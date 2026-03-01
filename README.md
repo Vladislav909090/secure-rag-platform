@@ -94,6 +94,13 @@ make proto:gen:iam
 make proto:gen:knowledge
 make proto:gen:rag
 
+# ── gRPC transport stubs ──────
+make grpc:stubs          # Генерация gRPC-стабов (all services)
+make grpc:stubs:gateway
+make grpc:stubs:iam
+make grpc:stubs:knowledge
+make grpc:stubs:rag
+
 # ── Docker ────────────────────
 make compose:up          # Запуск Docker Compose
 make compose:down        # Остановка Docker Compose
@@ -162,6 +169,37 @@ resp, _ := client.Authenticate(ctx, &iamv1.AuthenticateRequest{...})
 ```
 
 > **Важно**: gateway импортирует proto-файлы iam только если ему нужен клиент. В этом случае нужно добавить зависимость через `go.mod` / `replace`. Но для изоляции рекомендуется общаться через HTTP/gRPC без прямого импорта чужих proto.
+
+## Генерация серверных gRPC-стабов (transport)
+
+В репозитории есть общая утилита: `tools/grpcstubgen`.
+
+Она запускается отдельно для каждого сервиса и генерирует заготовки реализации серверных методов в:
+
+`services/<svc>/internal/transport/grpc`
+
+### Что создаётся
+
+- `<service>_server_impl.go` — структура реализации с `Unimplemented...Server`
+- `<method>.go` — отдельный файл на каждый RPC-метод (в `snake_case`), например `health.go`, `query.go`, `authorize.go`
+
+### Как запускать
+
+```bash
+# Все сервисы
+make grpc:stubs
+
+# Один сервис
+make grpc:stubs:rag
+
+# Прямой запуск утилиты
+go run ./tools/grpcstubgen --service services/rag --out internal/transport/grpc
+```
+
+### Поведение генератора
+
+- Генератор **не перезаписывает** существующие файлы (печатает `skip ...`).
+- Если нужно пересоздать стабы, удалите нужные файлы вручную и запустите генерацию снова.
 
 ## Требования
 

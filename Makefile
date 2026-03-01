@@ -1,18 +1,26 @@
 .PHONY: lint lint\:gateway lint\:iam lint\:knowledge lint\:rag \
-       test test\:gateway test\:iam test\:knowledge test\:rag \
-       build build\:gateway build\:iam build\:knowledge build\:rag \
-       proto\:tools proto\:deps proto\:gen \
-       proto\:gen\:gateway proto\:gen\:iam proto\:gen\:knowledge proto\:gen\:rag \
-       compose\:up compose\:down
+	test test\:gateway test\:iam test\:knowledge test\:rag \
+	build build\:gateway build\:iam build\:knowledge build\:rag \
+	proto\:tools proto\:deps proto\:gen \
+	proto\:gen\:gateway proto\:gen\:iam proto\:gen\:knowledge proto\:gen\:rag \
+	grpc\:stubs grpc\:stubs\:gateway grpc\:stubs\:iam grpc\:stubs\:knowledge grpc\:stubs\:rag \
+	compose\:up compose\:down
 
 GOOGLEAPIS_RAW = https://raw.githubusercontent.com/googleapis/googleapis/master
 PROTO_INC      = -I third_party
+PROTOC         = protoc
 
 # ── Platform-specific helpers ─────────────────────────
 
 ifeq ($(OS),Windows_NT)
 
 MKDIRP = powershell -NoProfile -Command "New-Item -ItemType Directory -Force -Path '$1' | Out-Null"
+
+# Авто-поиск protoc на Windows:
+# 1) в PATH
+# 2) winget-путь
+# 3) локальная распаковка в %LOCALAPPDATA%\protoc\bin
+PROTOC = $(shell powershell -NoProfile -Command "$$cmd=Get-Command protoc -ErrorAction SilentlyContinue; if($$cmd){$$cmd.Source}else{$$p1=Join-Path $$env:LOCALAPPDATA 'Microsoft\\WinGet\\Packages\\Google.Protobuf_Microsoft.Winget.Source_8wekyb3d8bbwe\\bin\\protoc.exe'; $$p2=Join-Path $$env:LOCALAPPDATA 'protoc\\bin\\protoc.exe'; if(Test-Path $$p1){$$p1}elseif(Test-Path $$p2){$$p2}else{'protoc'}}")
 
 PROTO_DEPS_CMD = powershell -NoProfile -Command "New-Item -ItemType Directory -Force third_party/google/api | Out-Null; if(-not(Test-Path third_party/google/api/annotations.proto)){Invoke-WebRequest '$(GOOGLEAPIS_RAW)/google/api/annotations.proto' -OutFile third_party/google/api/annotations.proto -UseBasicParsing; Invoke-WebRequest '$(GOOGLEAPIS_RAW)/google/api/http.proto' -OutFile third_party/google/api/http.proto -UseBasicParsing; Write-Host '==> Downloaded google/api protos'}else{Write-Host '==> google/api protos already present'}"
 
@@ -95,7 +103,7 @@ proto\:deps:
 proto\:gen\:gateway: proto\:deps
 	@$(call MKDIRP,services/gateway/gen/v1)
 	@$(call MKDIRP,services/gateway/gen/openapiv2)
-	protoc $(PROTO_INC) -I services/gateway/api \
+	"$(PROTOC)" $(PROTO_INC) -I services/gateway/api \
 		--go_out=services/gateway/gen --go_opt=paths=source_relative \
 		--go-grpc_out=services/gateway/gen --go-grpc_opt=paths=source_relative \
 		--grpc-gateway_out=services/gateway/gen --grpc-gateway_opt=paths=source_relative,generate_unbound_methods=true \
@@ -105,7 +113,7 @@ proto\:gen\:gateway: proto\:deps
 proto\:gen\:iam: proto\:deps
 	@$(call MKDIRP,services/iam/gen/v1)
 	@$(call MKDIRP,services/iam/gen/openapiv2)
-	protoc $(PROTO_INC) -I services/iam/api \
+	"$(PROTOC)" $(PROTO_INC) -I services/iam/api \
 		--go_out=services/iam/gen --go_opt=paths=source_relative \
 		--go-grpc_out=services/iam/gen --go-grpc_opt=paths=source_relative \
 		--grpc-gateway_out=services/iam/gen --grpc-gateway_opt=paths=source_relative,generate_unbound_methods=true \
@@ -115,7 +123,7 @@ proto\:gen\:iam: proto\:deps
 proto\:gen\:knowledge: proto\:deps
 	@$(call MKDIRP,services/knowledge/gen/v1)
 	@$(call MKDIRP,services/knowledge/gen/openapiv2)
-	protoc $(PROTO_INC) -I services/knowledge/api \
+	"$(PROTOC)" $(PROTO_INC) -I services/knowledge/api \
 		--go_out=services/knowledge/gen --go_opt=paths=source_relative \
 		--go-grpc_out=services/knowledge/gen --go-grpc_opt=paths=source_relative \
 		--grpc-gateway_out=services/knowledge/gen --grpc-gateway_opt=paths=source_relative,generate_unbound_methods=true \
@@ -125,7 +133,7 @@ proto\:gen\:knowledge: proto\:deps
 proto\:gen\:rag: proto\:deps
 	@$(call MKDIRP,services/rag/gen/v1)
 	@$(call MKDIRP,services/rag/gen/openapiv2)
-	protoc $(PROTO_INC) -I services/rag/api \
+	"$(PROTOC)" $(PROTO_INC) -I services/rag/api \
 		--go_out=services/rag/gen --go_opt=paths=source_relative \
 		--go-grpc_out=services/rag/gen --go-grpc_opt=paths=source_relative \
 		--grpc-gateway_out=services/rag/gen --grpc-gateway_opt=paths=source_relative,generate_unbound_methods=true \
@@ -133,6 +141,23 @@ proto\:gen\:rag: proto\:deps
 		services/rag/api/v1/rag.proto
 
 proto\:gen: proto\:gen\:gateway proto\:gen\:iam proto\:gen\:knowledge proto\:gen\:rag
+
+# ── gRPC: generate server stubs (transport/grpc) ─────
+
+grpc\:stubs\:gateway:
+	go run ./tools/grpcstubgen --service services/gateway --out internal/transport/grpc
+
+grpc\:stubs\:iam:
+	go run ./tools/grpcstubgen --service services/iam --out internal/transport/grpc
+
+grpc\:stubs\:knowledge:
+	go run ./tools/grpcstubgen --service services/knowledge --out internal/transport/grpc
+
+grpc\:stubs\:rag:
+	go run ./tools/grpcstubgen --service services/rag --out internal/transport/grpc
+
+grpc\:stubs: grpc\:stubs\:gateway grpc\:stubs\:iam grpc\:stubs\:knowledge grpc\:stubs\:rag
+
 
 # ── Docker Compose ───────────────────────────────────
 

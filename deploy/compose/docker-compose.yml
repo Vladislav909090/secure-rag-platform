@@ -1,3 +1,5 @@
+name: secure-rag-platform
+
 networks:
   traefik-net:
     driver: bridge

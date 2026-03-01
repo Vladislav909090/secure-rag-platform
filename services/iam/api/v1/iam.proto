@@ -1,0 +1,41 @@
+syntax = "proto3";
+
+package iam.v1;
+
+option go_package = "example.com/project/iam/gen/v1;iamv1";
+
+import "google/api/annotations.proto";
+
+// IAMService — управление идентификацией и доступом.
+service IAMService {
+  // Health проверяет работоспособность iam.
+  rpc Health(HealthRequest) returns (HealthResponse) {
+    option (google.api.http) = {
+      get: "/v1/iam/health"
+    };
+  }
+
+  // Authenticate аутентифицирует пользователя.
+  rpc Authenticate(AuthenticateRequest) returns (AuthenticateResponse) {
+    option (google.api.http) = {
+      post: "/v1/iam/authenticate"
+      body: "*"
+    };
+  }
+}
+
+message HealthRequest {}
+
+message HealthResponse {
+  string status = 1;
+}
+
+message AuthenticateRequest {
+  string username = 1;
+  string password = 2;
+}
+
+message AuthenticateResponse {
+  string token = 1;
+  int64 expires_at = 2;
+}

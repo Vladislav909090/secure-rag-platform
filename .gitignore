@@ -28,5 +28,16 @@ go.work.sum
 .env
 
 # Editor/IDE
-# .idea/
-# .vscode/
+.idea/
+.vscode/
+
+# Generated proto code (regenerate with make proto:gen)
+services/*/gen/*
+!services/*/gen/.gitkeep
+
+# Downloaded third-party protos
+third_party/google/
+
+# OS
+.DS_Store
+Thumbs.db

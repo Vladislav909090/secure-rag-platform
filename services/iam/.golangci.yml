@@ -1,0 +1,36 @@
+version: "2"
+
+run:
+  timeout: 3m
+
+linters:
+  enable:
+    - govet
+    - staticcheck
+    - errcheck
+    - gosimple
+    - ineffassign
+    - revive
+  settings:
+    errcheck:
+      check-type-assertions: true
+    govet:
+      enable-all: true
+    revive:
+      rules:
+        - name: exported
+          severity: error
+        - name: var-naming
+          severity: error
+        - name: indent-error-flow
+          severity: error
+        - name: cognitive-complexity
+          arguments: [15]
+        - name: cyclomatic
+          arguments: [10]
+        - name: function-length
+          arguments: [40, 0]
+
+issues:
+  max-issues-per-linter: 30
+  max-same-issues: 3

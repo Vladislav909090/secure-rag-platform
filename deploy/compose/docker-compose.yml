@@ -1,0 +1,78 @@
+networks:
+  traefik-net:
+    driver: bridge
+
+services:
+  # ─── Traefik (единственный публичный entrypoint) ─────────
+  traefik:
+    image: traefik:latest
+    ports:
+      - "80:80"
+      - "8090:8080"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - ../traefik/traefik.yml:/etc/traefik/traefik.yml:ro
+      - ../traefik/dynamic.yml:/etc/traefik/dynamic.yml:ro
+    networks:
+      - traefik-net
+
+  # ─── Gateway ─────────────────────────────────────────────
+  gateway:
+    build:
+      context: ../../services/gateway
+      dockerfile: Dockerfile
+    environment:
+      - PORT=8080
+    ports:
+      - "8080:8080"
+    expose:
+      - "8080"
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.gateway.rule=PathPrefix(`/`)"
+      - "traefik.http.routers.gateway.entrypoints=web"
+      - "traefik.http.services.gateway.loadbalancer.server.port=8080"
+    networks:
+      - traefik-net
+
+  # ─── IAM ─────────────────────────────────────────────────
+  iam:
+    build:
+      context: ../../services/iam
+      dockerfile: Dockerfile
+    environment:
+      - PORT=8081
+    ports:
+      - "8081:8081"
+    expose:
+      - "8081"
+    networks:
+      - traefik-net
+
+  # ─── Knowledge ───────────────────────────────────────────
+  knowledge:
+    build:
+      context: ../../services/knowledge
+      dockerfile: Dockerfile
+    environment:
+      - PORT=8082
+    ports:
+      - "8082:8082"
+    expose:
+      - "8082"
+    networks:
+      - traefik-net
+
+  # ─── RAG ─────────────────────────────────────────────────
+  rag:
+    build:
+      context: ../../services/rag
+      dockerfile: Dockerfile
+    environment:
+      - PORT=8083
+    ports:
+      - "8083:8083"
+    expose:
+      - "8083"
+    networks:
+      - traefik-net

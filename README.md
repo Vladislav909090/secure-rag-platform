@@ -203,6 +203,6 @@ go run ./tools/grpcstubgen --service services/rag --out internal/transport/grpc
 
 ## Требования
 
-- Go 1.25+
+- Go 1.23+
 - protoc (Protocol Buffers compiler)
 - Docker & Docker Compose

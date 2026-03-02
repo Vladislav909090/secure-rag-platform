@@ -4,11 +4,10 @@ package grpc
 
 import (
 	"context"
-	pb "example.com/project/rag/gen/v1"
-	"google.golang.org/grpc/codes"
-	"google.golang.org/grpc/status"
+
+	pb "secure-rag-platform/services/rag/gen/v1"
 )
 
 func (s *RAGServiceServerImpl) Health(ctx context.Context, req *pb.HealthRequest) (*pb.HealthResponse, error) {
-	return nil, status.Error(codes.Unimplemented, "method Health not implemented")
+	return &pb.HealthResponse{Status: "ok"}, nil
 }

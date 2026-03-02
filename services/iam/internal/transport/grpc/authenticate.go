@@ -4,7 +4,8 @@ package grpc
 
 import (
 	"context"
-	pb "example.com/project/iam/gen/v1"
+	pb "secure-rag-platform/services/iam/gen/v1"
+
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 )

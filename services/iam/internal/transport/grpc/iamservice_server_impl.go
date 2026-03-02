@@ -3,7 +3,7 @@
 package grpc
 
 import (
-	pb "example.com/project/iam/gen/v1"
+	pb "secure-rag-platform/services/iam/gen/v1"
 )
 
 type IAMServiceServerImpl struct {

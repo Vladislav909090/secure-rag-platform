@@ -3,7 +3,7 @@
 package grpc
 
 import (
-	pb "example.com/project/knowledge/gen/v1"
+	pb "secure-rag-platform/services/knowledge/gen/v1"
 )
 
 type KnowledgeServiceServerImpl struct {

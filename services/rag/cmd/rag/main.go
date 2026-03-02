@@ -2,26 +2,29 @@ package main
 
 import (
 	"context"
-	"encoding/json"
+	"errors"
 	"log"
 	"net"
 	"net/http"
-	"os"
 
-	ragv1 "example.com/project/rag/gen/v1"
-	"example.com/project/rag/internal/docs"
-	transportgrpc "example.com/project/rag/internal/transport/grpc"
+	ragv1 "secure-rag-platform/services/rag/gen/v1"
+	application "secure-rag-platform/services/rag/internal/app"
+	"secure-rag-platform/services/rag/internal/closer"
+	"secure-rag-platform/services/rag/internal/config"
+	"secure-rag-platform/services/rag/internal/docs"
+	transportgrpc "secure-rag-platform/services/rag/internal/transport/grpc"
+
 	"github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
 	"google.golang.org/grpc"
 )
 
 func main() {
-	port := os.Getenv("PORT")
+	port := config.GetValue(config.Port)
 	if port == "" {
 		port = "8083"
 	}
 
-	grpcPort := os.Getenv("GRPC_PORT")
+	grpcPort := config.GetValue(config.GRPCPort)
 	if grpcPort == "" {
 		grpcPort = "9093"
 	}
@@ -35,15 +38,7 @@ func main() {
 		log.Fatalf("failed to listen grpc: %v", err)
 	}
 
-	go func() {
-		log.Printf("rag grpc listening on :%s", grpcPort)
-		if serveErr := grpcServer.Serve(grpcLis); serveErr != nil {
-			log.Fatalf("failed to serve grpc: %v", serveErr)
-		}
-	}()
-
 	mux := http.NewServeMux()
-	mux.HandleFunc("/health", healthHandler)
 
 	gwMux := runtime.NewServeMux()
 	if err := ragv1.RegisterRAGServiceHandlerServer(context.Background(), gwMux, serverImpl); err != nil {
@@ -51,22 +46,31 @@ func main() {
 	}
 	mux.Handle("/v1/", gwMux)
 
-	if spec, err := os.ReadFile("/etc/swagger.json"); err == nil {
-		docs.Register(mux, "RAG", spec)
-	} else {
-		log.Printf("warning: swagger spec not loaded: %v", err)
-	}
+	docs.Register(mux, "RAG")
 
+	app := application.New()
+
+	httpServer := &http.Server{Addr: ":" + port, Handler: mux}
+
+	log.Printf("rag grpc listening on :%s", grpcPort)
 	log.Printf("rag listening on :%s", port)
 	log.Printf("docs: http://localhost:%s/docs", port)
 
-	if err := http.ListenAndServe(":"+port, mux); err != nil {
-		log.Fatalf("failed to start server: %v", err)
-	}
-}
+	app.Add(func() error {
+		return grpcServer.Serve(grpcLis)
+	})
+	app.Add(func() error {
+		if err := httpServer.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
+			return err
+		}
+		return nil
+	})
 
-func healthHandler(w http.ResponseWriter, _ *http.Request) {
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusOK)
-	_ = json.NewEncoder(w).Encode(map[string]string{"status": "ok", "service": "rag"})
+	closer.Add(httpServer.Shutdown)
+	closer.Add(grpcServer.GracefulStop)
+	closer.Add(grpcLis.Close)
+
+	if err := app.Run(); err != nil {
+		log.Fatalf("application stopped with error: %v", err)
+	}
 }

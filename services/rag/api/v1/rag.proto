@@ -2,7 +2,7 @@ syntax = "proto3";
 
 package rag.v1;
 
-option go_package = "example.com/project/rag/gen/v1;ragv1";
+option go_package = "secure-rag-platform/services/rag/gen/v1;ragv1";
 
 import "google/api/annotations.proto";
 

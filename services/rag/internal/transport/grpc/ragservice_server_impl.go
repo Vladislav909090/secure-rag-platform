@@ -3,7 +3,7 @@
 package grpc
 
 import (
-	pb "example.com/project/rag/gen/v1"
+	pb "secure-rag-platform/services/rag/gen/v1"
 )
 
 type RAGServiceServerImpl struct {

@@ -1,5 +1,3 @@
-version: "2"
-
 run:
   timeout: 3m
 
@@ -11,23 +9,24 @@ linters:
     - gosimple
     - ineffassign
     - revive
-  settings:
-    errcheck:
-      check-type-assertions: true
-    govet:
-      enable-all: true
-    revive:
-      rules:
-        - name: exported
-          severity: warning
-        - name: var-naming
-          severity: warning
-        - name: indent-error-flow
-          severity: warning
-        - name: cognitive-complexity
-          arguments: [25]
-        - name: cyclomatic
-          arguments: [15]
+
+linters-settings:
+  errcheck:
+    check-type-assertions: true
+  govet:
+    enable-all: true
+  revive:
+    rules:
+      - name: exported
+        severity: warning
+      - name: var-naming
+        severity: warning
+      - name: indent-error-flow
+        severity: warning
+      - name: cognitive-complexity
+        arguments: [25]
+      - name: cyclomatic
+        arguments: [15]
 
 issues:
   max-issues-per-linter: 50

@@ -3,7 +3,10 @@ package docs
 
 import (
 	"fmt"
+	"log"
 	"net/http"
+	"os"
+	"path/filepath"
 )
 
 const uiTemplate = `<!DOCTYPE html>
@@ -29,11 +32,44 @@ const uiTemplate = `<!DOCTYPE html>
 </body>
 </html>`
 
+const dockerSpecPath = "/etc/swagger.json"
+const defaultSpecFileName = "iam.swagger.json"
+
+func resolveSpecPath() string {
+	serviceLocalPath := filepath.Join("gen", "openapiv2", "v1", defaultSpecFileName)
+	if _, err := os.Stat(serviceLocalPath); err == nil {
+		return serviceLocalPath
+	}
+
+	workspaceRootPath := filepath.Join("services", "iam", "gen", "openapiv2", "v1", defaultSpecFileName)
+	if _, err := os.Stat(workspaceRootPath); err == nil {
+		return workspaceRootPath
+	}
+
+	return dockerSpecPath
+}
+
+func loadSpecJSON() ([]byte, error) {
+	specPath := resolveSpecPath()
+	specJSON, err := os.ReadFile(specPath)
+	if err != nil {
+		return nil, fmt.Errorf("swagger spec not loaded from %q: %w", specPath, err)
+	}
+
+	return specJSON, nil
+}
+
 // Register добавляет в mux маршруты:
 //
 //	GET /docs          — Swagger UI
 //	GET /docs/openapi.json — OpenAPI-спецификация (JSON)
-func Register(mux *http.ServeMux, serviceName string, specJSON []byte) {
+func Register(mux *http.ServeMux, serviceName string) {
+	specJSON, err := loadSpecJSON()
+	if err != nil {
+		log.Printf("warning: %v", err)
+		return
+	}
+
 	html := fmt.Sprintf(uiTemplate, serviceName)
 
 	mux.HandleFunc("/docs", func(w http.ResponseWriter, _ *http.Request) {

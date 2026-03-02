@@ -1,6 +1,8 @@
-module example.com/project/knowledge
+module secure-rag-platform/services/knowledge
 
 go 1.25.0
+
+toolchain go1.25.0
 
 require (
 	github.com/grpc-ecosystem/grpc-gateway/v2 v2.28.0

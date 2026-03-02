@@ -1,27 +1,24 @@
-name: Lint
+# ...existing code...
+name: lint
 
 on:
   push:
     branches:
       - main
-      - master
   pull_request:
+    branches:
+      - main
 
 permissions:
   contents: read
 
 jobs:
-  golangci:
-    name: golangci-lint (${{ matrix.service }})
+  golangci-lint:
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
       matrix:
-        service:
-          - services/gateway
-          - services/iam
-          - services/knowledge
-          - services/rag
+        service: [gateway, iam, knowledge, rag]
 
     steps:
       - name: Checkout
@@ -30,12 +27,11 @@ jobs:
       - name: Setup Go
         uses: actions/setup-go@v5
         with:
-          go-version: '1.25.x'
+          go-version-file: services/${{ matrix.service }}/go.mod
 
-      - name: Run golangci-lint
+      - name: Run golangci-lint (${{ matrix.service }})
         uses: golangci/golangci-lint-action@v6
         with:
-          version: latest
-          install-mode: goinstall
-          working-directory: ${{ matrix.service }}
+          version: v1.64.4
+          working-directory: services/${{ matrix.service }}
           args: ./...

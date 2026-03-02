@@ -4,11 +4,10 @@ package grpc
 
 import (
 	"context"
-	pb "example.com/project/iam/gen/v1"
-	"google.golang.org/grpc/codes"
-	"google.golang.org/grpc/status"
+
+	pb "secure-rag-platform/services/iam/gen/v1"
 )
 
 func (s *IAMServiceServerImpl) Health(ctx context.Context, req *pb.HealthRequest) (*pb.HealthResponse, error) {
-	return nil, status.Error(codes.Unimplemented, "method Health not implemented")
+	return &pb.HealthResponse{Status: "ok"}, nil
 }

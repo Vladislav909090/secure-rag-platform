@@ -1,23 +1,21 @@
 package main
 
 import (
-	"net/http"
-	"net/http/httptest"
+	"context"
 	"testing"
+
+	transportgrpc "secure-rag-platform/services/iam/internal/transport/grpc"
 )
 
-func TestHealthHandler(t *testing.T) {
-	req := httptest.NewRequest(http.MethodGet, "/health", nil)
-	w := httptest.NewRecorder()
+func TestHealthRPC(t *testing.T) {
+	server := &transportgrpc.IAMServiceServerImpl{}
 
-	healthHandler(w, req)
-
-	if w.Code != http.StatusOK {
-		t.Errorf("expected status 200, got %d", w.Code)
+	resp, err := server.Health(context.Background(), nil)
+	if err != nil {
+		t.Fatalf("expected nil error, got %v", err)
 	}
 
-	ct := w.Header().Get("Content-Type")
-	if ct != "application/json" {
-		t.Errorf("expected Content-Type application/json, got %s", ct)
+	if resp.GetStatus() != "ok" {
+		t.Fatalf("expected status ok, got %q", resp.GetStatus())
 	}
 }

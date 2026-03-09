@@ -1,0 +1,23 @@
+syntax = "proto3";
+
+package knowledge.v1;
+
+option go_package = "secure-rag-platform/services/knowledge/gen/v1;knowledgev1";
+
+import "google/api/annotations.proto";
+
+// KnowledgeService — управление базой знаний.
+service KnowledgeService {
+  // Health проверяет работоспособность knowledge.
+  rpc Health(HealthRequest) returns (HealthResponse) {
+    option (google.api.http) = {
+      get: "/v1/knowledge/health"
+    };
+  }
+}
+
+message HealthRequest {}
+
+message HealthResponse {
+  string status = 1;
+}

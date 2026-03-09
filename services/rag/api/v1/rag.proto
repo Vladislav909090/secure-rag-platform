@@ -1,0 +1,23 @@
+syntax = "proto3";
+
+package rag.v1;
+
+option go_package = "secure-rag-platform/services/rag/gen/v1;ragv1";
+
+import "google/api/annotations.proto";
+
+// RAGService — генерация ответов на базе найденных знаний.
+service RAGService {
+  // Health проверяет работоспособность rag.
+  rpc Health(HealthRequest) returns (HealthResponse) {
+    option (google.api.http) = {
+      get: "/v1/rag/health"
+    };
+  }
+}
+
+message HealthRequest {}
+
+message HealthResponse {
+  string status = 1;
+}

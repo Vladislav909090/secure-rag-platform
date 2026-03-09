@@ -1,0 +1,23 @@
+syntax = "proto3";
+
+package gateway.v1;
+
+option go_package = "secure-rag-platform/services/gateway/gen/v1;gatewayv1";
+
+import "google/api/annotations.proto";
+
+// GatewayService — единая точка входа для внешних клиентов.
+service GatewayService {
+  // Health проверяет работоспособность gateway.
+  rpc Health(HealthRequest) returns (HealthResponse) {
+    option (google.api.http) = {
+      get: "/v1/gateway/health"
+    };
+  }
+}
+
+message HealthRequest {}
+
+message HealthResponse {
+  string status = 1;
+}

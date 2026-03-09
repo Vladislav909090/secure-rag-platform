@@ -1,0 +1,23 @@
+syntax = "proto3";
+
+package iam.v1;
+
+option go_package = "secure-rag-platform/services/iam/gen/v1;iamv1";
+
+import "google/api/annotations.proto";
+
+// IAMService — управление идентификацией и доступом.
+service IAMService {
+  // Health проверяет работоспособность iam.
+  rpc Health(HealthRequest) returns (HealthResponse) {
+    option (google.api.http) = {
+      get: "/v1/iam/health"
+    };
+  }
+}
+
+message HealthRequest {}
+
+message HealthResponse {
+  string status = 1;
+}

@@ -1,0 +1,46 @@
+# ...existing code...
+name: lint
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+permissions:
+  contents: read
+
+jobs:
+  golangci-lint:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        service: [gateway, iam, knowledge, rag]
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Go
+        uses: actions/setup-go@v5
+        with:
+          go-version-file: services/${{ matrix.service }}/go.mod
+
+      - name: Setup protoc
+        uses: arduino/setup-protoc@v3
+
+      - name: Install proto tools
+        run: make proto:tools
+
+      - name: Generate proto stubs (${{ matrix.service }})
+        run: make proto:gen:${{ matrix.service }}
+
+      - name: Run golangci-lint (${{ matrix.service }})
+        uses: golangci/golangci-lint-action@v6
+        with:
+          version: v1.64.4
+          working-directory: services/${{ matrix.service }}
+          args: ./...

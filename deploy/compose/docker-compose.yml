@@ -1,0 +1,176 @@
+name: secure-rag-platform
+
+volumes:
+  gateway-postgres-data:
+  iam-postgres-data:
+  knowledge-postgres-data:
+  rag-postgres-data:
+
+networks:
+  traefik-net:
+    driver: bridge
+
+services:
+  # ─── Traefik (единственный публичный entrypoint) ─────────
+  traefik:
+    image: traefik:latest
+    ports:
+      - "80:80"
+      - "8090:8080"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - ../traefik/traefik.yml:/etc/traefik/traefik.yml:ro
+      - ../traefik/dynamic.yml:/etc/traefik/dynamic.yml:ro
+    networks:
+      - traefik-net
+
+  # ─── Gateway ─────────────────────────────────────────────
+  gateway:
+    build:
+      context: ../../services/gateway
+      dockerfile: Dockerfile
+    environment:
+      - PORT=8080
+      - DB_DSN=postgres://gateway:gateway@gateway-db:5432/gateway?sslmode=disable
+    expose:
+      - "8080"
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.gateway.rule=PathPrefix(`/`)"
+      - "traefik.http.routers.gateway.entrypoints=web"
+      - "traefik.http.routers.gateway.priority=1"
+      - "traefik.http.services.gateway.loadbalancer.server.port=8080"
+    depends_on:
+      - gateway-db
+    networks:
+      - traefik-net
+
+  gateway-db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: gateway
+      POSTGRES_USER: gateway
+      POSTGRES_PASSWORD: gateway
+    expose:
+      - "5432"
+    volumes:
+      - gateway-postgres-data:/var/lib/postgresql/data
+    networks:
+      - traefik-net
+
+  # ─── IAM ─────────────────────────────────────────────────
+  iam:
+    build:
+      context: ../../services/iam
+      dockerfile: Dockerfile
+    environment:
+      - PORT=8081
+      - DB_DSN=postgres://iam:iam@iam-db:5432/iam?sslmode=disable
+    expose:
+      - "8081"
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.iam.rule=PathPrefix(`/iam`)"
+      - "traefik.http.routers.iam.entrypoints=web"
+      - "traefik.http.routers.iam.priority=100"
+      - "traefik.http.routers.iam.middlewares=iam-strip"
+      - "traefik.http.middlewares.iam-strip.stripprefix.prefixes=/iam"
+      - "traefik.http.routers.iam-v1.rule=PathPrefix(`/v1/iam`)"
+      - "traefik.http.routers.iam-v1.entrypoints=web"
+      - "traefik.http.routers.iam-v1.priority=110"
+      - "traefik.http.services.iam.loadbalancer.server.port=8081"
+    depends_on:
+      - iam-db
+    networks:
+      - traefik-net
+
+  iam-db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: iam
+      POSTGRES_USER: iam
+      POSTGRES_PASSWORD: iam
+    expose:
+      - "5432"
+    volumes:
+      - iam-postgres-data:/var/lib/postgresql/data
+    networks:
+      - traefik-net
+
+  # ─── Knowledge ───────────────────────────────────────────
+  knowledge:
+    build:
+      context: ../../services/knowledge
+      dockerfile: Dockerfile
+    environment:
+      - PORT=8082
+      - DB_DSN=postgres://knowledge:knowledge@knowledge-db:5432/knowledge?sslmode=disable
+    expose:
+      - "8082"
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.knowledge.rule=PathPrefix(`/knowledge`)"
+      - "traefik.http.routers.knowledge.entrypoints=web"
+      - "traefik.http.routers.knowledge.priority=100"
+      - "traefik.http.routers.knowledge.middlewares=knowledge-strip"
+      - "traefik.http.middlewares.knowledge-strip.stripprefix.prefixes=/knowledge"
+      - "traefik.http.routers.knowledge-v1.rule=PathPrefix(`/v1/knowledge`)"
+      - "traefik.http.routers.knowledge-v1.entrypoints=web"
+      - "traefik.http.routers.knowledge-v1.priority=110"
+      - "traefik.http.services.knowledge.loadbalancer.server.port=8082"
+    depends_on:
+      - knowledge-db
+    networks:
+      - traefik-net
+
+  knowledge-db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: knowledge
+      POSTGRES_USER: knowledge
+      POSTGRES_PASSWORD: knowledge
+    expose:
+      - "5432"
+    volumes:
+      - knowledge-postgres-data:/var/lib/postgresql/data
+    networks:
+      - traefik-net
+
+  # ─── RAG ─────────────────────────────────────────────────
+  rag:
+    build:
+      context: ../../services/rag
+      dockerfile: Dockerfile
+    environment:
+      - PORT=8083
+      - DB_DSN=postgres://rag:rag@rag-db:5432/rag?sslmode=disable
+    expose:
+      - "8083"
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.rag.rule=PathPrefix(`/rag`)"
+      - "traefik.http.routers.rag.entrypoints=web"
+      - "traefik.http.routers.rag.priority=100"
+      - "traefik.http.routers.rag.middlewares=rag-strip"
+      - "traefik.http.middlewares.rag-strip.stripprefix.prefixes=/rag"
+      - "traefik.http.routers.rag-v1.rule=PathPrefix(`/v1/rag`)"
+      - "traefik.http.routers.rag-v1.entrypoints=web"
+      - "traefik.http.routers.rag-v1.priority=110"
+      - "traefik.http.services.rag.loadbalancer.server.port=8083"
+    depends_on:
+      - rag-db
+    networks:
+      - traefik-net
+
+  rag-db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: rag
+      POSTGRES_USER: rag
+      POSTGRES_PASSWORD: rag
+    expose:
+      - "5432"
+    volumes:
+      - rag-postgres-data:/var/lib/postgresql/data
+    networks:
+      - traefik-net

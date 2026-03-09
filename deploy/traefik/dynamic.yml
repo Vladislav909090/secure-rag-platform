@@ -1,0 +1,30 @@
+# Traefik dynamic configuration
+# Дополнительные маршруты и middleware.
+#
+# Основная маршрутизация на gateway выполняется через Docker labels
+# в docker-compose.yml (traefik.http.routers.gateway.*).
+#
+# Этот файл для будущих кастомных правил.
+
+http:
+  middlewares:
+    # Пример: rate-limit middleware
+    rate-limit:
+      rateLimit:
+        average: 100
+        burst: 50
+
+    # Пример: CORS headers
+    cors-headers:
+      headers:
+        accessControlAllowOriginList:
+          - "*"
+        accessControlAllowMethods:
+          - GET
+          - POST
+          - PUT
+          - DELETE
+          - OPTIONS
+        accessControlAllowHeaders:
+          - Content-Type
+          - Authorization

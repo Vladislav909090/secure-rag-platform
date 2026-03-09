@@ -1,0 +1,21 @@
+# Traefik static configuration
+# https://doc.traefik.io/traefik/reference/static-configuration/file/
+
+entryPoints:
+  web:
+    address: ":80"
+
+api:
+  dashboard: true
+  insecure: true
+
+providers:
+  docker:
+    exposedByDefault: false
+    network: traefik-net
+  file:
+    filename: /etc/traefik/dynamic.yml
+    watch: true
+
+log:
+  level: DEBUG

@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"strconv"
 )
 
 const uiTemplate = `<!DOCTYPE html>
@@ -22,8 +23,9 @@ const uiTemplate = `<!DOCTYPE html>
   <script src="https://unpkg.com/swagger-ui-dist@5/swagger-ui-bundle.js"></script>
   <script src="https://unpkg.com/swagger-ui-dist@5/swagger-ui-standalone-preset.js"></script>
   <script>
+	const spec = JSON.parse(%s);
     SwaggerUIBundle({
-      url: '/docs/openapi.json',
+	  spec: spec,
       dom_id: '#swagger-ui',
       presets: [SwaggerUIBundle.presets.apis, SwaggerUIStandalonePreset],
       layout: 'StandaloneLayout'
@@ -59,10 +61,7 @@ func loadSpecJSON() ([]byte, error) {
 	return specJSON, nil
 }
 
-// Register добавляет в mux маршруты:
-//
-//	GET /docs          — Swagger UI
-//	GET /docs/openapi.json — OpenAPI-спецификация (JSON)
+//	GET /docs — Swagger UI (OpenAPI встроен в страницу)
 func Register(mux *http.ServeMux, serviceName string) {
 	specJSON, err := loadSpecJSON()
 	if err != nil {
@@ -70,15 +69,10 @@ func Register(mux *http.ServeMux, serviceName string) {
 		return
 	}
 
-	html := fmt.Sprintf(uiTemplate, serviceName)
+	html := fmt.Sprintf(uiTemplate, serviceName, strconv.Quote(string(specJSON)))
 
 	mux.HandleFunc("/docs", func(w http.ResponseWriter, _ *http.Request) {
 		w.Header().Set("Content-Type", "text/html; charset=utf-8")
 		_, _ = w.Write([]byte(html))
-	})
-
-	mux.HandleFunc("/docs/openapi.json", func(w http.ResponseWriter, _ *http.Request) {
-		w.Header().Set("Content-Type", "application/json")
-		_, _ = w.Write(specJSON)
 	})
 }

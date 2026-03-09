@@ -14,52 +14,10 @@ service KnowledgeService {
       get: "/v1/knowledge/health"
     };
   }
-
-  // Ingest загружает документ в базу знаний.
-  rpc Ingest(IngestRequest) returns (IngestResponse) {
-    option (google.api.http) = {
-      post: "/v1/knowledge/ingest"
-      body: "*"
-    };
-  }
-
-  // Search ищет по базе знаний.
-  rpc Search(SearchRequest) returns (SearchResponse) {
-    option (google.api.http) = {
-      post: "/v1/knowledge/search"
-      body: "*"
-    };
-  }
 }
 
 message HealthRequest {}
 
 message HealthResponse {
   string status = 1;
-}
-
-message IngestRequest {
-  string document_id = 1;
-  string content = 2;
-  map<string, string> metadata = 3;
-}
-
-message IngestResponse {
-  string document_id = 1;
-  bool accepted = 2;
-}
-
-message SearchRequest {
-  string query = 1;
-  int32 top_k = 2;
-}
-
-message SearchResponse {
-  repeated SearchResult results = 1;
-}
-
-message SearchResult {
-  string document_id = 1;
-  float score = 2;
-  string snippet = 3;
 }

@@ -4,11 +4,27 @@
 	proto\:tools proto\:deps proto\:gen \
 	proto\:gen\:gateway proto\:gen\:iam proto\:gen\:knowledge proto\:gen\:rag \
 	grpc\:stubs grpc\:stubs\:gateway grpc\:stubs\:iam grpc\:stubs\:knowledge grpc\:stubs\:rag \
+	migrate\:status migrate\:status\:gateway migrate\:status\:iam migrate\:status\:knowledge migrate\:status\:rag \
+	migrate\:up migrate\:up\:gateway migrate\:up\:iam migrate\:up\:knowledge migrate\:up\:rag \
+	migrate\:down migrate\:down\:gateway migrate\:down\:iam migrate\:down\:knowledge migrate\:down\:rag \
+	migrate\:create\:gateway migrate\:create\:iam migrate\:create\:knowledge migrate\:create\:rag \
 	compose\:up compose\:down
 
 GOOGLEAPIS_RAW = https://raw.githubusercontent.com/googleapis/googleapis/master
 PROTO_INC      = -I third_party
 PROTOC         = protoc
+GOOSE          = go run github.com/pressly/goose/v3/cmd/goose@v3.24.3
+MIGRATION_NAME ?= new_migration
+
+GATEWAY_MIGRATIONS_DIR   = services/gateway/migrations
+IAM_MIGRATIONS_DIR       = services/iam/migrations
+KNOWLEDGE_MIGRATIONS_DIR = services/knowledge/migrations
+RAG_MIGRATIONS_DIR       = services/rag/migrations
+
+GATEWAY_DB_DSN   ?= postgres://gateway:gateway@localhost:5432/gateway?sslmode=disable
+IAM_DB_DSN       ?= postgres://iam:iam@localhost:5433/iam?sslmode=disable
+KNOWLEDGE_DB_DSN ?= postgres://knowledge:knowledge@localhost:5434/knowledge?sslmode=disable
+RAG_DB_DSN       ?= postgres://rag:rag@localhost:5435/rag?sslmode=disable
 
 # ── Platform-specific helpers ─────────────────────────
 
@@ -157,6 +173,63 @@ grpc\:stubs\:rag:
 	go run ./tools/grpcstubgen --service services/rag --out internal/transport/grpc
 
 grpc\:stubs: grpc\:stubs\:gateway grpc\:stubs\:iam grpc\:stubs\:knowledge grpc\:stubs\:rag
+
+
+# ── Database migrations (goose) ─────────────────────
+
+migrate\:status\:gateway:
+	@$(GOOSE) -dir $(GATEWAY_MIGRATIONS_DIR) postgres "$(GATEWAY_DB_DSN)" status
+
+migrate\:status\:iam:
+	@$(GOOSE) -dir $(IAM_MIGRATIONS_DIR) postgres "$(IAM_DB_DSN)" status
+
+migrate\:status\:knowledge:
+	@$(GOOSE) -dir $(KNOWLEDGE_MIGRATIONS_DIR) postgres "$(KNOWLEDGE_DB_DSN)" status
+
+migrate\:status\:rag:
+	@$(GOOSE) -dir $(RAG_MIGRATIONS_DIR) postgres "$(RAG_DB_DSN)" status
+
+migrate\:status: migrate\:status\:gateway migrate\:status\:iam migrate\:status\:knowledge migrate\:status\:rag
+
+migrate\:up\:gateway:
+	@$(GOOSE) -dir $(GATEWAY_MIGRATIONS_DIR) postgres "$(GATEWAY_DB_DSN)" up
+
+migrate\:up\:iam:
+	@$(GOOSE) -dir $(IAM_MIGRATIONS_DIR) postgres "$(IAM_DB_DSN)" up
+
+migrate\:up\:knowledge:
+	@$(GOOSE) -dir $(KNOWLEDGE_MIGRATIONS_DIR) postgres "$(KNOWLEDGE_DB_DSN)" up
+
+migrate\:up\:rag:
+	@$(GOOSE) -dir $(RAG_MIGRATIONS_DIR) postgres "$(RAG_DB_DSN)" up
+
+migrate\:up: migrate\:up\:gateway migrate\:up\:iam migrate\:up\:knowledge migrate\:up\:rag
+
+migrate\:down\:gateway:
+	@$(GOOSE) -dir $(GATEWAY_MIGRATIONS_DIR) postgres "$(GATEWAY_DB_DSN)" down
+
+migrate\:down\:iam:
+	@$(GOOSE) -dir $(IAM_MIGRATIONS_DIR) postgres "$(IAM_DB_DSN)" down
+
+migrate\:down\:knowledge:
+	@$(GOOSE) -dir $(KNOWLEDGE_MIGRATIONS_DIR) postgres "$(KNOWLEDGE_DB_DSN)" down
+
+migrate\:down\:rag:
+	@$(GOOSE) -dir $(RAG_MIGRATIONS_DIR) postgres "$(RAG_DB_DSN)" down
+
+migrate\:down: migrate\:down\:gateway migrate\:down\:iam migrate\:down\:knowledge migrate\:down\:rag
+
+migrate\:create\:gateway:
+	@$(GOOSE) -dir $(GATEWAY_MIGRATIONS_DIR) create $(MIGRATION_NAME) sql
+
+migrate\:create\:iam:
+	@$(GOOSE) -dir $(IAM_MIGRATIONS_DIR) create $(MIGRATION_NAME) sql
+
+migrate\:create\:knowledge:
+	@$(GOOSE) -dir $(KNOWLEDGE_MIGRATIONS_DIR) create $(MIGRATION_NAME) sql
+
+migrate\:create\:rag:
+	@$(GOOSE) -dir $(RAG_MIGRATIONS_DIR) create $(MIGRATION_NAME) sql
 
 
 # ── Docker Compose ───────────────────────────────────

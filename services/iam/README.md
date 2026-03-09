@@ -1,34 +1,63 @@
 # iam
 
-Identity & Access Management сервис.
+Identity and Access Management сервис.
 
-## Порт
+## Порты
 
-| Протокол | Порт |
-|----------|------|
-| HTTP     | 8081 |
+| Протокол | Порт по умолчанию |
+|----------|--------------------|
+| HTTP     | 8081               |
+| gRPC     | 9091               |
 
-## API
+## Контракт API
 
-API определяется через protobuf-контракты в `libs/proto/proto/iam/v1/iam.proto` с аннотациями `google.api.http`.
+- Proto-файл: `services/iam/api/v1/iam.proto`
+- Генерация: `make proto:gen:iam`
+- Transport-стабы: `make grpc:stubs:iam`
 
-После генерации кода (см. `libs/proto/README.md`), gRPC сервер будет обслуживать межсервисные вызовы, а grpc-gateway — HTTP.
+## Базовые маршруты
 
-## Сборка
+- `GET /v1/iam/health`
+- `GET /docs` (Swagger UI, OpenAPI встроен в HTML)
+
+Через Traefik с хоста:
+
+- `GET http://localhost/v1/iam/health`
+- `GET http://localhost/iam/docs`
+
+Примечание: в `docker-compose` сервис использует только `expose`, прямой URL `http://localhost:8081` не публикуется.
+
+## Запуск локально
+
+Из корня репозитория:
+
+```bash
+go run ./services/iam/cmd/iam
+```
+
+Или из каталога сервиса:
 
 ```bash
 cd services/iam
-go build ./cmd/iam
+go run ./cmd/iam
 ```
 
-## Тесты
+## Проверки
 
 ```bash
-go test ./...
+make test:iam
+make lint:iam
+make build:iam
 ```
 
-## Линтинг
+## Миграции
+
+- Каталог миграций: `services/iam/migrations`
+- DSN по умолчанию для make: `postgres://iam:iam@localhost:5433/iam?sslmode=disable`
 
 ```bash
-golangci-lint run ./...
+make migrate:status:iam
+make migrate:up:iam
+make migrate:down:iam
+make migrate:create:iam MIGRATION_NAME=add_iam_table
 ```

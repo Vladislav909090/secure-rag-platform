@@ -14,29 +14,10 @@ service GatewayService {
       get: "/v1/gateway/health"
     };
   }
-
-  // Authorize выполняет авторизацию запроса.
-  rpc Authorize(AuthorizeRequest) returns (AuthorizeResponse) {
-    option (google.api.http) = {
-      post: "/v1/gateway/authorize"
-      body: "*"
-    };
-  }
 }
 
 message HealthRequest {}
 
 message HealthResponse {
   string status = 1;
-}
-
-message AuthorizeRequest {
-  string token = 1;
-  string resource = 2;
-  string action = 3;
-}
-
-message AuthorizeResponse {
-  bool allowed = 1;
-  string reason = 2;
 }

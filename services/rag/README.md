@@ -1,32 +1,63 @@
 # rag
 
-Retrieval-Augmented Generation — сервис генерации ответов с использованием базы знаний.
+Retrieval-Augmented Generation сервис.
 
-## Порт
+## Порты
 
-| Протокол | Порт |
-|----------|------|
-| HTTP     | 8083 |
+| Протокол | Порт по умолчанию |
+|----------|--------------------|
+| HTTP     | 8083               |
+| gRPC     | 9093               |
 
-## API
+## Контракт API
 
-API определяется через protobuf-контракты в `libs/proto/proto/rag/v1/rag.proto` с аннотациями `google.api.http`.
+- Proto-файл: `services/rag/api/v1/rag.proto`
+- Генерация: `make proto:gen:rag`
+- Transport-стабы: `make grpc:stubs:rag`
 
-## Сборка
+## Базовые маршруты
+
+- `GET /v1/rag/health`
+- `GET /docs` (Swagger UI, OpenAPI встроен в HTML)
+
+Через Traefik с хоста:
+
+- `GET http://localhost/v1/rag/health`
+- `GET http://localhost/rag/docs`
+
+Примечание: в `docker-compose` сервис использует только `expose`, прямой URL `http://localhost:8083` не публикуется.
+
+## Запуск локально
+
+Из корня репозитория:
+
+```bash
+go run ./services/rag/cmd/rag
+```
+
+Или из каталога сервиса:
 
 ```bash
 cd services/rag
-go build ./cmd/rag
+go run ./cmd/rag
 ```
 
-## Тесты
+## Проверки
 
 ```bash
-go test ./...
+make test:rag
+make lint:rag
+make build:rag
 ```
 
-## Линтинг
+## Миграции
+
+- Каталог миграций: `services/rag/migrations`
+- DSN по умолчанию для make: `postgres://rag:rag@localhost:5435/rag?sslmode=disable`
 
 ```bash
-golangci-lint run ./...
+make migrate:status:rag
+make migrate:up:rag
+make migrate:down:rag
+make migrate:create:rag MIGRATION_NAME=add_rag_table
 ```

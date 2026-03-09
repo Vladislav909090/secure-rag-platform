@@ -14,34 +14,10 @@ service RAGService {
       get: "/v1/rag/health"
     };
   }
-
-  // Query выполняет RAG-запрос: поиск + генерация ответа.
-  rpc Query(QueryRequest) returns (QueryResponse) {
-    option (google.api.http) = {
-      post: "/v1/rag/query"
-      body: "*"
-    };
-  }
 }
 
 message HealthRequest {}
 
 message HealthResponse {
   string status = 1;
-}
-
-message QueryRequest {
-  string question = 1;
-  int32 top_k = 2;
-}
-
-message QueryResponse {
-  string answer = 1;
-  repeated Source sources = 2;
-}
-
-message Source {
-  string document_id = 1;
-  string snippet = 2;
-  float score = 3;
 }

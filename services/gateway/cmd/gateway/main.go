@@ -44,9 +44,9 @@ func main() {
 	if err := gatewayv1.RegisterGatewayServiceHandlerServer(context.Background(), gwMux, serverImpl); err != nil {
 		log.Fatalf("failed to register gateway handlers: %v", err)
 	}
-	mux.Handle("/v1/", gwMux)
+	mux.Handle("/gateway/", gwMux)
 
-	docs.Register(mux, "Gateway")
+	docs.RegisterAt(mux, "Gateway", "/gateway/docs")
 
 	app := application.New()
 
@@ -54,7 +54,7 @@ func main() {
 
 	log.Printf("gateway grpc listening on :%s", grpcPort)
 	log.Printf("gateway listening on :%s", port)
-	log.Printf("docs: http://localhost:%s/docs", port)
+	log.Printf("docs: http://localhost/gateway/docs")
 
 	app.Add(func() error {
 		return grpcServer.Serve(grpcLis)

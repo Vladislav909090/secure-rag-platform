@@ -61,8 +61,8 @@ func loadSpecJSON() ([]byte, error) {
 	return specJSON, nil
 }
 
-//	GET /docs — Swagger UI
-func Register(mux *http.ServeMux, serviceName string) {
+// RegisterAt регистрирует Swagger UI по заданному пути.
+func RegisterAt(mux *http.ServeMux, serviceName string, docsPath string) {
 	specJSON, err := loadSpecJSON()
 	if err != nil {
 		log.Printf("warning: %v", err)
@@ -71,7 +71,7 @@ func Register(mux *http.ServeMux, serviceName string) {
 
 	html := fmt.Sprintf(uiTemplate, serviceName, strconv.Quote(string(specJSON)))
 
-	mux.HandleFunc("/docs", func(w http.ResponseWriter, _ *http.Request) {
+	mux.HandleFunc(docsPath, func(w http.ResponseWriter, _ *http.Request) {
 		w.Header().Set("Content-Type", "text/html; charset=utf-8")
 		_, _ = w.Write([]byte(html))
 	})

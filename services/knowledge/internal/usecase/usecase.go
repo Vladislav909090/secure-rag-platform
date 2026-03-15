@@ -1,0 +1,75 @@
+package usecase
+
+import (
+	"context"
+	"crypto/sha256"
+	"encoding/hex"
+	"errors"
+	"io"
+
+	"secure-rag-platform/services/knowledge/internal/repository"
+	"secure-rag-platform/services/knowledge/internal/storage"
+)
+
+var (
+	ErrDocumentNotFound   = errors.New("document not found")
+	ErrDocumentDeleted    = errors.New("document is deleted")
+	ErrDocumentNotDeleted = errors.New("document is not deleted")
+	ErrVersionNotFound    = errors.New("version not found")
+	ErrFileNotFound       = errors.New("file not found in storage")
+	ErrFileTooLarge       = errors.New("file too large")
+	ErrInvalidRequest     = errors.New("invalid request")
+)
+
+// DocumentUsecase содержит бизнес-логику работы с документами.
+type DocumentUsecase struct {
+	repo    *repository.Repo
+	storage *storage.S3Storage
+	maxSize int64
+}
+
+// NewDocumentUsecase создаёт usecase.
+func NewDocumentUsecase(repo *repository.Repo, s3 *storage.S3Storage, maxSize int64) *DocumentUsecase {
+	return &DocumentUsecase{repo: repo, storage: s3, maxSize: maxSize}
+}
+
+type sizeLimitReader struct {
+	r      io.Reader
+	max    int64
+	read   int64
+	failed bool
+}
+
+func (r *sizeLimitReader) Read(p []byte) (int, error) {
+	if r.failed {
+		return 0, ErrFileTooLarge
+	}
+
+	n, err := r.r.Read(p)
+	r.read += int64(n)
+	if r.read > r.max {
+		r.failed = true
+		return n, ErrFileTooLarge
+	}
+
+	return n, err
+}
+
+func (uc *DocumentUsecase) uploadAndHash(ctx context.Context, storageKey string, file io.Reader, mimeType string) (int64, string, error) {
+	hasher := sha256.New()
+	limited := &sizeLimitReader{r: file, max: uc.maxSize}
+	stream := io.TeeReader(limited, hasher)
+
+	if err := uc.storage.Upload(ctx, storageKey, stream, -1, mimeType); err != nil {
+		if errors.Is(err, ErrFileTooLarge) || limited.failed {
+			return 0, "", ErrFileTooLarge
+		}
+		return 0, "", err
+	}
+
+	if limited.failed {
+		return 0, "", ErrFileTooLarge
+	}
+
+	return limited.read, hex.EncodeToString(hasher.Sum(nil)), nil
+}

@@ -44,9 +44,9 @@ func main() {
 	if err := ragv1.RegisterRAGServiceHandlerServer(context.Background(), gwMux, serverImpl); err != nil {
 		log.Fatalf("failed to register rag handlers: %v", err)
 	}
-	mux.Handle("/v1/", gwMux)
+	mux.Handle("/rag/", gwMux)
 
-	docs.Register(mux, "RAG")
+	docs.RegisterAt(mux, "RAG", "/rag/docs")
 
 	app := application.New()
 
@@ -54,7 +54,7 @@ func main() {
 
 	log.Printf("rag grpc listening on :%s", grpcPort)
 	log.Printf("rag listening on :%s", port)
-	log.Printf("docs: http://localhost:%s/docs", port)
+	log.Printf("docs: http://localhost/rag/docs")
 
 	app.Add(func() error {
 		return grpcServer.Serve(grpcLis)

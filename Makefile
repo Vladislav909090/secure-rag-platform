@@ -10,6 +10,17 @@
 	migrate\:create\:gateway migrate\:create\:iam migrate\:create\:knowledge migrate\:create\:rag \
 	compose\:up compose\:down
 
+COMPOSE_DEV ?= 0
+COMPOSE_FILES = -f deploy/compose/docker-compose.yml
+
+ifeq ($(DEV),1)
+COMPOSE_DEV = 1
+endif
+
+ifeq ($(COMPOSE_DEV),1)
+COMPOSE_FILES += -f deploy/compose/compose.dev.yml
+endif
+
 GOOGLEAPIS_RAW = https://raw.githubusercontent.com/googleapis/googleapis/master
 PROTO_INC      = -I third_party
 PROTOC         = protoc
@@ -38,18 +49,24 @@ MKDIRP = powershell -NoProfile -Command "New-Item -ItemType Directory -Force -Pa
 # 3) локальная распаковка в %LOCALAPPDATA%\protoc\bin
 PROTOC = $(shell powershell -NoProfile -Command "$$cmd=Get-Command protoc -ErrorAction SilentlyContinue; if($$cmd){$$cmd.Source}else{$$p1=Join-Path $$env:LOCALAPPDATA 'Microsoft\\WinGet\\Packages\\Google.Protobuf_Microsoft.Winget.Source_8wekyb3d8bbwe\\bin\\protoc.exe'; $$p2=Join-Path $$env:LOCALAPPDATA 'protoc\\bin\\protoc.exe'; if(Test-Path $$p1){$$p1}elseif(Test-Path $$p2){$$p2}else{'protoc'}}")
 
-PROTO_DEPS_CMD = powershell -NoProfile -Command "New-Item -ItemType Directory -Force third_party/google/api | Out-Null; if(-not(Test-Path third_party/google/api/annotations.proto)){Invoke-WebRequest '$(GOOGLEAPIS_RAW)/google/api/annotations.proto' -OutFile third_party/google/api/annotations.proto -UseBasicParsing; Invoke-WebRequest '$(GOOGLEAPIS_RAW)/google/api/http.proto' -OutFile third_party/google/api/http.proto -UseBasicParsing; Write-Host '==> Downloaded google/api protos'}else{Write-Host '==> google/api protos already present'}"
+PROTO_DEPS_CMD = powershell -NoProfile -Command "New-Item -ItemType Directory -Force third_party/google/api | Out-Null; $$updated=$$false; if(-not(Test-Path third_party/google/api/annotations.proto)){Invoke-WebRequest '$(GOOGLEAPIS_RAW)/google/api/annotations.proto' -OutFile third_party/google/api/annotations.proto -UseBasicParsing; $$updated=$$true}; if(-not(Test-Path third_party/google/api/http.proto)){Invoke-WebRequest '$(GOOGLEAPIS_RAW)/google/api/http.proto' -OutFile third_party/google/api/http.proto -UseBasicParsing; $$updated=$$true}; if(-not(Test-Path third_party/google/api/httpbody.proto)){Invoke-WebRequest '$(GOOGLEAPIS_RAW)/google/api/httpbody.proto' -OutFile third_party/google/api/httpbody.proto -UseBasicParsing; $$updated=$$true}; if($$updated){Write-Host '==> Downloaded missing google/api protos'}else{Write-Host '==> google/api protos already present'}"
 
 else
 
 MKDIRP = mkdir -p $1
 
 PROTO_DEPS_CMD = mkdir -p third_party/google/api && \
-  if [ ! -f third_party/google/api/annotations.proto ]; then \
-    curl -sSL $(GOOGLEAPIS_RAW)/google/api/annotations.proto -o third_party/google/api/annotations.proto && \
-    curl -sSL $(GOOGLEAPIS_RAW)/google/api/http.proto -o third_party/google/api/http.proto && \
-    echo "==> Downloaded google/api protos"; \
-  else echo "==> google/api protos already present"; fi
+	changed=0; \
+	if [ ! -f third_party/google/api/annotations.proto ]; then \
+		curl -sSL $(GOOGLEAPIS_RAW)/google/api/annotations.proto -o third_party/google/api/annotations.proto && changed=1; \
+	fi; \
+	if [ ! -f third_party/google/api/http.proto ]; then \
+		curl -sSL $(GOOGLEAPIS_RAW)/google/api/http.proto -o third_party/google/api/http.proto && changed=1; \
+	fi; \
+	if [ ! -f third_party/google/api/httpbody.proto ]; then \
+		curl -sSL $(GOOGLEAPIS_RAW)/google/api/httpbody.proto -o third_party/google/api/httpbody.proto && changed=1; \
+	fi; \
+	if [ $$changed -eq 1 ]; then echo "==> Downloaded missing google/api protos"; else echo "==> google/api protos already present"; fi
 
 endif
 
@@ -235,7 +252,7 @@ migrate\:create\:rag:
 # ── Docker Compose ───────────────────────────────────
 
 compose\:up:
-	docker compose -f deploy/compose/docker-compose.yml up -d --build
+	docker compose $(COMPOSE_FILES) up -d --build
 
 compose\:down:
-	docker compose -f deploy/compose/docker-compose.yml down
+	docker compose -f deploy/compose/docker-compose.yml -f deploy/compose/compose.dev.yml down

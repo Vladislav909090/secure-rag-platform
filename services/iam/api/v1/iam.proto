@@ -11,7 +11,7 @@ service IAMService {
   // Health проверяет работоспособность iam.
   rpc Health(HealthRequest) returns (HealthResponse) {
     option (google.api.http) = {
-      get: "/v1/iam/health"
+      get: "/iam/health"
     };
   }
 }

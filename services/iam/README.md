@@ -17,12 +17,12 @@ Identity and Access Management сервис.
 
 ## Базовые маршруты
 
-- `GET /v1/iam/health`
+- `GET /health`
 - `GET /docs` (Swagger UI, OpenAPI встроен в HTML)
 
 Через Traefik с хоста:
 
-- `GET http://localhost/v1/iam/health`
+- `GET http://localhost/iam/health`
 - `GET http://localhost/iam/docs`
 
 Примечание: в `docker-compose` сервис использует только `expose`, прямой URL `http://localhost:8081` не публикуется.

@@ -1,0 +1,39 @@
+networks:
+  dev-expose-net:
+    driver: bridge
+
+services:
+  gateway-db:
+    networks:
+      - gateway-db-net
+      - dev-expose-net
+    ports:
+      - "5432:5432"
+
+  iam-db:
+    networks:
+      - iam-db-net
+      - dev-expose-net
+    ports:
+      - "5433:5432"
+
+  knowledge-db:
+    networks:
+      - knowledge-db-net
+      - dev-expose-net
+    ports:
+      - "5434:5432"
+
+  rag-db:
+    networks:
+      - rag-db-net
+      - dev-expose-net
+    ports:
+      - "5435:5432"
+
+  knowledge-minio:
+    networks:
+      - knowledge-minio-net
+      - dev-expose-net
+    ports:
+      - "9001:9001"

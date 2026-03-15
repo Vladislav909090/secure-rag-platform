@@ -4,14 +4,38 @@ volumes:
   gateway-postgres-data:
   iam-postgres-data:
   knowledge-postgres-data:
+  knowledge-minio-data:
   rag-postgres-data:
 
 networks:
   traefik-net:
     driver: bridge
 
+  app-net:
+    driver: bridge
+    internal: true
+
+  gateway-db-net:
+    driver: bridge
+    internal: true
+
+  iam-db-net:
+    driver: bridge
+    internal: true
+
+  knowledge-db-net:
+    driver: bridge
+    internal: true
+
+  knowledge-minio-net:
+    driver: bridge
+    internal: true
+
+  rag-db-net:
+    driver: bridge
+    internal: true
+
 services:
-  # ─── Traefik (единственный публичный entrypoint) ─────────
   traefik:
     image: traefik:latest
     ports:
@@ -24,7 +48,6 @@ services:
     networks:
       - traefik-net
 
-  # ─── Gateway ─────────────────────────────────────────────
   gateway:
     build:
       context: ../../services/gateway
@@ -36,14 +59,16 @@ services:
       - "8080"
     labels:
       - "traefik.enable=true"
-      - "traefik.http.routers.gateway.rule=PathPrefix(`/`)"
+      - "traefik.http.routers.gateway.rule=PathPrefix(`/gateway`)"
       - "traefik.http.routers.gateway.entrypoints=web"
-      - "traefik.http.routers.gateway.priority=1"
+      - "traefik.http.routers.gateway.priority=100"
       - "traefik.http.services.gateway.loadbalancer.server.port=8080"
     depends_on:
       - gateway-db
     networks:
       - traefik-net
+      - app-net
+      - gateway-db-net
 
   gateway-db:
     image: postgres:16-alpine
@@ -51,14 +76,11 @@ services:
       POSTGRES_DB: gateway
       POSTGRES_USER: gateway
       POSTGRES_PASSWORD: gateway
-    expose:
-      - "5432"
     volumes:
       - gateway-postgres-data:/var/lib/postgresql/data
     networks:
-      - traefik-net
+      - gateway-db-net
 
-  # ─── IAM ─────────────────────────────────────────────────
   iam:
     build:
       context: ../../services/iam
@@ -70,19 +92,17 @@ services:
       - "8081"
     labels:
       - "traefik.enable=true"
+      - "traefik.docker.network=secure-rag-platform_traefik-net"
       - "traefik.http.routers.iam.rule=PathPrefix(`/iam`)"
       - "traefik.http.routers.iam.entrypoints=web"
       - "traefik.http.routers.iam.priority=100"
-      - "traefik.http.routers.iam.middlewares=iam-strip"
-      - "traefik.http.middlewares.iam-strip.stripprefix.prefixes=/iam"
-      - "traefik.http.routers.iam-v1.rule=PathPrefix(`/v1/iam`)"
-      - "traefik.http.routers.iam-v1.entrypoints=web"
-      - "traefik.http.routers.iam-v1.priority=110"
       - "traefik.http.services.iam.loadbalancer.server.port=8081"
     depends_on:
       - iam-db
     networks:
       - traefik-net
+      - app-net
+      - iam-db-net
 
   iam-db:
     image: postgres:16-alpine
@@ -90,38 +110,42 @@ services:
       POSTGRES_DB: iam
       POSTGRES_USER: iam
       POSTGRES_PASSWORD: iam
-    expose:
-      - "5432"
     volumes:
       - iam-postgres-data:/var/lib/postgresql/data
     networks:
-      - traefik-net
+      - iam-db-net
 
-  # ─── Knowledge ───────────────────────────────────────────
   knowledge:
     build:
       context: ../../services/knowledge
       dockerfile: Dockerfile
     environment:
       - PORT=8082
-      - DB_DSN=postgres://knowledge:knowledge@knowledge-db:5432/knowledge?sslmode=disable
+      - DATABASE_DSN=postgres://knowledge:knowledge@knowledge-db:5432/knowledge?sslmode=disable
+      - S3_ENDPOINT=knowledge-minio:9000
+      - S3_BUCKET=knowledge
+      - S3_ACCESS_KEY=minioadmin
+      - S3_SECRET_KEY=minioadmin
+      - S3_USE_SSL=false
     expose:
       - "8082"
     labels:
       - "traefik.enable=true"
+      - "traefik.docker.network=secure-rag-platform_traefik-net"
       - "traefik.http.routers.knowledge.rule=PathPrefix(`/knowledge`)"
       - "traefik.http.routers.knowledge.entrypoints=web"
       - "traefik.http.routers.knowledge.priority=100"
-      - "traefik.http.routers.knowledge.middlewares=knowledge-strip"
-      - "traefik.http.middlewares.knowledge-strip.stripprefix.prefixes=/knowledge"
-      - "traefik.http.routers.knowledge-v1.rule=PathPrefix(`/v1/knowledge`)"
-      - "traefik.http.routers.knowledge-v1.entrypoints=web"
-      - "traefik.http.routers.knowledge-v1.priority=110"
       - "traefik.http.services.knowledge.loadbalancer.server.port=8082"
     depends_on:
-      - knowledge-db
+      knowledge-db:
+        condition: service_started
+      knowledge-minio:
+        condition: service_healthy
     networks:
       - traefik-net
+      - app-net
+      - knowledge-db-net
+      - knowledge-minio-net
 
   knowledge-db:
     image: postgres:16-alpine
@@ -129,14 +153,28 @@ services:
       POSTGRES_DB: knowledge
       POSTGRES_USER: knowledge
       POSTGRES_PASSWORD: knowledge
-    expose:
-      - "5432"
     volumes:
       - knowledge-postgres-data:/var/lib/postgresql/data
     networks:
-      - traefik-net
+      - knowledge-db-net
 
-  # ─── RAG ─────────────────────────────────────────────────
+  knowledge-minio:
+    image: minio/minio:latest
+    environment:
+      MINIO_ROOT_USER: minioadmin
+      MINIO_ROOT_PASSWORD: minioadmin
+    command: server /data --console-address ":9001"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    volumes:
+      - knowledge-minio-data:/data
+    networks:
+      - knowledge-minio-net
+
   rag:
     build:
       context: ../../services/rag
@@ -148,19 +186,17 @@ services:
       - "8083"
     labels:
       - "traefik.enable=true"
+      - "traefik.docker.network=secure-rag-platform_traefik-net"
       - "traefik.http.routers.rag.rule=PathPrefix(`/rag`)"
       - "traefik.http.routers.rag.entrypoints=web"
       - "traefik.http.routers.rag.priority=100"
-      - "traefik.http.routers.rag.middlewares=rag-strip"
-      - "traefik.http.middlewares.rag-strip.stripprefix.prefixes=/rag"
-      - "traefik.http.routers.rag-v1.rule=PathPrefix(`/v1/rag`)"
-      - "traefik.http.routers.rag-v1.entrypoints=web"
-      - "traefik.http.routers.rag-v1.priority=110"
       - "traefik.http.services.rag.loadbalancer.server.port=8083"
     depends_on:
       - rag-db
     networks:
       - traefik-net
+      - app-net
+      - rag-db-net
 
   rag-db:
     image: postgres:16-alpine
@@ -168,9 +204,7 @@ services:
       POSTGRES_DB: rag
       POSTGRES_USER: rag
       POSTGRES_PASSWORD: rag
-    expose:
-      - "5432"
     volumes:
       - rag-postgres-data:/var/lib/postgresql/data
     networks:
-      - traefik-net
+      - rag-db-net

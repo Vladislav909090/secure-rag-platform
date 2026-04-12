@@ -44,9 +44,9 @@ func main() {
 	if err := iamv1.RegisterIAMServiceHandlerServer(context.Background(), gwMux, serverImpl); err != nil {
 		log.Fatalf("failed to register iam handlers: %v", err)
 	}
-	mux.Handle("/v1/", gwMux)
+	mux.Handle("/iam/", gwMux)
 
-	docs.Register(mux, "IAM")
+	docs.RegisterAt(mux, "IAM", "/iam/docs")
 
 	app := application.New()
 
@@ -54,7 +54,7 @@ func main() {
 
 	log.Printf("iam grpc listening on :%s", grpcPort)
 	log.Printf("iam listening on :%s", port)
-	log.Printf("docs: http://localhost:%s/docs", port)
+	log.Printf("docs: http://localhost/iam/docs")
 
 	app.Add(func() error {
 		return grpcServer.Serve(grpcLis)

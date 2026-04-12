@@ -2,6 +2,7 @@
 package docs
 
 import (
+	"encoding/json"
 	"fmt"
 	"log"
 	"net/http"
@@ -58,11 +59,80 @@ func loadSpecJSON() ([]byte, error) {
 		return nil, fmt.Errorf("swagger spec not loaded from %q: %w", specPath, err)
 	}
 
-	return specJSON, nil
+	overlaid, err := applyMultipartUploadOverlay(specJSON)
+	if err != nil {
+		return nil, err
+	}
+
+	return overlaid, nil
 }
 
-//	GET /docs — Swagger UI (OpenAPI встроен в страницу)
-func Register(mux *http.ServeMux, serviceName string) {
+func applyMultipartUploadOverlay(specJSON []byte) ([]byte, error) {
+	var root map[string]any
+	if err := json.Unmarshal(specJSON, &root); err != nil {
+		return nil, fmt.Errorf("unmarshal swagger spec: %w", err)
+	}
+
+	paths, _ := root["paths"].(map[string]any)
+	if paths == nil {
+		paths = map[string]any{}
+		root["paths"] = paths
+	}
+
+	pathDocuments, _ := paths["/knowledge/api/v1/documents"].(map[string]any)
+	if pathDocuments == nil {
+		pathDocuments = map[string]any{}
+		paths["/knowledge/api/v1/documents"] = pathDocuments
+	}
+	pathDocuments["post"] = map[string]any{
+		"summary":     "CreateDocument загружает файл как multipart и стримит его в gRPC",
+		"operationId": "KnowledgeService_CreateDocumentMultipart",
+		"tags":        []any{"KnowledgeService"},
+		"consumes":    []any{"multipart/form-data"},
+		"produces":    []any{"application/json"},
+		"parameters": []any{
+			map[string]any{"name": "title", "in": "formData", "required": true, "type": "string"},
+			map[string]any{"name": "description", "in": "formData", "required": false, "type": "string"},
+			map[string]any{"name": "attributes", "in": "formData", "required": false, "type": "string", "description": "JSON object as string"},
+			map[string]any{"name": "file", "in": "formData", "required": true, "type": "file"},
+		},
+		"responses": map[string]any{
+			"200": map[string]any{"description": "OK", "schema": map[string]any{"$ref": "#/definitions/v1CreateDocumentResponse"}},
+			"400": map[string]any{"description": "Bad Request", "schema": map[string]any{"$ref": "#/definitions/rpcStatus"}},
+		},
+	}
+
+	pathVersions, _ := paths["/knowledge/api/v1/documents/{document_uuid}/versions"].(map[string]any)
+	if pathVersions == nil {
+		pathVersions = map[string]any{}
+		paths["/knowledge/api/v1/documents/{document_uuid}/versions"] = pathVersions
+	}
+	pathVersions["post"] = map[string]any{
+		"summary":     "UploadVersion загружает версию как multipart и стримит её в gRPC",
+		"operationId": "KnowledgeService_UploadVersionMultipart",
+		"tags":        []any{"KnowledgeService"},
+		"consumes":    []any{"multipart/form-data"},
+		"produces":    []any{"application/json"},
+		"parameters": []any{
+			map[string]any{"name": "document_uuid", "in": "path", "required": true, "type": "string"},
+			map[string]any{"name": "file", "in": "formData", "required": true, "type": "file"},
+		},
+		"responses": map[string]any{
+			"200": map[string]any{"description": "OK", "schema": map[string]any{"$ref": "#/definitions/v1UploadVersionResponse"}},
+			"400": map[string]any{"description": "Bad Request", "schema": map[string]any{"$ref": "#/definitions/rpcStatus"}},
+		},
+	}
+
+	out, err := json.Marshal(root)
+	if err != nil {
+		return nil, fmt.Errorf("marshal swagger spec: %w", err)
+	}
+
+	return out, nil
+}
+
+// RegisterAt регистрирует Swagger UI по заданному пути.
+func RegisterAt(mux *http.ServeMux, serviceName string, docsPath string) {
 	specJSON, err := loadSpecJSON()
 	if err != nil {
 		log.Printf("warning: %v", err)
@@ -71,7 +141,7 @@ func Register(mux *http.ServeMux, serviceName string) {
 
 	html := fmt.Sprintf(uiTemplate, serviceName, strconv.Quote(string(specJSON)))
 
-	mux.HandleFunc("/docs", func(w http.ResponseWriter, _ *http.Request) {
+	mux.HandleFunc(docsPath, func(w http.ResponseWriter, _ *http.Request) {
 		w.Header().Set("Content-Type", "text/html; charset=utf-8")
 		_, _ = w.Write([]byte(html))
 	})

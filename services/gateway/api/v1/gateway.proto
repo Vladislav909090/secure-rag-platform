@@ -11,7 +11,7 @@ service GatewayService {
   // Health проверяет работоспособность gateway.
   rpc Health(HealthRequest) returns (HealthResponse) {
     option (google.api.http) = {
-      get: "/v1/gateway/health"
+      get: "/gateway/health"
     };
   }
 }

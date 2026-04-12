@@ -17,12 +17,13 @@
 
 ## Базовые маршруты
 
-- `GET /v1/knowledge/health`
+- `GET /health`
 - `GET /docs` (Swagger UI, OpenAPI встроен в HTML)
 
 Через Traefik с хоста:
 
-- `GET http://localhost/v1/knowledge/health`
+- `GET http://localhost/knowledge/api/health`
+- `GET http://localhost/knowledge/api/v1/documents`
 - `GET http://localhost/knowledge/docs`
 
 Примечание: в `docker-compose` сервис использует только `expose`, прямой URL `http://localhost:8082` не публикуется.

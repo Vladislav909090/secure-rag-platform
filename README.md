@@ -54,10 +54,10 @@ services/<svc>/
 
 Внешние маршруты через Traefik:
 
-- Gateway: `GET /docs`, `GET /v1/gateway/health`
-- IAM: `GET /iam/docs`, `GET /v1/iam/health`
-- Knowledge: `GET /knowledge/docs`, `GET /v1/knowledge/health`
-- RAG: `GET /rag/docs`, `GET /v1/rag/health`
+- Gateway: `GET /gateway/docs`, `GET /gateway/v1/gateway/health`
+- IAM: `GET /iam/docs`, `GET /iam/v1/iam/health`
+- Knowledge: `GET /knowledge/docs`, `GET /knowledge/api/v1/knowledge/health`, `GET /knowledge/api/v1/documents`
+- RAG: `GET /rag/docs`, `GET /rag/v1/rag/health`
 
 ## Быстрый старт
 
@@ -73,6 +73,9 @@ make grpc:stubs
 
 # Запустить все сервисы
 make compose:up
+
+# Запустить в dev-режиме (с публикацией только инфраструктурных портов: БД/MinIO)
+make compose:up DEV=1
 
 # Применить все миграции
 make migrate:up
@@ -109,4 +112,5 @@ make migrate:create:rag MIGRATION_NAME=add_jobs_table
 - `gen/` и `third_party/google/` заполняются генерацией (`make proto:*`).
 - `grpcstubgen` не удаляет устаревшие файлы автоматически: лишние стабы удаляются вручную.
 - Папки-каркасы, где пока нет кода (`repository`, `usecase`), удерживаются в git через `doc.go`.
-- Для `iam`, `knowledge`, `rag` префиксы `/iam`, `/knowledge`, `/rag` и `/v1/iam`, `/v1/knowledge`, `/v1/rag` обрабатываются Traefik middleware `StripPrefix`.
+- Для всех сервисов используется сервисный namespace в Traefik: `/gateway/*`, `/iam/*`, `/knowledge/*`, `/rag/*`.
+- HTTP-доступ к сервисам оставлен только через Traefik; даже в `DEV=1` порты `8080-8083` на хост не публикуются.

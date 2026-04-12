@@ -17,13 +17,13 @@ Gateway-сервис, единая точка входа для API.
 
 ## Базовые маршруты
 
-- `GET /v1/gateway/health`
+- `GET /health`
 - `GET /docs` (Swagger UI, OpenAPI встроен в HTML)
 
 Через Traefik с хоста:
 
-- `GET http://localhost/v1/gateway/health`
-- `GET http://localhost/docs`
+- `GET http://localhost/gateway/health`
+- `GET http://localhost/gateway/docs`
 
 Примечание: в `docker-compose` сервисы работают через `expose`, поэтому прямой URL `http://localhost:8080` не используется.
 

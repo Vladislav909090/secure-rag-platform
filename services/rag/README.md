@@ -17,12 +17,12 @@ Retrieval-Augmented Generation сервис.
 
 ## Базовые маршруты
 
-- `GET /v1/rag/health`
+- `GET /health`
 - `GET /docs` (Swagger UI, OpenAPI встроен в HTML)
 
 Через Traefik с хоста:
 
-- `GET http://localhost/v1/rag/health`
+- `GET http://localhost/rag/health`
 - `GET http://localhost/rag/docs`
 
 Примечание: в `docker-compose` сервис использует только `expose`, прямой URL `http://localhost:8083` не публикуется.

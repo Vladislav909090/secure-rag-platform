@@ -211,11 +211,12 @@ func (r *Repo) AddUserRole(ctx context.Context, userID string, roleCode string, 
 		}
 		roleID := roleIDs[roleCode]
 
-		if _, err := tx.Exec(ctx, `
+		_, err = tx.Exec(ctx, `
 			INSERT INTO user_roles (user_id, role_id, assigned_at, assigned_by)
 			VALUES ($1, $2, NOW(), $3)
 			ON CONFLICT (user_id, role_id) DO NOTHING
-		`, userID, roleID, assignedBy); err != nil {
+		`, userID, roleID, assignedBy)
+		if err != nil {
 			return fmt.Errorf("insert user role: %w", err)
 		}
 
@@ -250,10 +251,11 @@ func (r *Repo) RemoveUserRole(ctx context.Context, userID string, roleCode strin
 		}
 		roleID := roleIDs[roleCode]
 
-		if _, err := tx.Exec(ctx, `
+		_, err = tx.Exec(ctx, `
 			DELETE FROM user_roles
 			WHERE user_id = $1 AND role_id = $2
-		`, userID, roleID); err != nil {
+		`, userID, roleID)
+		if err != nil {
 			return fmt.Errorf("delete user role: %w", err)
 		}
 

@@ -38,7 +38,7 @@ func (r *Repo) ReplaceUserAttributes(ctx context.Context, userID string, attrs m
 	}
 
 	var raw []byte
-	if err := r.pool.QueryRow(ctx, `
+	err = r.pool.QueryRow(ctx, `
 		INSERT INTO user_attributes (user_id, attributes, updated_at, updated_by)
 		VALUES ($1, $2::jsonb, NOW(), $3)
 		ON CONFLICT (user_id) DO UPDATE
@@ -46,7 +46,8 @@ func (r *Repo) ReplaceUserAttributes(ctx context.Context, userID string, attrs m
 		    updated_at = NOW(),
 		    updated_by = EXCLUDED.updated_by
 		RETURNING attributes
-	`, userID, attrsJSON, updatedBy).Scan(&raw); err != nil {
+	`, userID, attrsJSON, updatedBy).Scan(&raw)
+	if err != nil {
 		return nil, fmt.Errorf("replace user attributes: %w", err)
 	}
 

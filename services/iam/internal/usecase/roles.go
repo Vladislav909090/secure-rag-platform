@@ -63,7 +63,8 @@ func (uc *IAMUsecase) SetUserRoles(ctx context.Context, userID string, roleCodes
 		return nil, 0, err
 	}
 
-	if _, err := uc.repo.SetUserRoles(ctx, userID, normalized, assignedBy); err != nil {
+	_, err = uc.repo.SetUserRoles(ctx, userID, normalized, assignedBy)
+	if err != nil {
 		if errors.Is(err, repository.ErrInvalidRoleCode) {
 			return nil, 0, ErrInvalidArgument
 		}

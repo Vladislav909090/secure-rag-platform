@@ -119,12 +119,13 @@ func (uc *IAMUsecase) RefreshToken(ctx context.Context, input RefreshTokenInput)
 	newRefreshHash := hashOpaqueToken(newRefreshToken)
 	newExpiresAt := time.Now().UTC().Add(uc.cfg.RefreshTokenTTL)
 
-	if _, err := uc.repo.RotateSessionRefreshHash(
+	_, err = uc.repo.RotateSessionRefreshHash(
 		ctx,
 		session.ID,
 		newRefreshHash,
 		newExpiresAt,
-	); err != nil {
+	)
+	if err != nil {
 		if errors.Is(err, repository.ErrNotFound) {
 			return nil, ErrSessionRevoked
 		}

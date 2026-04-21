@@ -336,14 +336,6 @@ func mergeAttributes(current map[string]any, patch map[string]any) map[string]an
 	return merged
 }
 
-func sanitizeOptional(value string) *string {
-	trimmed := strings.TrimSpace(value)
-	if trimmed == "" {
-		return nil
-	}
-	return &trimmed
-}
-
 // GetSubjectContext возвращает нормализованный контекст с резервным чтением из кеша.
 func (uc *IAMUsecase) GetSubjectContext(ctx context.Context, userID string) (*model.SubjectContext, error) {
 	if strings.TrimSpace(userID) == "" {

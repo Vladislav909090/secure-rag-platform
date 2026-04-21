@@ -137,7 +137,8 @@ func (uc *IAMUsecase) UpdateUser(ctx context.Context, input UpdateUserInput) (*m
 		return nil, err
 	}
 
-	if _, err := uc.bumpContextVersion(ctx, input.UserID); err != nil {
+	_, err = uc.bumpContextVersion(ctx, input.UserID)
+	if err != nil {
 		return nil, err
 	}
 

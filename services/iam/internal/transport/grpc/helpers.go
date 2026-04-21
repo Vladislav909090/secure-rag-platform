@@ -107,14 +107,6 @@ func extractBearerToken(ctx context.Context) (string, error) {
 	return token, nil
 }
 
-func asOptionalString(value string) *string {
-	trimmed := strings.TrimSpace(value)
-	if trimmed == "" {
-		return nil
-	}
-	return &trimmed
-}
-
 func structToMap(value *structpb.Struct) map[string]any {
 	if value == nil {
 		return map[string]any{}

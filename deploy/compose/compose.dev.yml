@@ -17,6 +17,13 @@ services:
     ports:
       - "5433:5432"
 
+  iam-redis:
+    networks:
+      - iam-redis-net
+      - dev-expose-net
+    ports:
+      - "6380:6379"
+
   knowledge-db:
     networks:
       - knowledge-db-net

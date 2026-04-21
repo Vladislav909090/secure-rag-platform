@@ -8,7 +8,7 @@ import (
 )
 
 func TestHealthRPC(t *testing.T) {
-	server := &transportgrpc.IAMServiceServerImpl{}
+	server := transportgrpc.NewIAMServiceServer(nil)
 
 	resp, err := server.Health(context.Background(), nil)
 	if err != nil {

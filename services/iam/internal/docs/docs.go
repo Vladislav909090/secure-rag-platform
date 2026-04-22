@@ -1,4 +1,4 @@
-// Package docs предоставляет Swagger UI для отображения OpenAPI-спецификации.
+// Package docs предоставляет веб-интерфейс Swagger для отображения OpenAPI-спецификации.
 package docs
 
 import (
@@ -24,10 +24,48 @@ const uiTemplate = `<!DOCTYPE html>
   <script src="https://unpkg.com/swagger-ui-dist@5/swagger-ui-standalone-preset.js"></script>
   <script>
 	const spec = JSON.parse(%s);
+
+	// Inject Bearer auth schema for generated specs that do not include securityDefinitions.
+	if (!spec.securityDefinitions) {
+	  spec.securityDefinitions = {};
+	}
+	if (!spec.securityDefinitions.BearerAuth) {
+	  spec.securityDefinitions.BearerAuth = {
+		type: 'apiKey',
+		name: 'Authorization',
+		in: 'header',
+		description: 'Bearer access token, example: Bearer eyJ...'
+	  };
+	}
+	if (!spec.security) {
+	  spec.security = [{ BearerAuth: [] }];
+	}
+
+	const ensureBearer = (value) => {
+	  if (!value || typeof value !== 'string') {
+		return value;
+	  }
+	  const trimmed = value.trim();
+	  if (!trimmed) {
+		return trimmed;
+	  }
+	  if (/^Bearer\s+/i.test(trimmed)) {
+		return trimmed;
+	  }
+	  return 'Bearer ' + trimmed;
+	};
+
     SwaggerUIBundle({
 	  spec: spec,
       dom_id: '#swagger-ui',
       presets: [SwaggerUIBundle.presets.apis, SwaggerUIStandalonePreset],
+	  persistAuthorization: true,
+	  requestInterceptor: (req) => {
+		if (req && req.headers && req.headers.Authorization) {
+		  req.headers.Authorization = ensureBearer(req.headers.Authorization);
+		}
+		return req;
+	  },
       layout: 'StandaloneLayout'
     });
   </script>
@@ -61,7 +99,7 @@ func loadSpecJSON() ([]byte, error) {
 	return specJSON, nil
 }
 
-// RegisterAt регистрирует Swagger UI по заданному пути.
+// RegisterAt регистрирует интерфейс Swagger по заданному пути.
 func RegisterAt(mux *http.ServeMux, serviceName string, docsPath string) {
 	specJSON, err := loadSpecJSON()
 	if err != nil {

@@ -3,6 +3,7 @@ name: secure-rag-platform
 volumes:
   gateway-postgres-data:
   iam-postgres-data:
+  iam-redis-data:
   knowledge-postgres-data:
   knowledge-minio-data:
   rag-postgres-data:
@@ -20,6 +21,10 @@ networks:
     internal: true
 
   iam-db-net:
+    driver: bridge
+    internal: true
+
+  iam-redis-net:
     driver: bridge
     internal: true
 
@@ -87,7 +92,13 @@ services:
       dockerfile: Dockerfile
     environment:
       - PORT=8081
-      - DB_DSN=postgres://iam:iam@iam-db:5432/iam?sslmode=disable
+      - DATABASE_DSN=postgres://iam:iam@iam-db:5432/iam?sslmode=disable
+      - REDIS_ADDR=iam-redis:6379
+      - JWT_SECRET=dev-iam-jwt-secret
+      - JWT_ISSUER=secure-rag-iam
+      - JWT_AUDIENCE=secure-rag-gateway
+      - BOOTSTRAP_ADMIN_LOGIN=superadmin
+      - BOOTSTRAP_ADMIN_PASSWORD=superadmin
     expose:
       - "8081"
     labels:
@@ -99,10 +110,12 @@ services:
       - "traefik.http.services.iam.loadbalancer.server.port=8081"
     depends_on:
       - iam-db
+      - iam-redis
     networks:
       - traefik-net
       - app-net
       - iam-db-net
+      - iam-redis-net
 
   iam-db:
     image: postgres:16-alpine
@@ -114,6 +127,14 @@ services:
       - iam-postgres-data:/var/lib/postgresql/data
     networks:
       - iam-db-net
+
+  iam-redis:
+    image: redis:7-alpine
+    command: redis-server --appendonly yes
+    volumes:
+      - iam-redis-data:/data
+    networks:
+      - iam-redis-net
 
   knowledge:
     build:

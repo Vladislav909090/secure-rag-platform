@@ -4,10 +4,16 @@ package grpc
 
 import (
 	pb "secure-rag-platform/services/iam/gen/v1"
+	"secure-rag-platform/services/iam/internal/usecase"
 )
 
 type IAMServiceServerImpl struct {
 	pb.UnimplementedIAMServiceServer
+	deps *serverDeps
+}
+
+func NewIAMServiceServer(uc *usecase.IAMUsecase) *IAMServiceServerImpl {
+	return &IAMServiceServerImpl{deps: newServerDeps(uc)}
 }
 
 var _ pb.IAMServiceServer = (*IAMServiceServerImpl)(nil)

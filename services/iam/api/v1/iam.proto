@@ -5,6 +5,7 @@ package iam.v1;
 option go_package = "secure-rag-platform/services/iam/gen/v1;iamv1";
 
 import "google/api/annotations.proto";
+import "google/protobuf/struct.proto";
 
 // IAMService — управление идентификацией и доступом.
 service IAMService {
@@ -16,8 +17,436 @@ service IAMService {
   }
 }
 
+// AuthService — аутентификация и токены.
+service AuthService {
+  rpc Login(LoginRequest) returns (TokenPairResponse) {
+    option (google.api.http) = {
+      post: "/iam/api/v1/auth/login"
+      body: "*"
+    };
+  }
+
+  rpc RefreshToken(RefreshTokenRequest) returns (TokenPairResponse) {
+    option (google.api.http) = {
+      post: "/iam/api/v1/auth/refresh"
+      body: "*"
+    };
+  }
+
+  rpc Logout(LogoutRequest) returns (LogoutResponse) {
+    option (google.api.http) = {
+      post: "/iam/api/v1/auth/logout"
+    };
+  }
+
+  rpc LogoutAll(LogoutAllRequest) returns (LogoutAllResponse) {
+    option (google.api.http) = {
+      post: "/iam/api/v1/auth/logout-all"
+      body: "*"
+    };
+  }
+
+  rpc GetMe(GetMeRequest) returns (GetMeResponse) {
+    option (google.api.http) = {
+      get: "/iam/api/v1/auth/me"
+    };
+  }
+}
+
+// UserService — управление пользователями.
+service UserService {
+  rpc ListUsers(ListUsersRequest) returns (ListUsersResponse) {
+    option (google.api.http) = {
+      get: "/iam/api/v1/users"
+    };
+  }
+
+  rpc GetUser(GetUserRequest) returns (GetUserResponse) {
+    option (google.api.http) = {
+      get: "/iam/api/v1/users/{user_id}"
+    };
+  }
+
+  rpc CreateUser(CreateUserRequest) returns (CreateUserResponse) {
+    option (google.api.http) = {
+      post: "/iam/api/v1/users"
+      body: "*"
+    };
+  }
+
+  rpc UpdateUser(UpdateUserRequest) returns (UpdateUserResponse) {
+    option (google.api.http) = {
+      patch: "/iam/api/v1/users/{user_id}"
+      body: "*"
+    };
+  }
+}
+
+// RoleService — RBAC роли пользователей.
+service RoleService {
+  rpc ListRoles(ListRolesRequest) returns (ListRolesResponse) {
+    option (google.api.http) = {
+      get: "/iam/api/v1/roles"
+    };
+  }
+
+  rpc GetUserRoles(GetUserRolesRequest) returns (GetUserRolesResponse) {
+    option (google.api.http) = {
+      get: "/iam/api/v1/users/{user_id}/roles"
+    };
+  }
+
+  rpc SetUserRoles(SetUserRolesRequest) returns (SetUserRolesResponse) {
+    option (google.api.http) = {
+      put: "/iam/api/v1/users/{user_id}/roles"
+      body: "*"
+    };
+  }
+
+  rpc AddUserRole(AddUserRoleRequest) returns (AddUserRoleResponse) {
+    option (google.api.http) = {
+      post: "/iam/api/v1/users/{user_id}/roles/add"
+      body: "*"
+    };
+  }
+
+  rpc RemoveUserRole(RemoveUserRoleRequest) returns (RemoveUserRoleResponse) {
+    option (google.api.http) = {
+      post: "/iam/api/v1/users/{user_id}/roles/remove"
+      body: "*"
+    };
+  }
+}
+
+// AttributeService — subject attributes пользователей.
+service AttributeService {
+  rpc GetUserAttributes(GetUserAttributesRequest) returns (GetUserAttributesResponse) {
+    option (google.api.http) = {
+      get: "/iam/api/v1/users/{user_id}/attributes"
+    };
+  }
+
+  rpc ReplaceUserAttributes(ReplaceUserAttributesRequest) returns (ReplaceUserAttributesResponse) {
+    option (google.api.http) = {
+      put: "/iam/api/v1/users/{user_id}/attributes"
+      body: "*"
+    };
+  }
+
+  rpc PatchUserAttributes(PatchUserAttributesRequest) returns (PatchUserAttributesResponse) {
+    option (google.api.http) = {
+      patch: "/iam/api/v1/users/{user_id}/attributes"
+      body: "*"
+    };
+  }
+
+  rpc DeleteUserAttributeKey(DeleteUserAttributeKeyRequest) returns (DeleteUserAttributeKeyResponse) {
+    option (google.api.http) = {
+      delete: "/iam/api/v1/users/{user_id}/attributes/{key}"
+    };
+  }
+}
+
+// SessionService — операции с пользовательскими сессиями.
+service SessionService {
+  rpc ListUserSessions(ListUserSessionsRequest) returns (ListUserSessionsResponse) {
+    option (google.api.http) = {
+      get: "/iam/api/v1/sessions"
+    };
+  }
+
+  rpc RevokeSession(RevokeSessionRequest) returns (RevokeSessionResponse) {
+    option (google.api.http) = {
+      post: "/iam/api/v1/sessions/{session_id}/revoke"
+      body: "*"
+    };
+  }
+
+  rpc RevokeAllUserSessions(RevokeAllUserSessionsRequest) returns (RevokeAllUserSessionsResponse) {
+    option (google.api.http) = {
+      post: "/iam/api/v1/sessions/revoke-all"
+      body: "*"
+    };
+  }
+}
+
+// InternalIAMService — внутренние методы для gateway и сервисов.
+service InternalIAMService {
+  rpc GetSubjectContext(GetSubjectContextRequest) returns (GetSubjectContextResponse) {
+    option (google.api.http) = {
+      post: "/iam/internal/v1/subject-context"
+      body: "*"
+    };
+  }
+
+  rpc ValidateAccessToken(ValidateAccessTokenRequest) returns (ValidateAccessTokenResponse) {
+    option (google.api.http) = {
+      post: "/iam/internal/v1/validate-access-token"
+      body: "*"
+    };
+  }
+}
+
 message HealthRequest {}
 
 message HealthResponse {
   string status = 1;
+}
+
+message SubjectContext {
+  string user_id = 1;
+  string login = 2;
+  bool is_active = 3;
+  reserved 4;
+  repeated string roles = 5;
+  google.protobuf.Struct attributes = 6;
+  int64 ctx_ver = 7;
+}
+
+message User {
+  string id = 1;
+  string login = 2;
+  bool is_active = 3;
+  reserved 4;
+  int64 ctx_ver = 5;
+  repeated string roles = 6;
+  google.protobuf.Struct attributes = 7;
+  string created_at = 8;
+  string updated_at = 9;
+}
+
+message Role {
+  int64 id = 1;
+  string code = 2;
+  string name = 3;
+  string description = 4;
+  string created_at = 5;
+}
+
+message UserSession {
+  string id = 1;
+  string user_id = 2;
+  reserved 3, 4;
+  string expires_at = 5;
+  string revoked_at = 6;
+  string created_at = 7;
+  string updated_at = 8;
+}
+
+message LoginRequest {
+  string login = 1;
+  string password = 2;
+  reserved 3, 4;
+}
+
+message RefreshTokenRequest {
+  string refresh_token = 1;
+  reserved 2, 3;
+}
+
+message TokenPairResponse {
+  string access_token = 1;
+  string refresh_token = 2;
+  int64 expires_in = 3;
+  string token_type = 4;
+}
+
+message LogoutRequest {}
+
+message LogoutResponse {
+  bool revoked = 1;
+}
+
+message LogoutAllRequest {
+  string user_id = 1;
+}
+
+message LogoutAllResponse {
+  string user_id = 1;
+  int64 revoked_count = 2;
+  int64 ctx_ver = 3;
+}
+
+message GetMeRequest {}
+
+message GetMeResponse {
+  SubjectContext me = 1;
+}
+
+message ListUsersRequest {}
+
+message ListUsersResponse {
+  repeated User users = 1;
+}
+
+message GetUserRequest {
+  string user_id = 1;
+}
+
+message GetUserResponse {
+  User user = 1;
+}
+
+message CreateUserRequest {
+  string login = 1;
+  string password = 2;
+  optional bool is_active = 3;
+  reserved 4;
+  repeated string role_codes = 5;
+  google.protobuf.Struct attributes = 6;
+}
+
+message CreateUserResponse {
+  User user = 1;
+}
+
+message UpdateUserRequest {
+  string user_id = 1;
+  optional string login = 2;
+  optional string password = 3;
+  optional bool is_active = 4;
+}
+
+message UpdateUserResponse {
+  User user = 1;
+}
+
+message ListRolesRequest {}
+
+message ListRolesResponse {
+  repeated Role roles = 1;
+}
+
+message GetUserRolesRequest {
+  string user_id = 1;
+}
+
+message GetUserRolesResponse {
+  string user_id = 1;
+  repeated Role roles = 2;
+  int64 ctx_ver = 3;
+}
+
+message SetUserRolesRequest {
+  string user_id = 1;
+  repeated string role_codes = 2;
+}
+
+message SetUserRolesResponse {
+  string user_id = 1;
+  repeated Role roles = 2;
+  int64 ctx_ver = 3;
+}
+
+message AddUserRoleRequest {
+  string user_id = 1;
+  string role_code = 2;
+}
+
+message AddUserRoleResponse {
+  string user_id = 1;
+  repeated Role roles = 2;
+  int64 ctx_ver = 3;
+}
+
+message RemoveUserRoleRequest {
+  string user_id = 1;
+  string role_code = 2;
+}
+
+message RemoveUserRoleResponse {
+  string user_id = 1;
+  repeated Role roles = 2;
+  int64 ctx_ver = 3;
+}
+
+message GetUserAttributesRequest {
+  string user_id = 1;
+}
+
+message GetUserAttributesResponse {
+  string user_id = 1;
+  google.protobuf.Struct attributes = 2;
+  int64 ctx_ver = 3;
+}
+
+message ReplaceUserAttributesRequest {
+  string user_id = 1;
+  google.protobuf.Struct attributes = 2;
+}
+
+message ReplaceUserAttributesResponse {
+  string user_id = 1;
+  google.protobuf.Struct attributes = 2;
+  int64 ctx_ver = 3;
+}
+
+message PatchUserAttributesRequest {
+  string user_id = 1;
+  google.protobuf.Struct attributes = 2;
+}
+
+message PatchUserAttributesResponse {
+  string user_id = 1;
+  google.protobuf.Struct attributes = 2;
+  int64 ctx_ver = 3;
+}
+
+message DeleteUserAttributeKeyRequest {
+  string user_id = 1;
+  string key = 2;
+}
+
+message DeleteUserAttributeKeyResponse {
+  string user_id = 1;
+  google.protobuf.Struct attributes = 2;
+  int64 ctx_ver = 3;
+}
+
+message ListUserSessionsRequest {
+  string user_id = 1;
+}
+
+message ListUserSessionsResponse {
+  string user_id = 1;
+  repeated UserSession sessions = 2;
+}
+
+message RevokeSessionRequest {
+  string session_id = 1;
+}
+
+message RevokeSessionResponse {
+  bool revoked = 1;
+}
+
+message RevokeAllUserSessionsRequest {
+  string user_id = 1;
+}
+
+message RevokeAllUserSessionsResponse {
+  string user_id = 1;
+  int64 revoked_count = 2;
+  int64 ctx_ver = 3;
+}
+
+message GetSubjectContextRequest {
+  string user_id = 1;
+}
+
+message GetSubjectContextResponse {
+  SubjectContext subject = 1;
+}
+
+message ValidateAccessTokenRequest {
+  string access_token = 1;
+}
+
+message ValidateAccessTokenResponse {
+  bool valid = 1;
+  string reason = 2;
+  SubjectContext subject = 3;
+  string session_id = 4;
+  string token_id = 5;
+  int64 expires_at_unix = 6;
 }

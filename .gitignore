@@ -24,6 +24,10 @@ profile.cov
 go.work
 go.work.sum
 
+# Local linter cache
+.golangci/
+.golangci-cache/
+
 # env file
 .env
 

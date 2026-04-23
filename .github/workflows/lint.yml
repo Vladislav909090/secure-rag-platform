@@ -18,7 +18,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        service: [gateway, iam, knowledge, rag]
+        service: [gateway, iam, knowledge, rag, ai-inference]
 
     steps:
       - name: Checkout

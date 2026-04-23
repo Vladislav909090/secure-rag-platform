@@ -229,3 +229,14 @@ services:
       - rag-postgres-data:/var/lib/postgresql/data
     networks:
       - rag-db-net
+
+  ai-inference:
+    build:
+      context: ../../services/ai-inference
+      dockerfile: Dockerfile
+    environment:
+      - GRPC_PORT=9094
+    expose:
+      - "9094"
+    networks:
+      - app-net

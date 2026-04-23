@@ -16,23 +16,15 @@ import (
 	"google.golang.org/protobuf/types/known/structpb"
 )
 
-type serverDeps struct {
-	uc *usecase.IAMUsecase
-}
-
-func newServerDeps(uc *usecase.IAMUsecase) *serverDeps {
-	return &serverDeps{uc: uc}
-}
-
-func (d *serverDeps) requireUC() error {
-	if d == nil || d.uc == nil {
+func requireUC(uc *usecase.IAMUsecase) error {
+	if uc == nil {
 		return status.Error(codes.Unavailable, "service not configured")
 	}
 	return nil
 }
 
-func (d *serverDeps) authenticate(ctx context.Context) (*usecase.Principal, *model.SubjectContext, error) {
-	if err := d.requireUC(); err != nil {
+func authenticate(uc *usecase.IAMUsecase, ctx context.Context) (*usecase.Principal, *model.SubjectContext, error) {
+	if err := requireUC(uc); err != nil {
 		return nil, nil, err
 	}
 
@@ -41,7 +33,7 @@ func (d *serverDeps) authenticate(ctx context.Context) (*usecase.Principal, *mod
 		return nil, nil, err
 	}
 
-	principal, subject, err := d.uc.AuthenticateAccessToken(ctx, accessToken)
+	principal, subject, err := uc.AuthenticateAccessToken(ctx, accessToken)
 	if err != nil {
 		return nil, nil, err
 	}

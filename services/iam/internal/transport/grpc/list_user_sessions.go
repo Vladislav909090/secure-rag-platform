@@ -8,12 +8,12 @@ import (
 )
 
 func (s *SessionServiceServerImpl) ListUserSessions(ctx context.Context, req *pb.ListUserSessionsRequest) (*pb.ListUserSessionsResponse, error) {
-	principal, _, err := s.deps.authenticate(ctx)
+	principal, _, err := authenticate(s.svc, ctx)
 	if err != nil {
 		return nil, toGRPCError(err)
 	}
 
-	sessions, userID, err := s.deps.uc.ListUserSessions(ctx, principal, req.GetUserId())
+	sessions, userID, err := s.svc.ListUserSessions(ctx, principal, req.GetUserId())
 	if err != nil {
 		return nil, toGRPCError(err)
 	}

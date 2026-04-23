@@ -48,13 +48,20 @@ func scanRole(row pgx.Row) (*model.Role, error) {
 }
 
 func getUserRolesTx(ctx context.Context, q roleQueryer, userID string) ([]*model.Role, error) {
-	rows, err := q.Query(ctx, `
-		SELECT r.id, r.code, r.name, r.description, r.created_at
+	query := `
+		SELECT
+			r.id,
+			r.code,
+			r.name,
+			r.description,
+			r.created_at
 		FROM user_roles ur
 		JOIN roles r ON r.id = ur.role_id
 		WHERE ur.user_id = $1
 		ORDER BY r.code ASC
-	`, userID)
+	`
+
+	rows, err := q.Query(ctx, query, userID)
 	if err != nil {
 		return nil, fmt.Errorf("query user roles: %w", err)
 	}
@@ -80,11 +87,15 @@ func resolveRoleIDsTx(ctx context.Context, tx pgx.Tx, roleCodes []string) (map[s
 		return map[string]int64{}, nil
 	}
 
-	rows, err := tx.Query(ctx, `
-		SELECT id, code
+	query := `
+		SELECT
+			id,
+			code
 		FROM roles
 		WHERE code = ANY($1::text[])
-	`, roleCodes)
+	`
+
+	rows, err := tx.Query(ctx, query, roleCodes)
 	if err != nil {
 		return nil, fmt.Errorf("query roles by codes: %w", err)
 	}
@@ -111,7 +122,12 @@ func resolveRoleIDsTx(ctx context.Context, tx pgx.Tx, roleCodes []string) (map[s
 }
 
 func setUserRolesTx(ctx context.Context, tx pgx.Tx, userID string, roleCodes []string, assignedBy *string) error {
-	if _, err := tx.Exec(ctx, `DELETE FROM user_roles WHERE user_id = $1`, userID); err != nil {
+	clearRolesQuery := `
+		DELETE FROM user_roles
+		WHERE user_id = $1
+	`
+
+	if _, err := tx.Exec(ctx, clearRolesQuery, userID); err != nil {
 		return fmt.Errorf("clear user roles: %w", err)
 	}
 
@@ -124,14 +140,22 @@ func setUserRolesTx(ctx context.Context, tx pgx.Tx, userID string, roleCodes []s
 		return err
 	}
 
+	assignRoleQuery := `
+		INSERT INTO user_roles (
+			user_id,
+			role_id,
+			assigned_at,
+			assigned_by
+		)
+		VALUES ($1, $2, NOW(), $3)
+		ON CONFLICT (user_id, role_id) DO UPDATE
+		SET
+			assigned_at = EXCLUDED.assigned_at,
+			assigned_by = EXCLUDED.assigned_by
+	`
+
 	for _, code := range roleCodes {
-		if _, err := tx.Exec(ctx, `
-			INSERT INTO user_roles (user_id, role_id, assigned_at, assigned_by)
-			VALUES ($1, $2, NOW(), $3)
-			ON CONFLICT (user_id, role_id) DO UPDATE
-			SET assigned_at = EXCLUDED.assigned_at,
-			    assigned_by = EXCLUDED.assigned_by
-		`, userID, roleIDs[code], assignedBy); err != nil {
+		if _, err := tx.Exec(ctx, assignRoleQuery, userID, roleIDs[code], assignedBy); err != nil {
 			return fmt.Errorf("assign role %q: %w", code, err)
 		}
 	}
@@ -141,11 +165,18 @@ func setUserRolesTx(ctx context.Context, tx pgx.Tx, userID string, roleCodes []s
 
 // ListRoles возвращает все фиксированные роли.
 func (r *Repo) ListRoles(ctx context.Context) ([]*model.Role, error) {
-	rows, err := r.pool.Query(ctx, `
-		SELECT id, code, name, description, created_at
+	query := `
+		SELECT
+			id,
+			code,
+			name,
+			description,
+			created_at
 		FROM roles
 		ORDER BY id ASC
-	`)
+	`
+
+	rows, err := r.pool.Query(ctx, query)
 	if err != nil {
 		return nil, fmt.Errorf("query roles: %w", err)
 	}
@@ -211,11 +242,18 @@ func (r *Repo) AddUserRole(ctx context.Context, userID string, roleCode string, 
 		}
 		roleID := roleIDs[roleCode]
 
-		_, err = tx.Exec(ctx, `
-			INSERT INTO user_roles (user_id, role_id, assigned_at, assigned_by)
+		insertRoleQuery := `
+			INSERT INTO user_roles (
+				user_id,
+				role_id,
+				assigned_at,
+				assigned_by
+			)
 			VALUES ($1, $2, NOW(), $3)
 			ON CONFLICT (user_id, role_id) DO NOTHING
-		`, userID, roleID, assignedBy)
+		`
+
+		_, err = tx.Exec(ctx, insertRoleQuery, userID, roleID, assignedBy)
 		if err != nil {
 			return fmt.Errorf("insert user role: %w", err)
 		}
@@ -251,10 +289,13 @@ func (r *Repo) RemoveUserRole(ctx context.Context, userID string, roleCode strin
 		}
 		roleID := roleIDs[roleCode]
 
-		_, err = tx.Exec(ctx, `
+		deleteRoleQuery := `
 			DELETE FROM user_roles
-			WHERE user_id = $1 AND role_id = $2
-		`, userID, roleID)
+			WHERE user_id = $1
+			  AND role_id = $2
+		`
+
+		_, err = tx.Exec(ctx, deleteRoleQuery, userID, roleID)
 		if err != nil {
 			return fmt.Errorf("delete user role: %w", err)
 		}
@@ -277,15 +318,17 @@ func (r *Repo) RemoveUserRole(ctx context.Context, userID string, roleCode strin
 
 // HasUserWithRole проверяет, есть ли хотя бы один пользователь с указанной ролью.
 func (r *Repo) HasUserWithRole(ctx context.Context, roleCode string) (bool, error) {
-	var exists bool
-	if err := r.pool.QueryRow(ctx, `
+	query := `
 		SELECT EXISTS (
 			SELECT 1
 			FROM user_roles ur
 			JOIN roles r ON r.id = ur.role_id
 			WHERE r.code = $1
 		)
-	`, roleCode).Scan(&exists); err != nil {
+	`
+
+	var exists bool
+	if err := r.pool.QueryRow(ctx, query, roleCode).Scan(&exists); err != nil {
 		return false, fmt.Errorf("check user role existence: %w", err)
 	}
 	return exists, nil

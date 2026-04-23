@@ -11,7 +11,7 @@ import (
 func (s *UserServiceServerImpl) ListUsers(ctx context.Context, req *pb.ListUsersRequest) (*pb.ListUsersResponse, error) {
 	_ = req
 
-	principal, _, err := s.deps.authenticate(ctx)
+	principal, _, err := authenticate(s.svc, ctx)
 	if err != nil {
 		return nil, toGRPCError(err)
 	}
@@ -19,7 +19,7 @@ func (s *UserServiceServerImpl) ListUsers(ctx context.Context, req *pb.ListUsers
 		return nil, toGRPCError(usecase.ErrForbidden)
 	}
 
-	users, err := s.deps.uc.ListUsers(ctx)
+	users, err := s.svc.ListUsers(ctx)
 	if err != nil {
 		return nil, toGRPCError(err)
 	}

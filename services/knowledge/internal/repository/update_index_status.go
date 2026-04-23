@@ -6,7 +6,8 @@ import "context"
 func (r *Repo) UpdateIndexStatus(ctx context.Context, versionID int64, status string) error {
 	query := `
 		UPDATE document_versions
-		SET index_status = $1
+		SET
+			index_status = $1
 		WHERE id = $2
 	`
 

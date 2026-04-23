@@ -9,11 +9,11 @@ import (
 
 type UserServiceServerImpl struct {
 	pb.UnimplementedUserServiceServer
-	deps *serverDeps
+	svc *usecase.IAMUsecase
 }
 
 func NewUserServiceServer(uc *usecase.IAMUsecase) *UserServiceServerImpl {
-	return &UserServiceServerImpl{deps: newServerDeps(uc)}
+	return &UserServiceServerImpl{svc: uc}
 }
 
 var _ pb.UserServiceServer = (*UserServiceServerImpl)(nil)

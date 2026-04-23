@@ -9,7 +9,7 @@ import (
 )
 
 func (s *RoleServiceServerImpl) GetUserRoles(ctx context.Context, req *pb.GetUserRolesRequest) (*pb.GetUserRolesResponse, error) {
-	principal, _, err := s.deps.authenticate(ctx)
+	principal, _, err := authenticate(s.svc, ctx)
 	if err != nil {
 		return nil, toGRPCError(err)
 	}
@@ -23,7 +23,7 @@ func (s *RoleServiceServerImpl) GetUserRoles(ctx context.Context, req *pb.GetUse
 		return nil, toGRPCError(usecase.ErrForbidden)
 	}
 
-	roles, ctxVer, err := s.deps.uc.GetUserRoles(ctx, targetUserID)
+	roles, ctxVer, err := s.svc.GetUserRoles(ctx, targetUserID)
 	if err != nil {
 		return nil, toGRPCError(err)
 	}

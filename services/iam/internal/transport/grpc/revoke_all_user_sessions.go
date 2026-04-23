@@ -8,12 +8,12 @@ import (
 )
 
 func (s *SessionServiceServerImpl) RevokeAllUserSessions(ctx context.Context, req *pb.RevokeAllUserSessionsRequest) (*pb.RevokeAllUserSessionsResponse, error) {
-	principal, _, err := s.deps.authenticate(ctx)
+	principal, _, err := authenticate(s.svc, ctx)
 	if err != nil {
 		return nil, toGRPCError(err)
 	}
 
-	result, err := s.deps.uc.RevokeAllUserSessions(ctx, principal, req.GetUserId())
+	result, err := s.svc.RevokeAllUserSessions(ctx, principal, req.GetUserId())
 	if err != nil {
 		return nil, toGRPCError(err)
 	}

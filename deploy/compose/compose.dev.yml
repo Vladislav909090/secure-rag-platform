@@ -44,3 +44,10 @@ services:
       - dev-expose-net
     ports:
       - "9001:9001"
+
+  ai-inference:
+    networks:
+      - app-net
+      - dev-expose-net
+    ports:
+      - "9094:9094"

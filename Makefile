@@ -1,9 +1,9 @@
-.PHONY: lint lint\:gateway lint\:iam lint\:knowledge lint\:rag \
-	test test\:gateway test\:iam test\:knowledge test\:rag \
-	build build\:gateway build\:iam build\:knowledge build\:rag \
+.PHONY: lint lint\:gateway lint\:iam lint\:knowledge lint\:rag lint\:ai-inference \
+	test test\:gateway test\:iam test\:knowledge test\:rag test\:ai-inference \
+	build build\:gateway build\:iam build\:knowledge build\:rag build\:ai-inference \
 	proto\:tools proto\:deps proto\:gen \
-	proto\:gen\:gateway proto\:gen\:iam proto\:gen\:knowledge proto\:gen\:rag \
-	grpc\:stubs grpc\:stubs\:gateway grpc\:stubs\:iam grpc\:stubs\:knowledge grpc\:stubs\:rag \
+	proto\:gen\:gateway proto\:gen\:iam proto\:gen\:knowledge proto\:gen\:rag proto\:gen\:ai-inference \
+	grpc\:stubs grpc\:stubs\:gateway grpc\:stubs\:iam grpc\:stubs\:knowledge grpc\:stubs\:rag grpc\:stubs\:ai-inference \
 	migrate\:status migrate\:status\:gateway migrate\:status\:iam migrate\:status\:knowledge migrate\:status\:rag \
 	migrate\:up migrate\:up\:gateway migrate\:up\:iam migrate\:up\:knowledge migrate\:up\:rag \
 	migrate\:down migrate\:down\:gateway migrate\:down\:iam migrate\:down\:knowledge migrate\:down\:rag \
@@ -84,7 +84,10 @@ lint\:knowledge:
 lint\:rag:
 	cd services/rag && golangci-lint run ./...
 
-lint: lint\:gateway lint\:iam lint\:knowledge lint\:rag
+lint\:ai-inference:
+	cd services/ai-inference && golangci-lint run ./...
+
+lint: lint\:gateway lint\:iam lint\:knowledge lint\:rag lint\:ai-inference
 
 # ── Test ──────────────────────────────────────────────
 
@@ -100,7 +103,10 @@ test\:knowledge:
 test\:rag:
 	cd services/rag && go test ./...
 
-test: test\:gateway test\:iam test\:knowledge test\:rag
+test\:ai-inference:
+	cd services/ai-inference && go test ./...
+
+test: test\:gateway test\:iam test\:knowledge test\:rag test\:ai-inference
 
 # ── Build ─────────────────────────────────────────────
 
@@ -116,7 +122,10 @@ build\:knowledge:
 build\:rag:
 	cd services/rag && go build ./cmd/rag
 
-build: build\:gateway build\:iam build\:knowledge build\:rag
+build\:ai-inference:
+	cd services/ai-inference && go build ./cmd/ai-inference
+
+build: build\:gateway build\:iam build\:knowledge build\:rag build\:ai-inference
 
 # ── Proto: install tools ─────────────────────────────
 
@@ -173,7 +182,14 @@ proto\:gen\:rag: proto\:deps
 		--openapiv2_out=services/rag/gen/openapiv2 \
 		services/rag/api/v1/rag.proto
 
-proto\:gen: proto\:gen\:gateway proto\:gen\:iam proto\:gen\:knowledge proto\:gen\:rag
+proto\:gen\:ai-inference: proto\:deps
+	@$(call MKDIRP,services/ai-inference/gen/v1)
+	"$(PROTOC)" $(PROTO_INC) -I services/ai-inference/api \
+		--go_out=services/ai-inference/gen --go_opt=paths=source_relative \
+		--go-grpc_out=services/ai-inference/gen --go-grpc_opt=paths=source_relative \
+		services/ai-inference/api/v1/ai_inference.proto
+
+proto\:gen: proto\:gen\:gateway proto\:gen\:iam proto\:gen\:knowledge proto\:gen\:rag proto\:gen\:ai-inference
 
 # ── gRPC: generate server stubs (transport/grpc) ─────
 
@@ -189,7 +205,10 @@ grpc\:stubs\:knowledge:
 grpc\:stubs\:rag:
 	go run ./tools/grpcstubgen --service services/rag --out internal/transport/grpc
 
-grpc\:stubs: grpc\:stubs\:gateway grpc\:stubs\:iam grpc\:stubs\:knowledge grpc\:stubs\:rag
+grpc\:stubs\:ai-inference:
+	go -C tools/grpcstubgen run . --service ../../services/ai-inference --out internal/transport/grpc
+
+grpc\:stubs: grpc\:stubs\:gateway grpc\:stubs\:iam grpc\:stubs\:knowledge grpc\:stubs\:rag grpc\:stubs\:ai-inference
 
 
 # ── Database migrations (goose) ─────────────────────

@@ -8,7 +8,7 @@ import (
 )
 
 func (s *AuthServiceServerImpl) GetMe(ctx context.Context, req *pb.GetMeRequest) (*pb.GetMeResponse, error) {
-	if err := s.deps.requireUC(); err != nil {
+	if err := requireUC(s.svc); err != nil {
 		return nil, err
 	}
 
@@ -17,12 +17,12 @@ func (s *AuthServiceServerImpl) GetMe(ctx context.Context, req *pb.GetMeRequest)
 		return nil, toGRPCError(err)
 	}
 
-	principal, _, err := s.deps.uc.AuthenticateAccessToken(ctx, accessToken)
+	principal, _, err := s.svc.AuthenticateAccessToken(ctx, accessToken)
 	if err != nil {
 		return nil, toGRPCError(err)
 	}
 
-	me, err := s.deps.uc.GetMe(ctx, principal)
+	me, err := s.svc.GetMe(ctx, principal)
 	if err != nil {
 		return nil, toGRPCError(err)
 	}

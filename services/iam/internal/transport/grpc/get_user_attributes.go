@@ -9,7 +9,7 @@ import (
 )
 
 func (s *AttributeServiceServerImpl) GetUserAttributes(ctx context.Context, req *pb.GetUserAttributesRequest) (*pb.GetUserAttributesResponse, error) {
-	principal, _, err := s.deps.authenticate(ctx)
+	principal, _, err := authenticate(s.svc, ctx)
 	if err != nil {
 		return nil, toGRPCError(err)
 	}
@@ -23,7 +23,7 @@ func (s *AttributeServiceServerImpl) GetUserAttributes(ctx context.Context, req 
 		return nil, toGRPCError(usecase.ErrForbidden)
 	}
 
-	attributes, ctxVer, err := s.deps.uc.GetUserAttributes(ctx, targetUserID)
+	attributes, ctxVer, err := s.svc.GetUserAttributes(ctx, targetUserID)
 	if err != nil {
 		return nil, toGRPCError(err)
 	}

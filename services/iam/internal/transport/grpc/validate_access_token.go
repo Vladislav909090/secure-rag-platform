@@ -10,7 +10,7 @@ import (
 )
 
 func (s *InternalIAMServiceServerImpl) ValidateAccessToken(ctx context.Context, req *pb.ValidateAccessTokenRequest) (*pb.ValidateAccessTokenResponse, error) {
-	if err := s.deps.requireUC(); err != nil {
+	if err := requireUC(s.svc); err != nil {
 		return nil, err
 	}
 
@@ -21,7 +21,7 @@ func (s *InternalIAMServiceServerImpl) ValidateAccessToken(ctx context.Context, 
 		}
 	}
 
-	result, err := s.deps.uc.ValidateAccessToken(ctx, accessToken)
+	result, err := s.svc.ValidateAccessToken(ctx, accessToken)
 	if err != nil {
 		return nil, toGRPCError(err)
 	}

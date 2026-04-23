@@ -10,20 +10,20 @@ import (
 )
 
 func (s *InternalIAMServiceServerImpl) GetSubjectContext(ctx context.Context, req *pb.GetSubjectContextRequest) (*pb.GetSubjectContextResponse, error) {
-	if err := s.deps.requireUC(); err != nil {
+	if err := requireUC(s.svc); err != nil {
 		return nil, err
 	}
 
 	targetUserID := strings.TrimSpace(req.GetUserId())
 	if targetUserID == "" {
-		principal, _, err := s.deps.authenticate(ctx)
+		principal, _, err := authenticate(s.svc, ctx)
 		if err != nil {
 			return nil, toGRPCError(err)
 		}
 		targetUserID = principal.UserID
 	}
 
-	subject, err := s.deps.uc.GetSubjectContextByUserID(ctx, targetUserID)
+	subject, err := s.svc.GetSubjectContextByUserID(ctx, targetUserID)
 	if err != nil {
 		return nil, toGRPCError(err)
 	}

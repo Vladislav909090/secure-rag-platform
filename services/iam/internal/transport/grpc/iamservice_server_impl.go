@@ -9,11 +9,11 @@ import (
 
 type IAMServiceServerImpl struct {
 	pb.UnimplementedIAMServiceServer
-	deps *serverDeps
+	svc *usecase.IAMUsecase
 }
 
 func NewIAMServiceServer(uc *usecase.IAMUsecase) *IAMServiceServerImpl {
-	return &IAMServiceServerImpl{deps: newServerDeps(uc)}
+	return &IAMServiceServerImpl{svc: uc}
 }
 
 var _ pb.IAMServiceServer = (*IAMServiceServerImpl)(nil)

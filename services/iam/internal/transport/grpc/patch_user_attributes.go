@@ -9,7 +9,7 @@ import (
 )
 
 func (s *AttributeServiceServerImpl) PatchUserAttributes(ctx context.Context, req *pb.PatchUserAttributesRequest) (*pb.PatchUserAttributesResponse, error) {
-	principal, _, err := s.deps.authenticate(ctx)
+	principal, _, err := authenticate(s.svc, ctx)
 	if err != nil {
 		return nil, toGRPCError(err)
 	}
@@ -24,7 +24,7 @@ func (s *AttributeServiceServerImpl) PatchUserAttributes(ctx context.Context, re
 	}
 
 	updatedBy := principal.UserID
-	attributes, ctxVer, err := s.deps.uc.PatchUserAttributes(ctx, targetUserID, structToMap(req.GetAttributes()), &updatedBy)
+	attributes, ctxVer, err := s.svc.PatchUserAttributes(ctx, targetUserID, structToMap(req.GetAttributes()), &updatedBy)
 	if err != nil {
 		return nil, toGRPCError(err)
 	}

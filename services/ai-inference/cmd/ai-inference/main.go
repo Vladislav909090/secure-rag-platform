@@ -16,8 +16,6 @@ import (
 	"secure-rag-platform/services/ai-inference/internal/usecase"
 
 	"google.golang.org/grpc"
-	"google.golang.org/grpc/health"
-	grpcHealthV1 "google.golang.org/grpc/health/grpc_health_v1"
 )
 
 const defaultGRPCPort = "9094"
@@ -39,13 +37,9 @@ func main() {
 	inferenceService := usecase.NewService(runtimeCfg.ModelAliases, providerSet, log.Default())
 
 	grpcServer := grpc.NewServer(grpc.UnaryInterceptor(loggingInterceptor))
-	aiinferencev1.RegisterAIInferenceServiceServer(grpcServer, transportgrpc.NewAIInferenceServiceServer())
+	aiinferencev1.RegisterAIInferenceServiceServer(grpcServer, transportgrpc.NewAIInferenceServiceServer(inferenceService))
 	aiinferencev1.RegisterGenerationServiceServer(grpcServer, transportgrpc.NewGenerationServiceServer(inferenceService))
 	aiinferencev1.RegisterEmbeddingServiceServer(grpcServer, transportgrpc.NewEmbeddingServiceServer(inferenceService))
-
-	healthServer := health.NewServer()
-	grpcHealthV1.RegisterHealthServer(grpcServer, healthServer)
-	healthServer.SetServingStatus("", grpcHealthV1.HealthCheckResponse_SERVING)
 
 	grpcLis, err := net.Listen("tcp", ":"+grpcPort)
 	if err != nil {

@@ -42,12 +42,6 @@ enum TaskType {
   TASK_TYPE_EMBEDDING = 2;
 }
 
-enum EmbeddingInputType {
-  EMBEDDING_INPUT_TYPE_UNSPECIFIED = 0;
-  EMBEDDING_INPUT_TYPE_QUERY = 1;
-  EMBEDDING_INPUT_TYPE_DOCUMENT = 2;
-}
-
 message Usage {
   int32 prompt_tokens = 1;
   int32 completion_tokens = 2;
@@ -102,8 +96,7 @@ message EmbedRequest {
   string request_id = 1;
   string model_alias = 2;
   string text = 3;
-  EmbeddingInputType input_type = 4;
-  bool normalize = 5;
+  bool normalize = 4;
 }
 
 message EmbedResponse {
@@ -117,8 +110,7 @@ message BatchEmbedRequest {
   string request_id = 1;
   string model_alias = 2;
   repeated string texts = 3;
-  EmbeddingInputType input_type = 4;
-  bool normalize = 5;
+  bool normalize = 4;
 }
 
 message EmbeddingVector {

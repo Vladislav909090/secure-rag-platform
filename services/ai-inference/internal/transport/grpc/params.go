@@ -59,14 +59,3 @@ func taskTypeToProto(task config.TaskType) aiinferencev1.TaskType {
 		return aiinferencev1.TaskType_TASK_TYPE_UNSPECIFIED
 	}
 }
-
-func embeddingInputTypeFromProto(inputType aiinferencev1.EmbeddingInputType) usecase.EmbeddingInputType {
-	switch inputType {
-	case aiinferencev1.EmbeddingInputType_EMBEDDING_INPUT_TYPE_QUERY:
-		return usecase.EmbeddingInputTypeQuery
-	case aiinferencev1.EmbeddingInputType_EMBEDDING_INPUT_TYPE_DOCUMENT:
-		return usecase.EmbeddingInputTypeDocument
-	default:
-		return usecase.EmbeddingInputTypeUnspecified
-	}
-}

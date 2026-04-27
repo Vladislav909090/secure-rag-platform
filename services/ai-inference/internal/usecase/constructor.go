@@ -37,6 +37,14 @@ func NewService(aliases map[string]config.ModelAlias, providers []Provider, logg
 	}
 }
 
+func (s *Service) Ready() bool {
+	if s == nil {
+		return false
+	}
+
+	return len(s.aliases) > 0 && len(s.providers) > 0
+}
+
 func (s *Service) resolve(aliasName string, expectedTask config.TaskType) (config.ModelAlias, Provider, error) {
 	alias, ok := s.aliases[aliasName]
 	if !ok {

@@ -13,7 +13,6 @@ func (s *EmbeddingServiceServerImpl) Embed(ctx context.Context, req *pb.EmbedReq
 		RequestID:  req.GetRequestId(),
 		ModelAlias: req.GetModelAlias(),
 		Texts:      []string{req.GetText()},
-		InputType:  embeddingInputTypeFromProto(req.GetInputType()),
 		Normalize:  req.GetNormalize(),
 	}
 

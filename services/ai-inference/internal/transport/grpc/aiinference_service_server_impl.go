@@ -4,14 +4,16 @@ package grpc
 
 import (
 	pb "secure-rag-platform/services/ai-inference/gen/v1"
+	"secure-rag-platform/services/ai-inference/internal/usecase"
 )
 
 type AIInferenceServiceServerImpl struct {
 	pb.UnimplementedAIInferenceServiceServer
+	svc *usecase.Service
 }
 
-func NewAIInferenceServiceServer() *AIInferenceServiceServerImpl {
-	return &AIInferenceServiceServerImpl{}
+func NewAIInferenceServiceServer(svc *usecase.Service) *AIInferenceServiceServerImpl {
+	return &AIInferenceServiceServerImpl{svc: svc}
 }
 
 var _ pb.AIInferenceServiceServer = (*AIInferenceServiceServerImpl)(nil)

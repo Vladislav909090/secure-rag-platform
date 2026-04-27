@@ -5,8 +5,23 @@ package grpc
 import (
 	"context"
 	pb "secure-rag-platform/services/ai-inference/gen/v1"
+	"time"
+
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 )
 
 func (s *AIInferenceServiceServerImpl) Health(ctx context.Context, req *pb.HealthRequest) (*pb.HealthResponse, error) {
-	return &pb.HealthResponse{Status: "ok"}, nil
+	if s == nil || s.svc == nil {
+		return nil, status.Error(codes.Unavailable, "service is not ready")
+	}
+
+	checkCtx, cancel := context.WithTimeout(ctx, 30*time.Second)
+	defer cancel()
+
+	if err := s.svc.CheckDependencies(checkCtx); err != nil {
+		return nil, status.Error(codes.Unavailable, err.Error())
+	}
+
+	return &pb.HealthResponse{Status: "serving"}, nil
 }

@@ -40,19 +40,10 @@ type GenerateResult struct {
 	ResolvedModel    string
 }
 
-type EmbeddingInputType string
-
-const (
-	EmbeddingInputTypeUnspecified EmbeddingInputType = "UNSPECIFIED"
-	EmbeddingInputTypeQuery       EmbeddingInputType = "QUERY"
-	EmbeddingInputTypeDocument    EmbeddingInputType = "DOCUMENT"
-)
-
 type BatchEmbedRequest struct {
 	RequestID  string
 	ModelAlias string
 	Texts      []string
-	InputType  EmbeddingInputType
 	Normalize  bool
 }
 

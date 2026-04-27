@@ -13,7 +13,6 @@ func (s *EmbeddingServiceServerImpl) BatchEmbed(ctx context.Context, req *pb.Bat
 		RequestID:  req.GetRequestId(),
 		ModelAlias: req.GetModelAlias(),
 		Texts:      req.GetTexts(),
-		InputType:  embeddingInputTypeFromProto(req.GetInputType()),
 		Normalize:  req.GetNormalize(),
 	}
 

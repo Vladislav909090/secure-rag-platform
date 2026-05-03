@@ -1,7 +1,6 @@
 name: secure-rag-platform
 
 volumes:
-  gateway-postgres-data:
   iam-postgres-data:
   iam-redis-data:
   knowledge-postgres-data:
@@ -13,10 +12,6 @@ networks:
     driver: bridge
 
   app-net:
-    driver: bridge
-    internal: true
-
-  gateway-db-net:
     driver: bridge
     internal: true
 
@@ -55,36 +50,41 @@ services:
 
   gateway:
     build:
-      context: ../../services/gateway
-      dockerfile: Dockerfile
+      context: ../..
+      dockerfile: services/gateway/Dockerfile
     environment:
       - PORT=8080
-      - DB_DSN=postgres://gateway:gateway@gateway-db:5432/gateway?sslmode=disable
+      - IAM_GRPC_ADDR=iam:9091
+      - KNOWLEDGE_GRPC_ADDR=knowledge:9092
+      - RAG_GRPC_ADDR=rag:9093
+      - DISABLE_AUTH=false
+      - DISABLE_DOC_FILTER=false
+      - OPA_URL=http://opa:8181
     expose:
       - "8080"
     labels:
       - "traefik.enable=true"
+      - "traefik.docker.network=secure-rag-platform_traefik-net"
       - "traefik.http.routers.gateway.rule=PathPrefix(`/gateway`)"
       - "traefik.http.routers.gateway.entrypoints=web"
       - "traefik.http.routers.gateway.priority=100"
       - "traefik.http.services.gateway.loadbalancer.server.port=8080"
     depends_on:
-      - gateway-db
+      opa:
+        condition: service_started
     networks:
       - traefik-net
       - app-net
-      - gateway-db-net
 
-  gateway-db:
-    image: postgres:16-alpine
-    environment:
-      POSTGRES_DB: gateway
-      POSTGRES_USER: gateway
-      POSTGRES_PASSWORD: gateway
+  opa:
+    image: openpolicyagent/opa:latest
+    command: ["run", "--server", "--addr=0.0.0.0:8181", "/policies"]
     volumes:
-      - gateway-postgres-data:/var/lib/postgresql/data
+      - ../opa:/policies:ro
+    expose:
+      - "8181"
     networks:
-      - gateway-db-net
+      - app-net
 
   iam:
     build:
@@ -101,18 +101,12 @@ services:
       - BOOTSTRAP_ADMIN_PASSWORD=superadmin
     expose:
       - "8081"
-    labels:
-      - "traefik.enable=true"
-      - "traefik.docker.network=secure-rag-platform_traefik-net"
-      - "traefik.http.routers.iam.rule=PathPrefix(`/iam`)"
-      - "traefik.http.routers.iam.entrypoints=web"
-      - "traefik.http.routers.iam.priority=100"
-      - "traefik.http.services.iam.loadbalancer.server.port=8081"
     depends_on:
-      - iam-db
-      - iam-redis
+      iam-db:
+        condition: service_healthy
+      iam-redis:
+        condition: service_healthy
     networks:
-      - traefik-net
       - app-net
       - iam-db-net
       - iam-redis-net
@@ -123,6 +117,12 @@ services:
       POSTGRES_DB: iam
       POSTGRES_USER: iam
       POSTGRES_PASSWORD: iam
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U iam -d iam"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+      start_period: 5s
     volumes:
       - iam-postgres-data:/var/lib/postgresql/data
     networks:
@@ -131,6 +131,12 @@ services:
   iam-redis:
     image: redis:7-alpine
     command: redis-server --appendonly yes
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+      start_period: 5s
     volumes:
       - iam-redis-data:/data
     networks:
@@ -150,20 +156,12 @@ services:
       - S3_USE_SSL=false
     expose:
       - "8082"
-    labels:
-      - "traefik.enable=true"
-      - "traefik.docker.network=secure-rag-platform_traefik-net"
-      - "traefik.http.routers.knowledge.rule=PathPrefix(`/knowledge`)"
-      - "traefik.http.routers.knowledge.entrypoints=web"
-      - "traefik.http.routers.knowledge.priority=100"
-      - "traefik.http.services.knowledge.loadbalancer.server.port=8082"
     depends_on:
       knowledge-db:
-        condition: service_started
+        condition: service_healthy
       knowledge-minio:
         condition: service_healthy
     networks:
-      - traefik-net
       - app-net
       - knowledge-db-net
       - knowledge-minio-net
@@ -174,6 +172,12 @@ services:
       POSTGRES_DB: knowledge
       POSTGRES_USER: knowledge
       POSTGRES_PASSWORD: knowledge
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U knowledge -d knowledge"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+      start_period: 5s
     volumes:
       - knowledge-postgres-data:/var/lib/postgresql/data
     networks:
@@ -198,33 +202,42 @@ services:
 
   rag:
     build:
-      context: ../../services/rag
-      dockerfile: Dockerfile
+      context: ../..
+      dockerfile: services/rag/Dockerfile
     environment:
       - PORT=8083
-      - DB_DSN=postgres://rag:rag@rag-db:5432/rag?sslmode=disable
+      - DATABASE_DSN=postgres://rag:rag@rag-db:5432/rag?sslmode=disable
+      - S3_ENDPOINT=knowledge-minio:9000
+      - S3_BUCKET=knowledge
+      - S3_ACCESS_KEY=minioadmin
+      - S3_SECRET_KEY=minioadmin
+      - S3_USE_SSL=false
+      - KNOWLEDGE_GRPC_ADDR=knowledge:9092
+      - AI_INFERENCE_GRPC_ADDR=ai-inference:9094
     expose:
       - "8083"
-    labels:
-      - "traefik.enable=true"
-      - "traefik.docker.network=secure-rag-platform_traefik-net"
-      - "traefik.http.routers.rag.rule=PathPrefix(`/rag`)"
-      - "traefik.http.routers.rag.entrypoints=web"
-      - "traefik.http.routers.rag.priority=100"
-      - "traefik.http.services.rag.loadbalancer.server.port=8083"
     depends_on:
-      - rag-db
+      rag-db:
+        condition: service_healthy
+      knowledge-minio:
+        condition: service_healthy
     networks:
-      - traefik-net
       - app-net
       - rag-db-net
+      - knowledge-minio-net
 
   rag-db:
-    image: postgres:16-alpine
+    image: pgvector/pgvector:pg16
     environment:
       POSTGRES_DB: rag
       POSTGRES_USER: rag
       POSTGRES_PASSWORD: rag
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U rag -d rag"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+      start_period: 5s
     volumes:
       - rag-postgres-data:/var/lib/postgresql/data
     networks:
@@ -236,6 +249,9 @@ services:
       dockerfile: Dockerfile
     environment:
       - GRPC_PORT=9094
+      - AI_INFERENCE_PROVIDER_TIMEOUT=180s
+    volumes:
+      - ../../services/ai-inference/config/models.json:/app/config/models.json:ro
     expose:
       - "9094"
     networks:

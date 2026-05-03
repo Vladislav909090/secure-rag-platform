@@ -15,7 +15,10 @@ FROM alpine:3.21
 
 RUN apk add --no-cache ca-certificates
 
+WORKDIR /app
+
 COPY --from=builder /bin/ai-inference /bin/ai-inference
+COPY --from=builder /app/config /app/config
 
 EXPOSE 9094
 

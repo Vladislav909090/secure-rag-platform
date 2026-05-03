@@ -25,18 +25,25 @@
 
 ## Конфиг моделей
 
-Используется env `AI_INFERENCE_MODELS_JSON` с JSON-объектом вида:
+Конфиг задаётся JSON-файлом (по умолчанию `services/ai-inference/config/models.json`).
+
+В репозитории есть один шаблон и один локальный файл конфигурации:
+
+- `services/ai-inference/config/models.example.json` — шаблон без токена
+- `services/ai-inference/config/models.json` — локальный файл с токеном и адресами моделей, он не должен попадать в git
+
+Формат файла:
 
 ```json
 {
   "chat.default": {
     "task": "generation",
     "provider": "openai_compat",
-    "model": "gpt-4o-mini",
-    "base_url": "https://api.openai.com/v1",
-    "api_key": "",
+    "model": "Qwen/Qwen2.5-3B-Instruct",
+    "base_url": "https://glade-untrue-stooge.ngrok-free.dev/v1",
+    "api_key": "<PUT_YOUR_BEARER_TOKEN_HERE>",
     "generation_defaults": {
-      "temperature": 0.2,
+      "temperature": 0.3,
       "top_p": 1,
       "max_tokens": 1024
     }
@@ -44,29 +51,35 @@
   "embed.default": {
     "task": "embedding",
     "provider": "openai_compat",
-    "model": "text-embedding-3-small",
-    "base_url": "https://api.openai.com/v1",
-    "api_key": ""
+    "model": "nomic-embed-text:latest",
+    "base_url": "http://localhost:11434/v1"
   }
 }
 ```
 
-Если env не задан, используются встроенные дефолтные алиасы.
+`provider` можно не указывать — по умолчанию используется `openai_compat`.
+Требование: сейчас поддерживается только `openai_compat`.
 
 ## Запуск локально
 
 Из корня репозитория:
 
 ```bash
-go run ./services/ai-inference/cmd/ai-inference
+cp ./services/ai-inference/config/models.example.json ./services/ai-inference/config/models.json
+go run ./services/ai-inference/cmd/ai-inference --config ./services/ai-inference/config/models.json
 ```
 
 Или из каталога сервиса:
 
 ```bash
 cd services/ai-inference
-go run ./cmd/ai-inference
+cp ./config/models.example.json ./config/models.json
+go run ./cmd/ai-inference --config ./config/models.json
 ```
+
+Для Docker используется тот же `models.json`: compose монтирует его в контейнер как `/app/config/models.json`.
+
+При старте сервис выполняет простой health-check по всем алиасам (короткий `chat/completions` для generation и `embeddings` для embedding).
 
 ## Проверки
 

@@ -19,6 +19,8 @@ Retrieval-Augmented Generation сервис.
 
 - `GET /health`
 - `GET /docs` (Swagger UI, OpenAPI встроен в HTML)
+- `POST /rag/api/v1/documents/{document_uuid}/versions/{version_number}/index`
+- `POST /rag/api/v1/query`
 
 Через Traefik с хоста:
 
@@ -26,6 +28,14 @@ Retrieval-Augmented Generation сервис.
 - `GET http://localhost/rag/docs`
 
 Примечание: в `docker-compose` сервис использует только `expose`, прямой URL `http://localhost:8083` не публикуется.
+
+## Основные переменные окружения
+
+- `DATABASE_DSN` (или `DB_DSN`)
+- `S3_ENDPOINT`, `S3_BUCKET`, `S3_ACCESS_KEY`, `S3_SECRET_KEY`, `S3_USE_SSL`
+- `KNOWLEDGE_GRPC_ADDR`, `AI_INFERENCE_GRPC_ADDR`
+- `RAG_CHUNK_SIZE`, `RAG_CHUNK_OVERLAP`, `RAG_DEFAULT_TOP_K`
+- `RAG_DEFAULT_EMBEDDING_MODEL_ALIAS`, `RAG_DEFAULT_GENERATION_MODEL_ALIAS`
 
 ## Запуск локально
 

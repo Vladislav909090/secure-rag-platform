@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"errors"
+	"flag"
 	"log"
 	"net"
 	"time"
@@ -21,7 +22,10 @@ import (
 const defaultGRPCPort = "9094"
 
 func main() {
-	runtimeCfg, err := config.Load()
+	modelsConfigPath := flag.String("config", config.DefaultModelsConfigPath, "Path to models config JSON file")
+	flag.Parse()
+
+	runtimeCfg, err := config.LoadFromFile(*modelsConfigPath)
 	if err != nil {
 		log.Fatalf("failed to load config: %v", err)
 	}
@@ -31,10 +35,26 @@ func main() {
 		grpcPort = defaultGRPCPort
 	}
 
+	providerTimeout := 180 * time.Second
+	if runtimeCfg.ProviderTimeout != "" {
+		parsed, err := time.ParseDuration(runtimeCfg.ProviderTimeout)
+		if err != nil {
+			log.Fatalf("failed to parse provider timeout: %v", err)
+		}
+		providerTimeout = parsed
+	}
+
 	providerSet := []usecase.Provider{
-		provider.NewOpenAICompatProvider(60 * time.Second),
+		provider.NewOpenAICompatProvider(providerTimeout),
 	}
 	inferenceService := usecase.NewService(runtimeCfg.ModelAliases, providerSet, log.Default())
+
+	startupCheckTimeout := providerTimeout + 5*time.Second
+	startupCtx, cancel := context.WithTimeout(context.Background(), startupCheckTimeout)
+	defer cancel()
+	if err := inferenceService.CheckDependencies(startupCtx); err != nil {
+		log.Fatalf("dependency check failed: %v", err)
+	}
 
 	grpcServer := grpc.NewServer(grpc.UnaryInterceptor(loggingInterceptor))
 	aiinferencev1.RegisterAIInferenceServiceServer(grpcServer, transportgrpc.NewAIInferenceServiceServer(inferenceService))

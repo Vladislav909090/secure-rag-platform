@@ -14,10 +14,65 @@ service RAGService {
       get: "/rag/health"
     };
   }
+
+  // IndexDocumentVersion индексирует версию документа в векторное хранилище.
+  rpc IndexDocumentVersion(IndexDocumentVersionRequest) returns (IndexDocumentVersionResponse) {
+    option (google.api.http) = {
+      post: "/rag/api/v1/documents/{document_uuid}/versions/{version_number}/index"
+      body: "*"
+    };
+  }
+
+  // Query выполняет поиск контекста и генерацию ответа.
+  rpc Query(QueryRequest) returns (QueryResponse) {
+    option (google.api.http) = {
+      post: "/rag/api/v1/query"
+      body: "*"
+    };
+  }
 }
 
 message HealthRequest {}
 
 message HealthResponse {
   string status = 1;
+}
+
+message IndexDocumentVersionRequest {
+  string document_uuid = 1;
+  int32 version_number = 2;
+  string embedding_model_alias = 3;
+  int32 chunk_size = 4;
+  int32 chunk_overlap = 5;
+}
+
+message IndexDocumentVersionResponse {
+  string document_uuid = 1;
+  int32 version_number = 2;
+  int32 chunk_count = 3;
+  int32 embedding_dimension = 4;
+  string resolved_embedding_model = 5;
+}
+
+message QueryRequest {
+  string query = 1;
+  int32 top_k = 2;
+  repeated string document_uuids = 3;
+  string embedding_model_alias = 4;
+  string generation_model_alias = 5;
+}
+
+message QueryContext {
+  string document_uuid = 1;
+  int32 version_number = 2;
+  int32 chunk_index = 3;
+  string text = 4;
+  float score = 5;
+}
+
+message QueryResponse {
+  string answer = 1;
+  repeated QueryContext contexts = 2;
+  string resolved_embedding_model = 3;
+  string resolved_generation_model = 4;
 }

@@ -4,10 +4,10 @@
 	proto\:tools proto\:deps proto\:gen \
 	proto\:gen\:gateway proto\:gen\:iam proto\:gen\:knowledge proto\:gen\:rag proto\:gen\:ai-inference \
 	grpc\:stubs grpc\:stubs\:gateway grpc\:stubs\:iam grpc\:stubs\:knowledge grpc\:stubs\:rag grpc\:stubs\:ai-inference \
-	migrate\:status migrate\:status\:gateway migrate\:status\:iam migrate\:status\:knowledge migrate\:status\:rag \
-	migrate\:up migrate\:up\:gateway migrate\:up\:iam migrate\:up\:knowledge migrate\:up\:rag \
-	migrate\:down migrate\:down\:gateway migrate\:down\:iam migrate\:down\:knowledge migrate\:down\:rag \
-	migrate\:create\:gateway migrate\:create\:iam migrate\:create\:knowledge migrate\:create\:rag \
+	migrate\:status migrate\:status\:iam migrate\:status\:knowledge migrate\:status\:rag \
+	migrate\:up migrate\:up\:iam migrate\:up\:knowledge migrate\:up\:rag \
+	migrate\:down migrate\:down\:iam migrate\:down\:knowledge migrate\:down\:rag \
+	migrate\:create\:iam migrate\:create\:knowledge migrate\:create\:rag \
 	compose\:up compose\:down
 
 COMPOSE_DEV ?= 0
@@ -27,17 +27,15 @@ PROTOC         = protoc
 GOOSE          = go run github.com/pressly/goose/v3/cmd/goose@v3.24.3
 MIGRATION_NAME ?= new_migration
 
-GATEWAY_MIGRATIONS_DIR   = services/gateway/migrations
 IAM_MIGRATIONS_DIR       = services/iam/migrations
 KNOWLEDGE_MIGRATIONS_DIR = services/knowledge/migrations
 RAG_MIGRATIONS_DIR       = services/rag/migrations
 
-GATEWAY_DB_DSN   ?= postgres://gateway:gateway@localhost:5432/gateway?sslmode=disable
 IAM_DB_DSN       ?= postgres://iam:iam@localhost:5433/iam?sslmode=disable
 KNOWLEDGE_DB_DSN ?= postgres://knowledge:knowledge@localhost:5434/knowledge?sslmode=disable
 RAG_DB_DSN       ?= postgres://rag:rag@localhost:5435/rag?sslmode=disable
 
-# ── Platform-specific helpers ─────────────────────────
+# ── Платформенные вспомогательные команды ─────────────
 
 ifeq ($(OS),Windows_NT)
 
@@ -127,7 +125,7 @@ build\:ai-inference:
 
 build: build\:gateway build\:iam build\:knowledge build\:rag build\:ai-inference
 
-# ── Proto: install tools ─────────────────────────────
+# ── Proto: установка инструментов ─────────────────────
 
 proto\:tools:
 	go install google.golang.org/protobuf/cmd/protoc-gen-go@v1.36.11
@@ -135,12 +133,12 @@ proto\:tools:
 	go install github.com/grpc-ecosystem/grpc-gateway/v2/protoc-gen-grpc-gateway@v2.27.2
 	go install github.com/grpc-ecosystem/grpc-gateway/v2/protoc-gen-openapiv2@v2.27.2
 
-# ── Proto: fetch google/api deps ─────────────────────
+# ── Proto: загрузка зависимостей google/api ───────────
 
 proto\:deps:
 	@$(PROTO_DEPS_CMD)
 
-# ── Proto: per-service generation ─────────────────────
+# ── Proto: генерация по сервисам ──────────────────────
 
 proto\:gen\:gateway: proto\:deps
 	@$(call MKDIRP,services/gateway/gen/v1)
@@ -191,7 +189,7 @@ proto\:gen\:ai-inference: proto\:deps
 
 proto\:gen: proto\:gen\:gateway proto\:gen\:iam proto\:gen\:knowledge proto\:gen\:rag proto\:gen\:ai-inference
 
-# ── gRPC: generate server stubs (transport/grpc) ─────
+# ── gRPC: генерация server stubs (transport/grpc) ─────
 
 grpc\:stubs\:gateway:
 	go run ./tools/grpcstubgen --service services/gateway --out internal/transport/grpc
@@ -211,10 +209,7 @@ grpc\:stubs\:ai-inference:
 grpc\:stubs: grpc\:stubs\:gateway grpc\:stubs\:iam grpc\:stubs\:knowledge grpc\:stubs\:rag grpc\:stubs\:ai-inference
 
 
-# ── Database migrations (goose) ─────────────────────
-
-migrate\:status\:gateway:
-	@$(GOOSE) -dir $(GATEWAY_MIGRATIONS_DIR) postgres "$(GATEWAY_DB_DSN)" status
+# ── Миграции баз данных (goose) ───────────────────────
 
 migrate\:status\:iam:
 	@$(GOOSE) -dir $(IAM_MIGRATIONS_DIR) postgres "$(IAM_DB_DSN)" status
@@ -225,10 +220,7 @@ migrate\:status\:knowledge:
 migrate\:status\:rag:
 	@$(GOOSE) -dir $(RAG_MIGRATIONS_DIR) postgres "$(RAG_DB_DSN)" status
 
-migrate\:status: migrate\:status\:gateway migrate\:status\:iam migrate\:status\:knowledge migrate\:status\:rag
-
-migrate\:up\:gateway:
-	@$(GOOSE) -dir $(GATEWAY_MIGRATIONS_DIR) postgres "$(GATEWAY_DB_DSN)" up
+migrate\:status: migrate\:status\:iam migrate\:status\:knowledge migrate\:status\:rag
 
 migrate\:up\:iam:
 	@$(GOOSE) -dir $(IAM_MIGRATIONS_DIR) postgres "$(IAM_DB_DSN)" up
@@ -239,10 +231,7 @@ migrate\:up\:knowledge:
 migrate\:up\:rag:
 	@$(GOOSE) -dir $(RAG_MIGRATIONS_DIR) postgres "$(RAG_DB_DSN)" up
 
-migrate\:up: migrate\:up\:gateway migrate\:up\:iam migrate\:up\:knowledge migrate\:up\:rag
-
-migrate\:down\:gateway:
-	@$(GOOSE) -dir $(GATEWAY_MIGRATIONS_DIR) postgres "$(GATEWAY_DB_DSN)" down
+migrate\:up: migrate\:up\:iam migrate\:up\:knowledge migrate\:up\:rag
 
 migrate\:down\:iam:
 	@$(GOOSE) -dir $(IAM_MIGRATIONS_DIR) postgres "$(IAM_DB_DSN)" down
@@ -253,10 +242,7 @@ migrate\:down\:knowledge:
 migrate\:down\:rag:
 	@$(GOOSE) -dir $(RAG_MIGRATIONS_DIR) postgres "$(RAG_DB_DSN)" down
 
-migrate\:down: migrate\:down\:gateway migrate\:down\:iam migrate\:down\:knowledge migrate\:down\:rag
-
-migrate\:create\:gateway:
-	@$(GOOSE) -dir $(GATEWAY_MIGRATIONS_DIR) create $(MIGRATION_NAME) sql
+migrate\:down: migrate\:down\:iam migrate\:down\:knowledge migrate\:down\:rag
 
 migrate\:create\:iam:
 	@$(GOOSE) -dir $(IAM_MIGRATIONS_DIR) create $(MIGRATION_NAME) sql

@@ -17,8 +17,19 @@ Gateway-сервис, единая точка входа для API.
 
 ## Базовые маршруты
 
-- `GET /health`
-- `GET /docs` (Swagger UI, OpenAPI встроен в HTML)
+- `GET /gateway/health`
+- `GET /gateway/docs` (Swagger UI, OpenAPI встроен в HTML)
+- `POST /gateway/api/v1/auth/login`
+- `POST /gateway/api/v1/auth/refresh`
+- `POST /gateway/api/v1/auth/logout`
+- `GET /gateway/api/v1/auth/me`
+- `GET /gateway/api/v1/documents`
+- `GET /gateway/api/v1/documents/{document_uuid}`
+- `GET /gateway/api/v1/documents/{document_uuid}/versions/{version_number}`
+- `GET /gateway/api/v1/documents/{document_uuid}/file`
+- `GET /gateway/api/v1/documents/{document_uuid}/versions/{version_number}/file`
+- `POST /gateway/api/v1/rag/query`
+- `POST /gateway/api/v1/rag/documents/{document_uuid}/versions/{version_number}/index`
 
 Через Traefik с хоста:
 
@@ -26,6 +37,12 @@ Gateway-сервис, единая точка входа для API.
 - `GET http://localhost/gateway/docs`
 
 Примечание: в `docker-compose` сервисы работают через `expose`, поэтому прямой URL `http://localhost:8080` не используется.
+
+## Основные переменные окружения
+
+- `IAM_GRPC_ADDR`, `KNOWLEDGE_GRPC_ADDR`, `RAG_GRPC_ADDR`
+- `DISABLE_AUTH`, `DISABLE_DOC_FILTER`
+- `GATEWAY_DEFAULT_TOP_K`, `GATEWAY_DEFAULT_EMBEDDING_MODEL_ALIAS`, `GATEWAY_DEFAULT_GENERATION_MODEL_ALIAS`
 
 ## Запуск локально
 
@@ -50,14 +67,4 @@ make lint:gateway
 make build:gateway
 ```
 
-## Миграции
-
-- Каталог миграций: `services/gateway/migrations`
-- DSN по умолчанию для make: `postgres://gateway:gateway@localhost:5432/gateway?sslmode=disable`
-
-```bash
-make migrate:status:gateway
-make migrate:up:gateway
-make migrate:down:gateway
-make migrate:create:gateway MIGRATION_NAME=add_gateway_table
-```
+Gateway не использует собственную БД и не имеет миграций.

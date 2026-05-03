@@ -3,12 +3,47 @@ networks:
     driver: bridge
 
 services:
-  gateway-db:
+  iam:
+    labels:
+      - "traefik.enable=true"
+      - "traefik.docker.network=secure-rag-platform_traefik-net"
+      - "traefik.http.routers.iam.rule=PathPrefix(`/iam`)"
+      - "traefik.http.routers.iam.entrypoints=web"
+      - "traefik.http.routers.iam.priority=100"
+      - "traefik.http.services.iam.loadbalancer.server.port=8081"
     networks:
-      - gateway-db-net
-      - dev-expose-net
-    ports:
-      - "5432:5432"
+      - traefik-net
+      - app-net
+      - iam-db-net
+      - iam-redis-net
+
+  knowledge:
+    labels:
+      - "traefik.enable=true"
+      - "traefik.docker.network=secure-rag-platform_traefik-net"
+      - "traefik.http.routers.knowledge.rule=PathPrefix(`/knowledge`)"
+      - "traefik.http.routers.knowledge.entrypoints=web"
+      - "traefik.http.routers.knowledge.priority=100"
+      - "traefik.http.services.knowledge.loadbalancer.server.port=8082"
+    networks:
+      - traefik-net
+      - app-net
+      - knowledge-db-net
+      - knowledge-minio-net
+
+  rag:
+    labels:
+      - "traefik.enable=true"
+      - "traefik.docker.network=secure-rag-platform_traefik-net"
+      - "traefik.http.routers.rag.rule=PathPrefix(`/rag`)"
+      - "traefik.http.routers.rag.entrypoints=web"
+      - "traefik.http.routers.rag.priority=100"
+      - "traefik.http.services.rag.loadbalancer.server.port=8083"
+    networks:
+      - traefik-net
+      - app-net
+      - rag-db-net
+      - knowledge-minio-net
 
   iam-db:
     networks:

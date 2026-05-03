@@ -46,7 +46,7 @@ func main() {
 		}
 	}
 
-	// --- optional infrastructure: DB + S3 ---
+	// --- Опциональная инфраструктура: БД + S3 ---
 
 	var uc *usecase.DocumentUsecase
 
@@ -80,7 +80,7 @@ func main() {
 		log.Println("knowledge: DATABASE_DSN not set, document endpoints unavailable")
 	}
 
-	// --- gRPC server ---
+	// --- gRPC-сервер ---
 
 	serverImpl := transportgrpc.NewKnowledgeServiceServer(uc)
 	grpcServer := grpc.NewServer()
@@ -125,7 +125,7 @@ func main() {
 
 	docs.RegisterAt(mux, "Knowledge", "/knowledge/docs")
 
-	// --- run ---
+	// --- Запуск ---
 
 	app := application.New()
 

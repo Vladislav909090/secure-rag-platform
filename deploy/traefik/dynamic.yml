@@ -1,4 +1,4 @@
-# Traefik dynamic configuration
+# Динамическая конфигурация Traefik
 # Дополнительные маршруты и middleware.
 #
 # Основная маршрутизация на gateway выполняется через Docker labels
@@ -8,13 +8,13 @@
 
 http:
   middlewares:
-    # Пример: rate-limit middleware
+    # Пример: middleware ограничения частоты запросов
     rate-limit:
       rateLimit:
         average: 100
         burst: 50
 
-    # Пример: CORS headers
+    # Пример: CORS-заголовки
     cors-headers:
       headers:
         accessControlAllowOriginList:

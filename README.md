@@ -43,7 +43,7 @@ services/<svc>/
 
 | Сервис    | HTTP | gRPC | PostgreSQL |
 |-----------|------|------|------------|
-| gateway   | 8080 | 9090 |    5432    |
+| gateway   | 8080 | 9090 |      -     |
 | iam       | 8081 | 9091 |    5433    |
 | knowledge | 8082 | 9092 |    5434    |
 | rag       | 8083 | 9093 |    5435    |
@@ -63,7 +63,6 @@ services/<svc>/
 
 | Компонент | Host порт | Container порт | Назначение |
 |-----------|-----------|----------------|------------|
-| gateway-db | 5432 | 5432 | PostgreSQL gateway |
 | iam-db | 5433 | 5432 | PostgreSQL iam |
 | knowledge-db | 5434 | 5432 | PostgreSQL knowledge |
 | rag-db | 5435 | 5432 | PostgreSQL rag |
@@ -122,7 +121,6 @@ make grpc:stubs
 make migrate:status
 make migrate:up
 make migrate:down
-make migrate:create:gateway MIGRATION_NAME=add_users_table
 make migrate:create:iam MIGRATION_NAME=add_tokens_table
 make migrate:create:knowledge MIGRATION_NAME=add_documents_table
 make migrate:create:rag MIGRATION_NAME=add_jobs_table

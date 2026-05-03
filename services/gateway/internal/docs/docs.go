@@ -24,10 +24,48 @@ const uiTemplate = `<!DOCTYPE html>
   <script src="https://unpkg.com/swagger-ui-dist@5/swagger-ui-standalone-preset.js"></script>
   <script>
 	const spec = JSON.parse(%s);
+
+	// Добавляем Bearer auth schema для сгенерированных спецификаций без securityDefinitions.
+	if (!spec.securityDefinitions) {
+	  spec.securityDefinitions = {};
+	}
+	if (!spec.securityDefinitions.BearerAuth) {
+	  spec.securityDefinitions.BearerAuth = {
+		type: 'apiKey',
+		name: 'Authorization',
+		in: 'header',
+		description: 'Bearer access token, пример: Bearer eyJ...'
+	  };
+	}
+	if (!spec.security) {
+	  spec.security = [{ BearerAuth: [] }];
+	}
+
+	const ensureBearer = (value) => {
+	  if (!value || typeof value !== 'string') {
+		return value;
+	  }
+	  const trimmed = value.trim();
+	  if (!trimmed) {
+		return trimmed;
+	  }
+	  if (/^Bearer\s+/i.test(trimmed)) {
+		return trimmed;
+	  }
+	  return 'Bearer ' + trimmed;
+	};
+
     SwaggerUIBundle({
 	  spec: spec,
       dom_id: '#swagger-ui',
       presets: [SwaggerUIBundle.presets.apis, SwaggerUIStandalonePreset],
+	  persistAuthorization: true,
+	  requestInterceptor: (req) => {
+		if (req && req.headers && req.headers.Authorization) {
+		  req.headers.Authorization = ensureBearer(req.headers.Authorization);
+		}
+		return req;
+	  },
       layout: 'StandaloneLayout'
     });
   </script>

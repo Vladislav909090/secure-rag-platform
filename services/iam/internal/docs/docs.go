@@ -25,7 +25,7 @@ const uiTemplate = `<!DOCTYPE html>
   <script>
 	const spec = JSON.parse(%s);
 
-	// Inject Bearer auth schema for generated specs that do not include securityDefinitions.
+	// Добавляем Bearer auth schema для сгенерированных спецификаций без securityDefinitions.
 	if (!spec.securityDefinitions) {
 	  spec.securityDefinitions = {};
 	}
@@ -34,7 +34,7 @@ const uiTemplate = `<!DOCTYPE html>
 		type: 'apiKey',
 		name: 'Authorization',
 		in: 'header',
-		description: 'Bearer access token, example: Bearer eyJ...'
+		description: 'Bearer access token, пример: Bearer eyJ...'
 	  };
 	}
 	if (!spec.security) {

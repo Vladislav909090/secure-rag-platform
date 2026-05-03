@@ -12,10 +12,13 @@ import (
 type Key string
 
 const (
-	GRPCPort         Key = "GRPC_PORT"
-	ModelsJSON       Key = "AI_INFERENCE_MODELS_JSON"
-	OpenAIAPIKey     Key = "OPENAI_API_KEY"
-	DefaultOpenAIURL Key = "AI_INFERENCE_DEFAULT_OPENAI_BASE_URL"
+	GRPCPort        Key = "GRPC_PORT"
+	ProviderTimeout Key = "AI_INFERENCE_PROVIDER_TIMEOUT"
+)
+
+const (
+	DefaultModelsConfigPath  = "config/models.json"
+	OpenAICompatProviderName = "openai_compat"
 )
 
 type TaskType string
@@ -43,8 +46,9 @@ type ModelAlias struct {
 }
 
 type Runtime struct {
-	GRPCPort     string
-	ModelAliases map[string]ModelAlias
+	GRPCPort        string
+	ProviderTimeout string
+	ModelAliases    map[string]ModelAlias
 }
 
 func GetValue(key Key) string {
@@ -52,19 +56,28 @@ func GetValue(key Key) string {
 }
 
 func Load() (*Runtime, error) {
-	aliases := defaultModelAliases()
+	return LoadFromFile(DefaultModelsConfigPath)
+}
 
-	if raw := strings.TrimSpace(GetValue(ModelsJSON)); raw != "" {
-		parsed := make(map[string]ModelAlias)
-		if err := json.Unmarshal([]byte(raw), &parsed); err != nil {
-			return nil, fmt.Errorf("parse AI_INFERENCE_MODELS_JSON: %w", err)
-		}
-		aliases = parsed
+func LoadFromFile(modelsConfigPath string) (*Runtime, error) {
+	modelsConfigPath = strings.TrimSpace(modelsConfigPath)
+	if modelsConfigPath == "" {
+		modelsConfigPath = DefaultModelsConfigPath
+	}
+
+	raw, err := os.ReadFile(modelsConfigPath)
+	if err != nil {
+		return nil, fmt.Errorf("read models config %q: %w", modelsConfigPath, err)
+	}
+
+	aliases := make(map[string]ModelAlias)
+	if err := json.Unmarshal(raw, &aliases); err != nil {
+		return nil, fmt.Errorf("parse models config %q: %w", modelsConfigPath, err)
 	}
 
 	for aliasName, alias := range aliases {
-		if strings.TrimSpace(alias.APIKey) == "" {
-			alias.APIKey = strings.TrimSpace(GetValue(OpenAIAPIKey))
+		if strings.TrimSpace(alias.Provider) == "" {
+			alias.Provider = OpenAICompatProviderName
 			aliases[aliasName] = alias
 		}
 	}
@@ -74,8 +87,9 @@ func Load() (*Runtime, error) {
 	}
 
 	return &Runtime{
-		GRPCPort:     strings.TrimSpace(GetValue(GRPCPort)),
-		ModelAliases: aliases,
+		GRPCPort:        strings.TrimSpace(GetValue(GRPCPort)),
+		ProviderTimeout: strings.TrimSpace(GetValue(ProviderTimeout)),
+		ModelAliases:    aliases,
 	}, nil
 }
 
@@ -105,6 +119,9 @@ func validateAliases(aliases map[string]ModelAlias) error {
 		if strings.TrimSpace(alias.Provider) == "" {
 			return fmt.Errorf("alias %q provider is empty", name)
 		}
+		if alias.Provider != OpenAICompatProviderName {
+			return fmt.Errorf("alias %q provider %q is not supported (only %q)", name, alias.Provider, OpenAICompatProviderName)
+		}
 		if strings.TrimSpace(alias.Model) == "" {
 			return fmt.Errorf("alias %q model is empty", name)
 		}
@@ -114,50 +131,4 @@ func validateAliases(aliases map[string]ModelAlias) error {
 	}
 
 	return nil
-}
-
-func defaultModelAliases() map[string]ModelAlias {
-	defaultURL := strings.TrimSpace(GetValue(DefaultOpenAIURL))
-	if defaultURL == "" {
-		defaultURL = "https://api.openai.com/v1"
-	}
-
-	return map[string]ModelAlias{
-		"chat.default": {
-			Task:     TaskGeneration,
-			Provider: "openai_compat",
-			Model:    "gpt-4o-mini",
-			BaseURL:  defaultURL,
-			GenerationDefaults: GenerationDefaults{
-				Temperature: ptrFloat32(0.2),
-				TopP:        ptrFloat32(1.0),
-				MaxTokens:   ptrInt32(1024),
-			},
-		},
-		"chat.quality": {
-			Task:     TaskGeneration,
-			Provider: "openai_compat",
-			Model:    "gpt-4.1",
-			BaseURL:  defaultURL,
-			GenerationDefaults: GenerationDefaults{
-				Temperature: ptrFloat32(0.2),
-				TopP:        ptrFloat32(1.0),
-				MaxTokens:   ptrInt32(1024),
-			},
-		},
-		"embed.default": {
-			Task:     TaskEmbedding,
-			Provider: "openai_compat",
-			Model:    "text-embedding-3-small",
-			BaseURL:  defaultURL,
-		},
-	}
-}
-
-func ptrFloat32(v float32) *float32 {
-	return &v
-}
-
-func ptrInt32(v int32) *int32 {
-	return &v
 }

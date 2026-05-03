@@ -70,7 +70,7 @@ func (h *UploadHandlers) CreateDocument(gateway http.Handler) http.HandlerFunc {
 
 func (h *UploadHandlers) UploadVersion(gateway http.Handler) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		// Intercept file downloads:
+		// Перехватываем скачивание файлов:
 		// - GET /knowledge/api/v1/documents/{uuid}/file
 		// - GET /knowledge/api/v1/documents/{uuid}/versions/{version}/file
 		if r.Method == http.MethodGet &&
@@ -396,7 +396,7 @@ func (h *UploadHandlers) handleDownloadFile(w http.ResponseWriter, r *http.Reque
 		case errors.Is(err, usecase.ErrDocumentDeleted):
 			writeError(w, http.StatusGone, err.Error())
 		default:
-			// unwrap gRPC status errors from potential gateway calls
+			// Разворачиваем gRPC status errors после возможных gateway-вызовов.
 			if st, ok := status.FromError(err); ok && st.Code() == codes.NotFound {
 				writeError(w, http.StatusNotFound, st.Message())
 				return
@@ -445,8 +445,8 @@ func (h *UploadHandlers) writeDownloadResponse(w http.ResponseWriter, dl *usecas
 		mimeType = "application/octet-stream"
 	}
 
-	// RFC 6266: include both ASCII-quoted fallback and RFC 5987 encoded name.
-	// Browsers prefer filename* when both are present; swagger UI uses filename.
+	// RFC 6266: указываем и ASCII fallback в кавычках, и имя по RFC 5987.
+	// Браузеры предпочитают filename*, если есть оба варианта; Swagger UI использует filename.
 	fallback := asciiFilenameFallback(dl.FileName)
 	escaped := strings.ReplaceAll(fallback, `"`, `\\"`)
 	encodedName := url.PathEscape(dl.FileName)

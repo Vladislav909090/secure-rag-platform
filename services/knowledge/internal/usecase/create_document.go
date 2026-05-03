@@ -14,7 +14,13 @@ import (
 )
 
 // CreateDocument создаёт документ сразу с первой версией и файлом.
-func (uc *DocumentUsecase) CreateDocument(ctx context.Context, input CreateDocumentInput, file io.Reader, fileName string, mimeType string) (*CreateDocumentOutput, error) {
+func (uc *DocumentUsecase) CreateDocument(
+	ctx context.Context,
+	input CreateDocumentInput,
+	file io.Reader,
+	fileName string,
+	mimeType string,
+) (*CreateDocumentOutput, error) {
 	if input.Title == "" {
 		return nil, ErrInvalidRequest
 	}

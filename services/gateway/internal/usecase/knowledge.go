@@ -46,7 +46,11 @@ func (s *Service) ListDocuments(ctx context.Context, accessToken string) ([]Docu
 	return out, nil
 }
 
-func (s *Service) GetDocument(ctx context.Context, documentUUID string, accessToken string) (*DocumentWithVersions, error) {
+func (s *Service) GetDocument(
+	ctx context.Context,
+	documentUUID string,
+	accessToken string,
+) (*DocumentWithVersions, error) {
 	if !s.Ready() {
 		return nil, ErrNotConfigured
 	}
@@ -80,7 +84,12 @@ func (s *Service) GetDocument(ctx context.Context, documentUUID string, accessTo
 	}, nil
 }
 
-func (s *Service) GetDocumentVersion(ctx context.Context, documentUUID string, versionNumber int32, accessToken string) (*DocumentWithVersions, error) {
+func (s *Service) GetDocumentVersion(
+	ctx context.Context,
+	documentUUID string,
+	versionNumber int32,
+	accessToken string,
+) (*DocumentWithVersions, error) {
 	if !s.Ready() {
 		return nil, ErrNotConfigured
 	}
@@ -119,7 +128,12 @@ func (s *Service) GetDocumentVersion(ctx context.Context, documentUUID string, v
 	}, nil
 }
 
-func (s *Service) DownloadFile(ctx context.Context, documentUUID string, versionNumber int32, accessToken string) (*FileResult, error) {
+func (s *Service) DownloadFile(
+	ctx context.Context,
+	documentUUID string,
+	versionNumber int32,
+	accessToken string,
+) (*FileResult, error) {
 	if versionNumber > 0 {
 		if _, err := s.GetDocumentVersion(ctx, documentUUID, versionNumber, accessToken); err != nil {
 			return nil, err
@@ -139,14 +153,20 @@ func (s *Service) DownloadFile(ctx context.Context, documentUUID string, version
 		return nil, err
 	}
 
-	resp, err := s.knowledge.DownloadFile(ctx, &knowledgev1.DownloadFileRequest{DocumentUuid: strings.TrimSpace(documentUUID)})
+	resp, err := s.knowledge.DownloadFile(ctx, &knowledgev1.DownloadFileRequest{
+		DocumentUuid: strings.TrimSpace(documentUUID),
+	})
 	if err != nil {
 		return nil, mapUpstreamError(err, "download file")
 	}
 	return &FileResult{ContentType: resp.GetContentType(), Data: resp.GetData()}, nil
 }
 
-func (s *Service) isDocumentAllowed(ctx context.Context, subject *iamv1.SubjectContext, doc *knowledgev1.Document) (bool, error) {
+func (s *Service) isDocumentAllowed(
+	ctx context.Context,
+	subject *iamv1.SubjectContext,
+	doc *knowledgev1.Document,
+) (bool, error) {
 	if doc == nil {
 		return false, ErrNotFound
 	}

@@ -93,11 +93,22 @@ func applyMultipartUploadOverlay(specJSON []byte) ([]byte, error) {
 		"parameters": []any{
 			map[string]any{"name": "title", "in": "formData", "required": true, "type": "string"},
 			map[string]any{"name": "description", "in": "formData", "required": false, "type": "string"},
-			map[string]any{"name": "attributes", "in": "formData", "required": false, "type": "string", "description": "JSON object as string"},
+			map[string]any{
+				"name":        "attributes",
+				"in":          "formData",
+				"required":    false,
+				"type":        "string",
+				"description": "JSON object as string",
+			},
 			map[string]any{"name": "file", "in": "formData", "required": true, "type": "file"},
 		},
 		"responses": map[string]any{
-			"200": map[string]any{"description": "OK", "schema": map[string]any{"$ref": "#/definitions/v1CreateDocumentResponse"}},
+			"200": map[string]any{
+				"description": "OK",
+				"schema": map[string]any{
+					"$ref": "#/definitions/v1CreateDocumentResponse",
+				},
+			},
 			"400": map[string]any{"description": "Bad Request", "schema": map[string]any{"$ref": "#/definitions/rpcStatus"}},
 		},
 	}
@@ -118,7 +129,12 @@ func applyMultipartUploadOverlay(specJSON []byte) ([]byte, error) {
 			map[string]any{"name": "file", "in": "formData", "required": true, "type": "file"},
 		},
 		"responses": map[string]any{
-			"200": map[string]any{"description": "OK", "schema": map[string]any{"$ref": "#/definitions/v1UploadVersionResponse"}},
+			"200": map[string]any{
+				"description": "OK",
+				"schema": map[string]any{
+					"$ref": "#/definitions/v1UploadVersionResponse",
+				},
+			},
 			"400": map[string]any{"description": "Bad Request", "schema": map[string]any{"$ref": "#/definitions/rpcStatus"}},
 		},
 	}

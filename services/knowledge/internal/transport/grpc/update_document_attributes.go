@@ -6,7 +6,10 @@ import (
 	pb "secure-rag-platform/services/knowledge/gen/v1"
 )
 
-func (s *KnowledgeServiceServerImpl) UpdateDocumentAttributes(ctx context.Context, req *pb.UpdateDocumentAttributesRequest) (*pb.UpdateDocumentAttributesResponse, error) {
+func (s *KnowledgeServiceServerImpl) UpdateDocumentAttributes(
+	ctx context.Context,
+	req *pb.UpdateDocumentAttributesRequest,
+) (*pb.UpdateDocumentAttributesResponse, error) {
 	if err := s.requireUC(); err != nil {
 		return nil, err
 	}

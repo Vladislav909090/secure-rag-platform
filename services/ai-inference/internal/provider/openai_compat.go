@@ -32,7 +32,11 @@ func (p *OpenAICompatProvider) Name() string {
 	return "openai_compat"
 }
 
-func (p *OpenAICompatProvider) Generate(ctx context.Context, alias config.ModelAlias, req usecase.GenerateRequest) (*usecase.GenerateResult, error) {
+func (p *OpenAICompatProvider) Generate(
+	ctx context.Context,
+	alias config.ModelAlias,
+	req usecase.GenerateRequest,
+) (*usecase.GenerateResult, error) {
 	payload := chatCompletionsRequest{
 		Model:            alias.Model,
 		Messages:         make([]chatMessage, 0, len(req.Messages)),
@@ -72,7 +76,11 @@ func (p *OpenAICompatProvider) Generate(ctx context.Context, alias config.ModelA
 	}, nil
 }
 
-func (p *OpenAICompatProvider) Embed(ctx context.Context, alias config.ModelAlias, req usecase.BatchEmbedRequest) (*usecase.BatchEmbedResult, error) {
+func (p *OpenAICompatProvider) Embed(
+	ctx context.Context,
+	alias config.ModelAlias,
+	req usecase.BatchEmbedRequest,
+) (*usecase.BatchEmbedResult, error) {
 	payload := embeddingsRequest{
 		Model: alias.Model,
 		Input: req.Texts,
@@ -113,7 +121,12 @@ func (p *OpenAICompatProvider) Embed(ctx context.Context, alias config.ModelAlia
 	}, nil
 }
 
-func (p *OpenAICompatProvider) postJSON(ctx context.Context, alias config.ModelAlias, path string, payload any) ([]byte, error) {
+func (p *OpenAICompatProvider) postJSON(
+	ctx context.Context,
+	alias config.ModelAlias,
+	path string,
+	payload any,
+) ([]byte, error) {
 	requestBody, err := json.Marshal(payload)
 	if err != nil {
 		return nil, fmt.Errorf("encode request: %w", err)

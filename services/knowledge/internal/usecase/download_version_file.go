@@ -6,7 +6,11 @@ import (
 )
 
 // DownloadVersionFile скачивает файл конкретной версии.
-func (uc *DocumentUsecase) DownloadVersionFile(ctx context.Context, docUUID string, versionNumber int32) (*FileDownload, error) {
+func (uc *DocumentUsecase) DownloadVersionFile(
+	ctx context.Context,
+	docUUID string,
+	versionNumber int32,
+) (*FileDownload, error) {
 	doc, err := uc.getActiveDocument(ctx, docUUID)
 	if err != nil {
 		return nil, err

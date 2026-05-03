@@ -15,11 +15,19 @@ func (testProvider) Name() string {
 	return "test"
 }
 
-func (testProvider) Generate(ctx context.Context, alias config.ModelAlias, req usecase.GenerateRequest) (*usecase.GenerateResult, error) {
+func (testProvider) Generate(
+	ctx context.Context,
+	alias config.ModelAlias,
+	req usecase.GenerateRequest,
+) (*usecase.GenerateResult, error) {
 	return &usecase.GenerateResult{}, nil
 }
 
-func (testProvider) Embed(ctx context.Context, alias config.ModelAlias, req usecase.BatchEmbedRequest) (*usecase.BatchEmbedResult, error) {
+func (testProvider) Embed(
+	ctx context.Context,
+	alias config.ModelAlias,
+	req usecase.BatchEmbedRequest,
+) (*usecase.BatchEmbedResult, error) {
 	return &usecase.BatchEmbedResult{}, nil
 }
 

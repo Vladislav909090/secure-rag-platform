@@ -135,7 +135,11 @@ func usecaseConfig() usecase.Config {
 func bootstrapSuperAdmin(ctx context.Context, uc *usecase.IAMUsecase) error {
 	bootstrapLogin := valueOrDefault(config.GetValue(config.BootstrapAdminLogin), defaultBootstrapAdminLogin)
 
-	bootstrapPassword, created, err := uc.BootstrapSuperAdmin(ctx, bootstrapLogin, config.GetValue(config.BootstrapAdminPassword))
+	bootstrapPassword, created, err := uc.BootstrapSuperAdmin(
+		ctx,
+		bootstrapLogin,
+		config.GetValue(config.BootstrapAdminPassword),
+	)
 	if err != nil {
 		return errors.New("failed to bootstrap super admin: " + err.Error())
 	}

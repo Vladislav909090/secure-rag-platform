@@ -135,7 +135,7 @@ func (r *Repo) CreateUser(ctx context.Context, input CreateUserInput) (*model.Us
 	var created *model.User
 
 	if err := withTx(ctx, r.pool, func(tx pgx.Tx) error {
-		createUserQuery := `
+		query := `
 			INSERT INTO users (
 				login,
 				password_hash,
@@ -152,7 +152,13 @@ func (r *Repo) CreateUser(ctx context.Context, input CreateUserInput) (*model.Us
 				updated_at
 		`
 
-		user, err := scanUser(tx.QueryRow(ctx, createUserQuery, input.Login, input.PasswordHash, input.IsActive))
+		user, err := scanUser(tx.QueryRow(
+			ctx,
+			query,
+			input.Login,
+			input.PasswordHash,
+			input.IsActive,
+		))
 		if err != nil {
 			return fmt.Errorf("insert user: %w", err)
 		}
@@ -162,7 +168,7 @@ func (r *Repo) CreateUser(ctx context.Context, input CreateUserInput) (*model.Us
 			return err
 		}
 
-		upsertAttributesQuery := `
+		query = `
 			INSERT INTO user_attributes (
 				user_id,
 				attributes,
@@ -177,7 +183,7 @@ func (r *Repo) CreateUser(ctx context.Context, input CreateUserInput) (*model.Us
 				updated_by = EXCLUDED.updated_by
 		`
 
-		if _, err := tx.Exec(ctx, upsertAttributesQuery, user.ID, attrsJSON, input.CreatedBy); err != nil {
+		if _, err := tx.Exec(ctx, query, user.ID, attrsJSON, input.CreatedBy); err != nil {
 			return fmt.Errorf("upsert user attributes: %w", err)
 		}
 

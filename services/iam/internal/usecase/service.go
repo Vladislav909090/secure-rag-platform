@@ -359,7 +359,10 @@ func (uc *IAMUsecase) GetSubjectContext(ctx context.Context, userID string) (*mo
 }
 
 // AuthenticateAccessToken проверяет токен доступа и возвращает данные принципала с актуальным контекстом субъекта.
-func (uc *IAMUsecase) AuthenticateAccessToken(ctx context.Context, accessToken string) (*Principal, *model.SubjectContext, error) {
+func (uc *IAMUsecase) AuthenticateAccessToken(
+	ctx context.Context,
+	accessToken string,
+) (*Principal, *model.SubjectContext, error) {
 	claims, err := uc.parseAccessToken(accessToken)
 	if err != nil {
 		return nil, nil, ErrUnauthorized
@@ -406,7 +409,11 @@ func (uc *IAMUsecase) AuthenticateAccessToken(ctx context.Context, accessToken s
 }
 
 // BootstrapSuperAdmin создает начального суперадмина, если он отсутствует.
-func (uc *IAMUsecase) BootstrapSuperAdmin(ctx context.Context, login string, password string) (generatedPassword string, created bool, err error) {
+func (uc *IAMUsecase) BootstrapSuperAdmin(
+	ctx context.Context,
+	login string,
+	password string,
+) (generatedPassword string, created bool, err error) {
 	exists, err := uc.repo.HasUserWithRole(ctx, RoleSuperAdmin)
 	if err != nil {
 		return "", false, fmt.Errorf("check super admin existence: %w", err)

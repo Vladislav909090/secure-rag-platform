@@ -9,7 +9,12 @@ import (
 )
 
 // UpdateDocument обновляет title/description.
-func (uc *DocumentUsecase) UpdateDocument(ctx context.Context, docUUID string, title *string, description *string) (*model.Document, error) {
+func (uc *DocumentUsecase) UpdateDocument(
+	ctx context.Context,
+	docUUID string,
+	title *string,
+	description *string,
+) (*model.Document, error) {
 	if _, err := uc.getActiveDocument(ctx, docUUID); err != nil {
 		return nil, err
 	}

@@ -6,7 +6,10 @@ import (
 	pb "secure-rag-platform/services/knowledge/gen/v1"
 )
 
-func (s *KnowledgeServiceServerImpl) GetDocumentVersion(ctx context.Context, req *pb.GetDocumentVersionRequest) (*pb.GetDocumentVersionResponse, error) {
+func (s *KnowledgeServiceServerImpl) GetDocumentVersion(
+	ctx context.Context,
+	req *pb.GetDocumentVersionRequest,
+) (*pb.GetDocumentVersionResponse, error) {
 	if err := s.requireUC(); err != nil {
 		return nil, err
 	}

@@ -6,7 +6,10 @@ import (
 	pb "secure-rag-platform/services/knowledge/gen/v1"
 )
 
-func (s *KnowledgeServiceServerImpl) UpdateDocument(ctx context.Context, req *pb.UpdateDocumentRequest) (*pb.UpdateDocumentResponse, error) {
+func (s *KnowledgeServiceServerImpl) UpdateDocument(
+	ctx context.Context,
+	req *pb.UpdateDocumentRequest,
+) (*pb.UpdateDocumentResponse, error) {
 	if err := s.requireUC(); err != nil {
 		return nil, err
 	}

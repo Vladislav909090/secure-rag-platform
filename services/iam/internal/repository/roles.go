@@ -121,13 +121,19 @@ func resolveRoleIDsTx(ctx context.Context, tx pgx.Tx, roleCodes []string) (map[s
 	return roleIDs, nil
 }
 
-func setUserRolesTx(ctx context.Context, tx pgx.Tx, userID string, roleCodes []string, assignedBy *string) error {
-	clearRolesQuery := `
+func setUserRolesTx(
+	ctx context.Context,
+	tx pgx.Tx,
+	userID string,
+	roleCodes []string,
+	assignedBy *string,
+) error {
+	query := `
 		DELETE FROM user_roles
 		WHERE user_id = $1
 	`
 
-	if _, err := tx.Exec(ctx, clearRolesQuery, userID); err != nil {
+	if _, err := tx.Exec(ctx, query, userID); err != nil {
 		return fmt.Errorf("clear user roles: %w", err)
 	}
 
@@ -140,7 +146,7 @@ func setUserRolesTx(ctx context.Context, tx pgx.Tx, userID string, roleCodes []s
 		return err
 	}
 
-	assignRoleQuery := `
+	query = `
 		INSERT INTO user_roles (
 			user_id,
 			role_id,
@@ -155,7 +161,7 @@ func setUserRolesTx(ctx context.Context, tx pgx.Tx, userID string, roleCodes []s
 	`
 
 	for _, code := range roleCodes {
-		if _, err := tx.Exec(ctx, assignRoleQuery, userID, roleIDs[code], assignedBy); err != nil {
+		if _, err := tx.Exec(ctx, query, userID, roleIDs[code], assignedBy); err != nil {
 			return fmt.Errorf("assign role %q: %w", code, err)
 		}
 	}
@@ -203,7 +209,12 @@ func (r *Repo) GetUserRoles(ctx context.Context, userID string) ([]*model.Role, 
 }
 
 // SetUserRoles полностью заменяет все роли пользователя.
-func (r *Repo) SetUserRoles(ctx context.Context, userID string, roleCodes []string, assignedBy *string) ([]*model.Role, error) {
+func (r *Repo) SetUserRoles(
+	ctx context.Context,
+	userID string,
+	roleCodes []string,
+	assignedBy *string,
+) ([]*model.Role, error) {
 	roleCodes = normalizeRoleCodes(roleCodes)
 
 	var roles []*model.Role
@@ -228,7 +239,12 @@ func (r *Repo) SetUserRoles(ctx context.Context, userID string, roleCodes []stri
 }
 
 // AddUserRole добавляет одну роль пользователю.
-func (r *Repo) AddUserRole(ctx context.Context, userID string, roleCode string, assignedBy *string) ([]*model.Role, error) {
+func (r *Repo) AddUserRole(
+	ctx context.Context,
+	userID string,
+	roleCode string,
+	assignedBy *string,
+) ([]*model.Role, error) {
 	roleCode = strings.TrimSpace(roleCode)
 	if roleCode == "" {
 		return nil, ErrInvalidRoleCode
@@ -242,7 +258,7 @@ func (r *Repo) AddUserRole(ctx context.Context, userID string, roleCode string, 
 		}
 		roleID := roleIDs[roleCode]
 
-		insertRoleQuery := `
+		query := `
 			INSERT INTO user_roles (
 				user_id,
 				role_id,
@@ -253,7 +269,7 @@ func (r *Repo) AddUserRole(ctx context.Context, userID string, roleCode string, 
 			ON CONFLICT (user_id, role_id) DO NOTHING
 		`
 
-		_, err = tx.Exec(ctx, insertRoleQuery, userID, roleID, assignedBy)
+		_, err = tx.Exec(ctx, query, userID, roleID, assignedBy)
 		if err != nil {
 			return fmt.Errorf("insert user role: %w", err)
 		}
@@ -289,13 +305,13 @@ func (r *Repo) RemoveUserRole(ctx context.Context, userID string, roleCode strin
 		}
 		roleID := roleIDs[roleCode]
 
-		deleteRoleQuery := `
+		query := `
 			DELETE FROM user_roles
 			WHERE user_id = $1
 			  AND role_id = $2
 		`
 
-		_, err = tx.Exec(ctx, deleteRoleQuery, userID, roleID)
+		_, err = tx.Exec(ctx, query, userID, roleID)
 		if err != nil {
 			return fmt.Errorf("delete user role: %w", err)
 		}

@@ -9,7 +9,11 @@ import (
 )
 
 // IndexDocumentVersion инициирует индексацию документа через RAG.
-func (s *Service) IndexDocumentVersion(ctx context.Context, req IndexRequest, accessToken string) (*IndexResult, error) {
+func (s *Service) IndexDocumentVersion(
+	ctx context.Context,
+	req IndexRequest,
+	accessToken string,
+) (*IndexResult, error) {
 	if !s.Ready() {
 		return nil, ErrNotConfigured
 	}

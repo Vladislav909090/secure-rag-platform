@@ -7,7 +7,10 @@ import (
 	"secure-rag-platform/services/rag/internal/usecase"
 )
 
-func (s *Server) IndexDocumentVersion(ctx context.Context, req *pb.IndexDocumentVersionRequest) (*pb.IndexDocumentVersionResponse, error) {
+func (s *Server) IndexDocumentVersion(
+	ctx context.Context,
+	req *pb.IndexDocumentVersionRequest,
+) (*pb.IndexDocumentVersionResponse, error) {
 	if err := s.requireUC(); err != nil {
 		return nil, err
 	}

@@ -30,7 +30,13 @@ func (s *KnowledgeServiceServerImpl) UploadVersionStream(stream pb.KnowledgeServ
 	}, 1)
 
 	go func() {
-		out, runErr := s.uc.UploadVersion(stream.Context(), meta.GetDocumentUuid(), pr, meta.GetFileName(), meta.GetMimeType())
+		out, runErr := s.uc.UploadVersion(
+			stream.Context(),
+			meta.GetDocumentUuid(),
+			pr,
+			meta.GetFileName(),
+			meta.GetMimeType(),
+		)
 		resultCh <- struct {
 			out *usecase.UploadVersionOutput
 			err error

@@ -33,7 +33,12 @@ func (r *Repo) GetUserAttributes(ctx context.Context, userID string) (map[string
 }
 
 // ReplaceUserAttributes полностью заменяет атрибуты пользователя.
-func (r *Repo) ReplaceUserAttributes(ctx context.Context, userID string, attrs map[string]any, updatedBy *string) (map[string]any, error) {
+func (r *Repo) ReplaceUserAttributes(
+	ctx context.Context,
+	userID string,
+	attrs map[string]any,
+	updatedBy *string,
+) (map[string]any, error) {
 	attrsJSON, err := toJSON(attrs)
 	if err != nil {
 		return nil, err
@@ -70,7 +75,12 @@ func (r *Repo) ReplaceUserAttributes(ctx context.Context, userID string, attrs m
 }
 
 // DeleteUserAttributeKey удаляет один ключ из атрибутов пользователя.
-func (r *Repo) DeleteUserAttributeKey(ctx context.Context, userID string, key string, updatedBy *string) (map[string]any, error) {
+func (r *Repo) DeleteUserAttributeKey(
+	ctx context.Context,
+	userID string,
+	key string,
+	updatedBy *string,
+) (map[string]any, error) {
 	query := `
 		INSERT INTO user_attributes (
 			user_id,

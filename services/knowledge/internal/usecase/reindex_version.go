@@ -8,7 +8,11 @@ import (
 )
 
 // ReindexVersion ставит статус PENDING и инициирует переиндексацию.
-func (uc *DocumentUsecase) ReindexVersion(ctx context.Context, docUUID string, versionNumber int32) (*ReindexOutput, error) {
+func (uc *DocumentUsecase) ReindexVersion(
+	ctx context.Context,
+	docUUID string,
+	versionNumber int32,
+) (*ReindexOutput, error) {
 	doc, err := uc.getActiveDocument(ctx, docUUID)
 	if err != nil {
 		return nil, err

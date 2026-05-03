@@ -28,7 +28,17 @@ type Service struct {
 }
 
 // NewService создаёт gateway usecase.
-func NewService(rag ragv1.RAGServiceClient, knowledge knowledgev1.KnowledgeServiceClient, iam iamv1.InternalIAMServiceClient, auth iamv1.AuthServiceClient, policy PolicyAuthorizer, defaults Defaults, disableAuth bool, disableFilter bool, logger *log.Logger) *Service {
+func NewService(
+	rag ragv1.RAGServiceClient,
+	knowledge knowledgev1.KnowledgeServiceClient,
+	iam iamv1.InternalIAMServiceClient,
+	auth iamv1.AuthServiceClient,
+	policy PolicyAuthorizer,
+	defaults Defaults,
+	disableAuth bool,
+	disableFilter bool,
+	logger *log.Logger,
+) *Service {
 	if logger == nil {
 		logger = log.Default()
 	}

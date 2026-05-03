@@ -9,7 +9,10 @@ import (
 	"google.golang.org/genproto/googleapis/api/httpbody"
 )
 
-func (s *Server) ListDocuments(ctx context.Context, req *pb.ListDocumentsRequest) (*pb.ListDocumentsResponse, error) {
+func (s *Server) ListDocuments(
+	ctx context.Context,
+	req *pb.ListDocumentsRequest,
+) (*pb.ListDocumentsResponse, error) {
 	_ = req
 
 	if err := s.requireUC(); err != nil {
@@ -28,7 +31,10 @@ func (s *Server) ListDocuments(ctx context.Context, req *pb.ListDocumentsRequest
 	return &pb.ListDocumentsResponse{Items: out}, nil
 }
 
-func (s *Server) GetDocument(ctx context.Context, req *pb.GetDocumentRequest) (*pb.GetDocumentResponse, error) {
+func (s *Server) GetDocument(
+	ctx context.Context,
+	req *pb.GetDocumentRequest,
+) (*pb.GetDocumentResponse, error) {
 	if err := s.requireUC(); err != nil {
 		return nil, err
 	}
@@ -44,12 +50,20 @@ func (s *Server) GetDocument(ctx context.Context, req *pb.GetDocumentRequest) (*
 	}, nil
 }
 
-func (s *Server) GetDocumentVersion(ctx context.Context, req *pb.GetDocumentVersionRequest) (*pb.GetDocumentVersionResponse, error) {
+func (s *Server) GetDocumentVersion(
+	ctx context.Context,
+	req *pb.GetDocumentVersionRequest,
+) (*pb.GetDocumentVersionResponse, error) {
 	if err := s.requireUC(); err != nil {
 		return nil, err
 	}
 
-	item, err := s.uc.GetDocumentVersion(ctx, req.GetDocumentUuid(), req.GetVersionNumber(), extractAccessToken(ctx))
+	item, err := s.uc.GetDocumentVersion(
+		ctx,
+		req.GetDocumentUuid(),
+		req.GetVersionNumber(),
+		extractAccessToken(ctx),
+	)
 	if err != nil {
 		return nil, toGRPCError(err)
 	}
@@ -65,7 +79,10 @@ func (s *Server) GetDocumentVersion(ctx context.Context, req *pb.GetDocumentVers
 	}, nil
 }
 
-func (s *Server) DownloadFile(ctx context.Context, req *pb.DownloadFileRequest) (*httpbody.HttpBody, error) {
+func (s *Server) DownloadFile(
+	ctx context.Context,
+	req *pb.DownloadFileRequest,
+) (*httpbody.HttpBody, error) {
 	if err := s.requireUC(); err != nil {
 		return nil, err
 	}
@@ -78,12 +95,20 @@ func (s *Server) DownloadFile(ctx context.Context, req *pb.DownloadFileRequest) 
 	return &httpbody.HttpBody{ContentType: file.ContentType, Data: file.Data}, nil
 }
 
-func (s *Server) DownloadVersionFile(ctx context.Context, req *pb.DownloadVersionFileRequest) (*httpbody.HttpBody, error) {
+func (s *Server) DownloadVersionFile(
+	ctx context.Context,
+	req *pb.DownloadVersionFileRequest,
+) (*httpbody.HttpBody, error) {
 	if err := s.requireUC(); err != nil {
 		return nil, err
 	}
 
-	file, err := s.uc.DownloadFile(ctx, req.GetDocumentUuid(), req.GetVersionNumber(), extractAccessToken(ctx))
+	file, err := s.uc.DownloadFile(
+		ctx,
+		req.GetDocumentUuid(),
+		req.GetVersionNumber(),
+		extractAccessToken(ctx),
+	)
 	if err != nil {
 		return nil, toGRPCError(err)
 	}

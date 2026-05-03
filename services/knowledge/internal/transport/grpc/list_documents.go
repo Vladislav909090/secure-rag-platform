@@ -6,7 +6,10 @@ import (
 	pb "secure-rag-platform/services/knowledge/gen/v1"
 )
 
-func (s *KnowledgeServiceServerImpl) ListDocuments(ctx context.Context, _ *pb.ListDocumentsRequest) (*pb.ListDocumentsResponse, error) {
+func (s *KnowledgeServiceServerImpl) ListDocuments(
+	ctx context.Context,
+	_ *pb.ListDocumentsRequest,
+) (*pb.ListDocumentsResponse, error) {
 	if err := s.requireUC(); err != nil {
 		return nil, err
 	}

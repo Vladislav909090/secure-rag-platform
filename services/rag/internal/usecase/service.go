@@ -29,7 +29,15 @@ type Service struct {
 }
 
 // NewService создаёт RAG usecase.
-func NewService(repo *repository.Repo, storage *storage.S3Storage, knowledge knowledgev1.KnowledgeServiceClient, embedding aiinferencev1.EmbeddingServiceClient, generation aiinferencev1.GenerationServiceClient, defaults Defaults, logger *log.Logger) *Service {
+func NewService(
+	repo *repository.Repo,
+	storage *storage.S3Storage,
+	knowledge knowledgev1.KnowledgeServiceClient,
+	embedding aiinferencev1.EmbeddingServiceClient,
+	generation aiinferencev1.GenerationServiceClient,
+	defaults Defaults,
+	logger *log.Logger,
+) *Service {
 	if logger == nil {
 		logger = log.Default()
 	}
@@ -46,5 +54,10 @@ func NewService(repo *repository.Repo, storage *storage.S3Storage, knowledge kno
 
 // Ready проверяет минимальную конфигурацию.
 func (s *Service) Ready() bool {
-	return s != nil && s.repo != nil && s.storage != nil && s.knowledge != nil && s.embedding != nil && s.generation != nil
+	return s != nil &&
+		s.repo != nil &&
+		s.storage != nil &&
+		s.knowledge != nil &&
+		s.embedding != nil &&
+		s.generation != nil
 }

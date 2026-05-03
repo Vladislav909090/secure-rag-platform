@@ -87,7 +87,9 @@ func (h *UploadHandlers) UploadVersion(gateway http.Handler) http.HandlerFunc {
 			return
 		}
 
-		if r.Method != http.MethodPost || !strings.HasPrefix(r.URL.Path, knowledgeDocumentsPrefix+"/") || !strings.HasSuffix(r.URL.Path, "/versions") {
+		if r.Method != http.MethodPost ||
+			!strings.HasPrefix(r.URL.Path, knowledgeDocumentsPrefix+"/") ||
+			!strings.HasSuffix(r.URL.Path, "/versions") {
 			gateway.ServeHTTP(w, r)
 			return
 		}
@@ -109,7 +111,11 @@ func (h *UploadHandlers) UploadVersion(gateway http.Handler) http.HandlerFunc {
 	}
 }
 
-func (h *UploadHandlers) handleCreateDocumentMultipart(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
+func (h *UploadHandlers) handleCreateDocumentMultipart(
+	ctx context.Context,
+	w http.ResponseWriter,
+	r *http.Request,
+) error {
 	reader, err := r.MultipartReader()
 	if err != nil {
 		return err
@@ -148,7 +154,12 @@ func (h *UploadHandlers) handleCreateDocumentMultipart(ctx context.Context, w ht
 	return writeProtoJSON(w, http.StatusOK, resp)
 }
 
-func (h *UploadHandlers) handleUploadVersionMultipart(ctx context.Context, w http.ResponseWriter, r *http.Request, docUUID string) error {
+func (h *UploadHandlers) handleUploadVersionMultipart(
+	ctx context.Context,
+	w http.ResponseWriter,
+	r *http.Request,
+	docUUID string,
+) error {
 	reader, err := r.MultipartReader()
 	if err != nil {
 		return err
@@ -187,7 +198,11 @@ func (h *UploadHandlers) handleUploadVersionMultipart(ctx context.Context, w htt
 	return writeProtoJSON(w, http.StatusOK, resp)
 }
 
-func (h *UploadHandlers) processCreateDocumentPart(part *multipart.Part, stream knowledgev1.KnowledgeService_CreateDocumentStreamClient, state *createDocumentMultipartState) error {
+func (h *UploadHandlers) processCreateDocumentPart(
+	part *multipart.Part,
+	stream knowledgev1.KnowledgeService_CreateDocumentStreamClient,
+	state *createDocumentMultipartState,
+) error {
 	switch part.FormName() {
 	case "title":
 		value, err := readLimitedPart(part, 1<<20)
@@ -223,7 +238,11 @@ func (h *UploadHandlers) processCreateDocumentPart(part *multipart.Part, stream 
 	}
 }
 
-func (h *UploadHandlers) sendCreateDocumentFilePart(part *multipart.Part, stream knowledgev1.KnowledgeService_CreateDocumentStreamClient, state *createDocumentMultipartState) error {
+func (h *UploadHandlers) sendCreateDocumentFilePart(
+	part *multipart.Part,
+	stream knowledgev1.KnowledgeService_CreateDocumentStreamClient,
+	state *createDocumentMultipartState,
+) error {
 	if state.metaSent {
 		return errors.New("multiple file parts are not supported")
 	}
@@ -256,7 +275,9 @@ func (h *UploadHandlers) sendCreateDocumentFilePart(part *multipart.Part, stream
 
 	if err := sendChunks(part, h.chunkSize, func(chunk []byte) error {
 		return stream.Send(&knowledgev1.CreateDocumentStreamRequest{
-			Payload: &knowledgev1.CreateDocumentStreamRequest_Chunk{Chunk: &knowledgev1.FileChunk{Data: chunk}},
+			Payload: &knowledgev1.CreateDocumentStreamRequest_Chunk{
+				Chunk: &knowledgev1.FileChunk{Data: chunk},
+			},
 		})
 	}); err != nil {
 		return err
@@ -266,7 +287,12 @@ func (h *UploadHandlers) sendCreateDocumentFilePart(part *multipart.Part, stream
 	return nil
 }
 
-func (h *UploadHandlers) processUploadVersionPart(part *multipart.Part, stream knowledgev1.KnowledgeService_UploadVersionStreamClient, docUUID string, state *uploadVersionMultipartState) error {
+func (h *UploadHandlers) processUploadVersionPart(
+	part *multipart.Part,
+	stream knowledgev1.KnowledgeService_UploadVersionStreamClient,
+	docUUID string,
+	state *uploadVersionMultipartState,
+) error {
 	if part.FormName() != "file" {
 		_, _ = io.Copy(io.Discard, part)
 		return nil
@@ -299,7 +325,9 @@ func (h *UploadHandlers) processUploadVersionPart(part *multipart.Part, stream k
 
 	if err := sendChunks(part, h.chunkSize, func(chunk []byte) error {
 		return stream.Send(&knowledgev1.UploadVersionStreamRequest{
-			Payload: &knowledgev1.UploadVersionStreamRequest_Chunk{Chunk: &knowledgev1.FileChunk{Data: chunk}},
+			Payload: &knowledgev1.UploadVersionStreamRequest_Chunk{
+				Chunk: &knowledgev1.FileChunk{Data: chunk},
+			},
 		})
 	}); err != nil {
 		return err
@@ -451,7 +479,10 @@ func (h *UploadHandlers) writeDownloadResponse(w http.ResponseWriter, dl *usecas
 	escaped := strings.ReplaceAll(fallback, `"`, `\\"`)
 	encodedName := url.PathEscape(dl.FileName)
 	w.Header().Set("Content-Type", mimeType)
-	w.Header().Set("Content-Disposition", fmt.Sprintf(`attachment; filename="%s"; filename*=UTF-8''%s`, escaped, encodedName))
+	w.Header().Set(
+		"Content-Disposition",
+		fmt.Sprintf(`attachment; filename="%s"; filename*=UTF-8''%s`, escaped, encodedName),
+	)
 	w.Header().Set("Content-Length", strconv.FormatInt(dl.SizeBytes, 10))
 	w.WriteHeader(http.StatusOK)
 	_, _ = io.Copy(w, dl.Body)
@@ -460,7 +491,10 @@ func (h *UploadHandlers) writeDownloadResponse(w http.ResponseWriter, dl *usecas
 func extractVersionDownloadPath(path string) (string, int32, bool) {
 	trimmed := strings.TrimPrefix(path, knowledgeDocumentsPrefix+"/")
 	parts := strings.Split(strings.Trim(trimmed, "/"), "/")
-	if len(parts) != 4 || parts[1] != "versions" || parts[3] != "file" || strings.TrimSpace(parts[0]) == "" {
+	if len(parts) != 4 ||
+		parts[1] != "versions" ||
+		parts[3] != "file" ||
+		strings.TrimSpace(parts[0]) == "" {
 		return "", 0, false
 	}
 

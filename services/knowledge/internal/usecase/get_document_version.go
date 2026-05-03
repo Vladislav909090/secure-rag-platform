@@ -6,7 +6,11 @@ import (
 )
 
 // GetDocumentVersion возвращает конкретную версию.
-func (uc *DocumentUsecase) GetDocumentVersion(ctx context.Context, docUUID string, versionNumber int32) (*DocumentVersionDetail, error) {
+func (uc *DocumentUsecase) GetDocumentVersion(
+	ctx context.Context,
+	docUUID string,
+	versionNumber int32,
+) (*DocumentVersionDetail, error) {
 	doc, err := uc.repo.GetDocumentByUUID(ctx, docUUID)
 	if err != nil {
 		return nil, fmt.Errorf("get document: %w", err)

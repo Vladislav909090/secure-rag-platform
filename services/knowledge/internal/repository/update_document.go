@@ -7,7 +7,13 @@ import (
 )
 
 // UpdateDocument обновляет title и/или description.
-func (r *Repo) UpdateDocument(ctx context.Context, uuid string, title *string, description *string, updatedAt time.Time) error {
+func (r *Repo) UpdateDocument(
+	ctx context.Context,
+	uuid string,
+	title *string,
+	description *string,
+	updatedAt time.Time,
+) error {
 	query := `
 		UPDATE documents
 		SET

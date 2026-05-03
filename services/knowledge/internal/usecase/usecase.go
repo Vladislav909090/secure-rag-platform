@@ -55,7 +55,12 @@ func (r *sizeLimitReader) Read(p []byte) (int, error) {
 	return n, err
 }
 
-func (uc *DocumentUsecase) uploadAndHash(ctx context.Context, storageKey string, file io.Reader, mimeType string) (int64, string, error) {
+func (uc *DocumentUsecase) uploadAndHash(
+	ctx context.Context,
+	storageKey string,
+	file io.Reader,
+	mimeType string,
+) (int64, string, error) {
 	hasher := sha256.New()
 	limited := &sizeLimitReader{r: file, max: uc.maxSize}
 	stream := io.TeeReader(limited, hasher)

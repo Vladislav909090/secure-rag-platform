@@ -14,7 +14,13 @@ import (
 )
 
 // UploadVersion загружает новую версию существующего документа.
-func (uc *DocumentUsecase) UploadVersion(ctx context.Context, docUUID string, file io.Reader, fileName string, mimeType string) (*UploadVersionOutput, error) {
+func (uc *DocumentUsecase) UploadVersion(
+	ctx context.Context,
+	docUUID string,
+	file io.Reader,
+	fileName string,
+	mimeType string,
+) (*UploadVersionOutput, error) {
 	doc, err := uc.getActiveDocument(ctx, docUUID)
 	if err != nil {
 		return nil, err

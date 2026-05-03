@@ -30,7 +30,8 @@ type ChunkMatch struct {
 
 // DeleteChunks удаляет все сегменты документа.
 func (r *Repo) DeleteChunks(ctx context.Context, documentUUID string) error {
-	_, err := r.pool.Exec(ctx, `DELETE FROM rag_chunks WHERE document_uuid = $1`, documentUUID)
+	query := `DELETE FROM rag_chunks WHERE document_uuid = $1`
+	_, err := r.pool.Exec(ctx, query, documentUUID)
 	return err
 }
 
@@ -52,13 +53,16 @@ func (r *Repo) InsertChunks(ctx context.Context, chunks []Chunk) error {
 		}
 
 		var chunkID int64
-		insertChunkErr := tx.QueryRow(
-			ctx,
-			`INSERT INTO rag_chunks (document_uuid, version_number, chunk_index, chunk_text)
+		query := `
+			INSERT INTO rag_chunks (document_uuid, version_number, chunk_index, chunk_text)
 			 VALUES ($1, $2, $3, $4)
 			 ON CONFLICT (document_uuid, version_number, chunk_index)
 			 DO UPDATE SET chunk_text = EXCLUDED.chunk_text
-			 RETURNING id`,
+			 RETURNING id
+		`
+		insertChunkErr := tx.QueryRow(
+			ctx,
+			query,
 			chunk.DocumentUUID,
 			chunk.VersionNumber,
 			chunk.ChunkIndex,
@@ -68,12 +72,17 @@ func (r *Repo) InsertChunks(ctx context.Context, chunks []Chunk) error {
 			return fmt.Errorf("insert chunk: %w", insertChunkErr)
 		}
 
-		_, insertEmbeddingErr := tx.Exec(
-			ctx,
-			`INSERT INTO rag_embeddings (chunk_id, embedding, embedding_model, embedding_dimension)
+		query = `
+			INSERT INTO rag_embeddings (chunk_id, embedding, embedding_model, embedding_dimension)
 			 VALUES ($1, $2, $3, $4)
 			 ON CONFLICT (chunk_id, embedding_model)
-			 DO UPDATE SET embedding = EXCLUDED.embedding, embedding_dimension = EXCLUDED.embedding_dimension`,
+			 DO UPDATE SET
+			   embedding = EXCLUDED.embedding,
+			   embedding_dimension = EXCLUDED.embedding_dimension
+		`
+		_, insertEmbeddingErr := tx.Exec(
+			ctx,
+			query,
 			chunkID,
 			chunk.Embedding,
 			chunk.EmbeddingModel,

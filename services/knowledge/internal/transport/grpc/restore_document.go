@@ -6,7 +6,10 @@ import (
 	pb "secure-rag-platform/services/knowledge/gen/v1"
 )
 
-func (s *KnowledgeServiceServerImpl) RestoreDocument(ctx context.Context, req *pb.RestoreDocumentRequest) (*pb.RestoreDocumentResponse, error) {
+func (s *KnowledgeServiceServerImpl) RestoreDocument(
+	ctx context.Context,
+	req *pb.RestoreDocumentRequest,
+) (*pb.RestoreDocumentResponse, error) {
 	if err := s.requireUC(); err != nil {
 		return nil, err
 	}

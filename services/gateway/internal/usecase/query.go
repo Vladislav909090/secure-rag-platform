@@ -81,7 +81,11 @@ func (s *Service) Query(ctx context.Context, req QueryRequest, accessToken strin
 	}, nil
 }
 
-func (s *Service) resolveDocuments(ctx context.Context, requested []string, subject *iamv1.SubjectContext) ([]string, error) {
+func (s *Service) resolveDocuments(
+	ctx context.Context,
+	requested []string,
+	subject *iamv1.SubjectContext,
+) ([]string, error) {
 	if s.disableFilter {
 		normalized := make([]string, 0, len(requested))
 		for _, id := range requested {
@@ -168,7 +172,11 @@ func (s *Service) resolveDocuments(ctx context.Context, requested []string, subj
 	return allowed, nil
 }
 
-func (s *Service) allowDocument(ctx context.Context, subject *iamv1.SubjectContext, attrs map[string]any) (bool, error) {
+func (s *Service) allowDocument(
+	ctx context.Context,
+	subject *iamv1.SubjectContext,
+	attrs map[string]any,
+) (bool, error) {
 	if s.policy == nil {
 		return allowedByAttributes(attrs, subject), nil
 	}

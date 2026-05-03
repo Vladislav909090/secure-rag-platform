@@ -43,7 +43,7 @@ func main() {
 
 	pool, err := connectPostgres(ctx)
 	if err != nil {
-		log.Fatal(err)
+		log.Fatalf("[iam.db] не удалось подготовить PostgreSQL: %v", err)
 	}
 	closer.Add(func() { pool.Close() })
 
@@ -53,7 +53,7 @@ func main() {
 
 	err = bootstrapSuperAdmin(ctx, uc)
 	if err != nil {
-		log.Fatal(err)
+		log.Fatalf("[iam.bootstrap] не удалось подготовить начального администратора: %v", err)
 	}
 
 	servers := newServerSet(uc)
@@ -62,7 +62,7 @@ func main() {
 	grpcPort := valueOrDefault(config.GetValue(config.GRPCPort), defaultGRPCPort)
 	grpcLis, err := net.Listen("tcp", ":"+grpcPort)
 	if err != nil {
-		log.Fatalf("failed to listen on gRPC port: %v", err)
+		log.Fatalf("[iam.grpc] не удалось открыть порт gRPC: %v", err)
 	}
 
 	mux := newHTTPMux(ctx, servers)
@@ -72,12 +72,12 @@ func main() {
 	app := application.New()
 	registerRunners(app, grpcServer, grpcLis, httpServer)
 
-	log.Printf("iam gRPC listening on :%s", grpcPort)
-	log.Printf("iam listening on :%s", port)
-	log.Printf("docs: http://localhost/iam/docs")
+	log.Printf("[iam.grpc] слушает порт :%s", grpcPort)
+	log.Printf("[iam.http] слушает порт :%s", port)
+	log.Printf("[iam.docs] Swagger UI: http://localhost/iam/docs")
 
 	if err := app.Run(); err != nil {
-		log.Fatalf("application stopped with error: %v", err)
+		log.Fatalf("[iam.app] приложение остановлено с ошибкой: %v", err)
 	}
 }
 
@@ -114,13 +114,13 @@ func connectRedis(ctx context.Context) *redis.Client {
 	})
 
 	if err := client.Ping(ctx).Err(); err != nil {
-		log.Printf("[iam] failed to connect to Redis, cache/rate-limit disabled: %v", err)
+		log.Printf("[iam.cache] Redis недоступен, кеш и rate limit отключены: %v", err)
 		_ = client.Close()
 		return nil
 	}
 
 	closer.Add(func() { _ = client.Close() })
-	log.Printf("[iam] Redis connected: %s", redisAddr)
+	log.Printf("[iam.cache] Redis подключен: %s", redisAddr)
 	return client
 }
 
@@ -144,11 +144,11 @@ func bootstrapSuperAdmin(ctx context.Context, uc *usecase.IAMUsecase) error {
 	}
 
 	if bootstrapPassword != "" {
-		log.Printf("[iam] bootstrap super admin created: login=%s password=%s", bootstrapLogin, bootstrapPassword)
+		log.Printf("[iam.bootstrap] создан начальный superadmin: login=%s password=%s", bootstrapLogin, bootstrapPassword)
 		return nil
 	}
 
-	log.Printf("[iam] bootstrap super admin created: login=%s", bootstrapLogin)
+	log.Printf("[iam.bootstrap] создан начальный superadmin: login=%s", bootstrapLogin)
 	return nil
 }
 
@@ -189,25 +189,25 @@ func newHTTPMux(ctx context.Context, servers serverSet) *http.ServeMux {
 
 func registerGatewayHandlers(ctx context.Context, gwMux *runtime.ServeMux, servers serverSet) {
 	if err := iamv1.RegisterIAMServiceHandlerServer(ctx, gwMux, servers.iam); err != nil {
-		log.Fatalf("failed to register IAM handlers: %v", err)
+		log.Fatalf("[iam.http] не удалось зарегистрировать IAM-обработчики: %v", err)
 	}
 	if err := iamv1.RegisterAuthServiceHandlerServer(ctx, gwMux, servers.auth); err != nil {
-		log.Fatalf("failed to register Auth handlers: %v", err)
+		log.Fatalf("[iam.http] не удалось зарегистрировать auth-обработчики: %v", err)
 	}
 	if err := iamv1.RegisterUserServiceHandlerServer(ctx, gwMux, servers.user); err != nil {
-		log.Fatalf("failed to register User handlers: %v", err)
+		log.Fatalf("[iam.http] не удалось зарегистрировать user-обработчики: %v", err)
 	}
 	if err := iamv1.RegisterRoleServiceHandlerServer(ctx, gwMux, servers.role); err != nil {
-		log.Fatalf("failed to register Role handlers: %v", err)
+		log.Fatalf("[iam.http] не удалось зарегистрировать role-обработчики: %v", err)
 	}
 	if err := iamv1.RegisterAttributeServiceHandlerServer(ctx, gwMux, servers.attribute); err != nil {
-		log.Fatalf("failed to register Attribute handlers: %v", err)
+		log.Fatalf("[iam.http] не удалось зарегистрировать attribute-обработчики: %v", err)
 	}
 	if err := iamv1.RegisterSessionServiceHandlerServer(ctx, gwMux, servers.session); err != nil {
-		log.Fatalf("failed to register Session handlers: %v", err)
+		log.Fatalf("[iam.http] не удалось зарегистрировать session-обработчики: %v", err)
 	}
 	if err := iamv1.RegisterInternalIAMServiceHandlerServer(ctx, gwMux, servers.internalIAM); err != nil {
-		log.Fatalf("failed to register InternalIAM handlers: %v", err)
+		log.Fatalf("[iam.http] не удалось зарегистрировать internal IAM-обработчики: %v", err)
 	}
 }
 

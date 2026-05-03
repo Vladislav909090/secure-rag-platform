@@ -139,7 +139,7 @@ func (s *Service) IndexDocumentVersion(ctx context.Context, req IndexDocumentVer
 		return nil, fmt.Errorf("insert chunks: %w", err)
 	}
 
-	s.logger.Printf("[rag] indexed document=%s version=%d chunks=%d", docUUID, versionNumber, len(chunks))
+	s.logger.Printf("[rag.index] документ проиндексирован document=%s version=%d chunks=%d", docUUID, versionNumber, len(chunks))
 
 	return &IndexDocumentVersionResult{
 		DocumentUUID:           docUUID,

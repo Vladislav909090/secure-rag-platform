@@ -89,7 +89,7 @@ func NewIAMUsecase(repo *repository.Repo, redisClient *redis.Client, cfg Config)
 	}
 	if cfg.JWTSecret == "" {
 		cfg.JWTSecret = uuid.NewString()
-		log.Printf("[iam] JWT secret is empty; generated ephemeral secret for current run")
+		log.Printf("[iam.auth] JWT_SECRET пустой, создан временный секрет для текущего запуска")
 	}
 
 	return &IAMUsecase{
@@ -233,13 +233,13 @@ func (uc *IAMUsecase) getSubjectContextFromCache(ctx context.Context, userID str
 		if errors.Is(err, redis.Nil) {
 			return nil, false
 		}
-		log.Printf("[iam] redis get subject context failed: %v", err)
+		log.Printf("[iam.cache] не удалось прочитать контекст субъекта из Redis: %v", err)
 		return nil, false
 	}
 
 	var cached model.SubjectContext
 	if err := json.Unmarshal([]byte(raw), &cached); err != nil {
-		log.Printf("[iam] redis unmarshal subject context failed: %v", err)
+		log.Printf("[iam.cache] не удалось разобрать контекст субъекта из Redis: %v", err)
 		return nil, false
 	}
 
@@ -253,12 +253,12 @@ func (uc *IAMUsecase) storeSubjectContextInCache(ctx context.Context, subject *m
 
 	raw, err := json.Marshal(subject)
 	if err != nil {
-		log.Printf("[iam] redis marshal subject context failed: %v", err)
+		log.Printf("[iam.cache] не удалось сериализовать контекст субъекта для Redis: %v", err)
 		return
 	}
 
 	if err := uc.redis.Set(ctx, subjectCacheKey(subject.UserID), raw, uc.cfg.SubjectCacheTTL).Err(); err != nil {
-		log.Printf("[iam] redis set subject context failed: %v", err)
+		log.Printf("[iam.cache] не удалось сохранить контекст субъекта в Redis: %v", err)
 	}
 }
 
@@ -268,7 +268,7 @@ func (uc *IAMUsecase) InvalidateSubjectContextCache(ctx context.Context, userID 
 		return
 	}
 	if err := uc.redis.Del(ctx, subjectCacheKey(userID)).Err(); err != nil {
-		log.Printf("[iam] redis invalidate subject context failed: %v", err)
+		log.Printf("[iam.cache] не удалось сбросить контекст субъекта в Redis: %v", err)
 	}
 }
 
@@ -279,13 +279,13 @@ func (uc *IAMUsecase) checkRateLimit(ctx context.Context, key string, limit int,
 
 	count, err := uc.redis.Incr(ctx, key).Result()
 	if err != nil {
-		log.Printf("[iam] redis rate limit incr failed: %v", err)
+		log.Printf("[iam.rate-limit] не удалось увеличить счетчик Redis: %v", err)
 		return nil
 	}
 
 	if count == 1 {
 		if err := uc.redis.Expire(ctx, key, window).Err(); err != nil {
-			log.Printf("[iam] redis rate limit expire failed: %v", err)
+			log.Printf("[iam.rate-limit] не удалось выставить TTL счетчика Redis: %v", err)
 		}
 	}
 

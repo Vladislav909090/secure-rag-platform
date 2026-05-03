@@ -65,7 +65,7 @@ func loadSpecJSON() ([]byte, error) {
 func RegisterAt(mux *http.ServeMux, serviceName string, docsPath string) {
 	specJSON, err := loadSpecJSON()
 	if err != nil {
-		log.Printf("warning: %v", err)
+		log.Printf("[rag.docs] Swagger UI недоступен: %v", err)
 		return
 	}
 

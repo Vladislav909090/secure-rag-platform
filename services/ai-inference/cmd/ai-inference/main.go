@@ -27,7 +27,7 @@ func main() {
 
 	runtimeCfg, err := config.LoadFromFile(*modelsConfigPath)
 	if err != nil {
-		log.Fatalf("failed to load config: %v", err)
+		log.Fatalf("[ai-inference.config] не удалось загрузить конфигурацию моделей: %v", err)
 	}
 
 	grpcPort := runtimeCfg.GRPCPort
@@ -39,7 +39,7 @@ func main() {
 	if runtimeCfg.ProviderTimeout != "" {
 		parsed, err := time.ParseDuration(runtimeCfg.ProviderTimeout)
 		if err != nil {
-			log.Fatalf("failed to parse provider timeout: %v", err)
+			log.Fatalf("[ai-inference.config] не удалось разобрать provider_timeout: %v", err)
 		}
 		providerTimeout = parsed
 	}
@@ -53,7 +53,7 @@ func main() {
 	startupCtx, cancel := context.WithTimeout(context.Background(), startupCheckTimeout)
 	defer cancel()
 	if err := inferenceService.CheckDependencies(startupCtx); err != nil {
-		log.Fatalf("dependency check failed: %v", err)
+		log.Fatalf("[ai-inference.health] проверка зависимостей не прошла: %v", err)
 	}
 
 	grpcServer := grpc.NewServer(grpc.UnaryInterceptor(loggingInterceptor))
@@ -63,7 +63,7 @@ func main() {
 
 	grpcLis, err := net.Listen("tcp", ":"+grpcPort)
 	if err != nil {
-		log.Fatalf("failed to listen grpc: %v", err)
+		log.Fatalf("[ai-inference.grpc] не удалось открыть порт gRPC: %v", err)
 	}
 
 	app := application.New()
@@ -74,10 +74,10 @@ func main() {
 	closer.Add(grpcServer.GracefulStop)
 	closer.Add(grpcLis.Close)
 
-	log.Printf("ai-inference grpc listening on :%s", grpcPort)
+	log.Printf("[ai-inference.grpc] слушает порт :%s", grpcPort)
 
 	if err := app.Run(); err != nil && !errors.Is(err, context.Canceled) {
-		log.Fatalf("application stopped with error: %v", err)
+		log.Fatalf("[ai-inference.app] приложение остановлено с ошибкой: %v", err)
 	}
 }
 
@@ -90,10 +90,10 @@ func loggingInterceptor(
 	startedAt := time.Now()
 	resp, err := handler(ctx, req)
 	if err != nil {
-		log.Printf("[grpc] method=%s duration=%s error=%v", info.FullMethod, time.Since(startedAt), err)
+		log.Printf("[ai-inference.grpc] метод=%s длительность=%s ошибка=%v", info.FullMethod, time.Since(startedAt), err)
 		return nil, err
 	}
 
-	log.Printf("[grpc] method=%s duration=%s", info.FullMethod, time.Since(startedAt))
+	log.Printf("[ai-inference.grpc] метод=%s длительность=%s", info.FullMethod, time.Since(startedAt))
 	return resp, nil
 }

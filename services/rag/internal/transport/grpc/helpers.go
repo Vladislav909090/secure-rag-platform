@@ -26,7 +26,7 @@ func toGRPCError(err error) error {
 	case errors.Is(err, usecase.ErrNoContexts):
 		return status.Error(codes.NotFound, err.Error())
 	default:
-		log.Printf("[rag] internal error: %v", err)
+		log.Printf("[rag.grpc] внутренняя ошибка: %v", err)
 		return status.Error(codes.Internal, "internal error")
 	}
 }

@@ -60,7 +60,7 @@ func main() {
 
 	grpcLis, err := net.Listen("tcp", ":"+grpcPort)
 	if err != nil {
-		log.Fatalf("failed to listen grpc: %v", err)
+		log.Fatalf("[rag.grpc] не удалось открыть порт gRPC: %v", err)
 	}
 
 	mux := http.NewServeMux()
@@ -77,7 +77,7 @@ func main() {
 		}),
 	)
 	if err := ragv1.RegisterRAGServiceHandlerServer(context.Background(), gwMux, serverImpl); err != nil {
-		log.Fatalf("failed to register rag handlers: %v", err)
+		log.Fatalf("[rag.http] не удалось зарегистрировать RAG-обработчики: %v", err)
 	}
 	mux.Handle("/rag/", gwMux)
 
@@ -87,9 +87,9 @@ func main() {
 
 	httpServer := &http.Server{Addr: ":" + port, Handler: mux}
 
-	log.Printf("rag grpc listening on :%s", grpcPort)
-	log.Printf("rag listening on :%s", port)
-	log.Printf("docs: http://localhost/rag/docs")
+	log.Printf("[rag.grpc] слушает порт :%s", grpcPort)
+	log.Printf("[rag.http] слушает порт :%s", port)
+	log.Printf("[rag.docs] Swagger UI: http://localhost/rag/docs")
 
 	app.Add(func() error {
 		return grpcServer.Serve(grpcLis)
@@ -106,7 +106,7 @@ func main() {
 	closer.Add(grpcLis.Close)
 
 	if err := app.Run(); err != nil {
-		log.Fatalf("application stopped with error: %v", err)
+		log.Fatalf("[rag.app] приложение остановлено с ошибкой: %v", err)
 	}
 }
 
@@ -116,13 +116,13 @@ func buildUsecase(chunkSize int, chunkOverlap int, topK int32, embedAlias string
 		dbDSN = config.GetValue(config.LegacyDBDSN)
 	}
 	if dbDSN == "" {
-		log.Println("rag: DATABASE_DSN not set, indexing/query endpoints unavailable")
+		log.Println("[rag.db] DATABASE_DSN не задан, индексирование и поиск недоступны")
 		return nil
 	}
 
 	cfg, err := pgxpool.ParseConfig(dbDSN)
 	if err != nil {
-		log.Fatalf("failed to parse database dsn: %v", err)
+		log.Fatalf("[rag.db] не удалось разобрать DATABASE_DSN: %v", err)
 	}
 	cfg.AfterConnect = func(ctx context.Context, conn *pgx.Conn) error {
 		return pgvectorpgx.RegisterTypes(ctx, conn)
@@ -130,7 +130,7 @@ func buildUsecase(chunkSize int, chunkOverlap int, topK int32, embedAlias string
 
 	pool, err := pgxpool.NewWithConfig(context.Background(), cfg)
 	if err != nil {
-		log.Fatalf("failed to connect to database: %v", err)
+		log.Fatalf("[rag.db] не удалось подключиться к PostgreSQL: %v", err)
 	}
 	closer.Add(func() { pool.Close() })
 
@@ -142,10 +142,10 @@ func buildUsecase(chunkSize int, chunkOverlap int, topK int32, embedAlias string
 		config.GetValue(config.S3UseSSL) == "true",
 	)
 	if err != nil {
-		log.Fatalf("failed to init S3 storage: %v", err)
+		log.Fatalf("[rag.s3] не удалось инициализировать S3-хранилище: %v", err)
 	}
 	if err := s3Store.EnsureBucket(context.Background()); err != nil {
-		log.Fatalf("failed to ensure S3 bucket: %v", err)
+		log.Fatalf("[rag.s3] не удалось подготовить bucket: %v", err)
 	}
 
 	knowledgeAddr := config.GetValue(config.KnowledgeGRPC)
@@ -154,7 +154,7 @@ func buildUsecase(chunkSize int, chunkOverlap int, topK int32, embedAlias string
 	}
 	knowledgeConn, err := grpc.NewClient(knowledgeAddr, grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
-		log.Fatalf("failed to connect to knowledge gRPC: %v", err)
+		log.Fatalf("[rag.upstream.knowledge] не удалось создать gRPC-клиент: %v", err)
 	}
 	closer.Add(func() { _ = knowledgeConn.Close() })
 
@@ -164,7 +164,7 @@ func buildUsecase(chunkSize int, chunkOverlap int, topK int32, embedAlias string
 	}
 	aiConn, err := grpc.NewClient(aiAddr, grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
-		log.Fatalf("failed to connect to ai-inference gRPC: %v", err)
+		log.Fatalf("[rag.upstream.ai-inference] не удалось создать gRPC-клиент: %v", err)
 	}
 	closer.Add(func() { _ = aiConn.Close() })
 
@@ -187,7 +187,7 @@ func buildUsecase(chunkSize int, chunkOverlap int, topK int32, embedAlias string
 		log.Default(),
 	)
 
-	log.Println("rag: database, S3, and upstream services configured")
+	log.Println("[rag.app] PostgreSQL, S3 и внешние сервисы настроены")
 	return uc
 }
 

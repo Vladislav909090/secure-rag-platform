@@ -76,7 +76,7 @@ func toGRPCError(err error) error {
 	case strings.Contains(err.Error(), "upload to storage"):
 		return status.Error(codes.Internal, err.Error())
 	default:
-		log.Printf("[knowledge] internal error: %v", err)
+		log.Printf("[knowledge.grpc] внутренняя ошибка: %v", err)
 		return status.Error(codes.Internal, "internal error")
 	}
 }

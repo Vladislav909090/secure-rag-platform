@@ -42,7 +42,7 @@ func toGRPCError(err error) error {
 	case errors.Is(err, usecase.ErrNotFound):
 		return status.Error(codes.NotFound, err.Error())
 	default:
-		log.Printf("[gateway] internal error: %v", err)
+		log.Printf("[gateway.grpc] внутренняя ошибка: %v", err)
 		return status.Error(codes.Internal, "internal error")
 	}
 }

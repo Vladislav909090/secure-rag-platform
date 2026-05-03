@@ -53,7 +53,7 @@ func main() {
 	if dbDSN := config.GetValue(config.DatabaseDSN); dbDSN != "" {
 		pool, err := pgxpool.New(context.Background(), dbDSN)
 		if err != nil {
-			log.Fatalf("failed to connect to database: %v", err)
+			log.Fatalf("[knowledge.db] не удалось подключиться к PostgreSQL: %v", err)
 		}
 		closer.Add(func() { pool.Close() })
 
@@ -65,19 +65,19 @@ func main() {
 			config.GetValue(config.S3UseSSL) == "true",
 		)
 		if err != nil {
-			log.Fatalf("failed to init S3 storage: %v", err)
+			log.Fatalf("[knowledge.s3] не удалось инициализировать S3-хранилище: %v", err)
 		}
 
 		if err := s3Store.EnsureBucket(context.Background()); err != nil {
-			log.Fatalf("failed to ensure S3 bucket: %v", err)
+			log.Fatalf("[knowledge.s3] не удалось подготовить bucket: %v", err)
 		}
 
 		repo := repository.NewRepo(pool)
 		uc = usecase.NewDocumentUsecase(repo, s3Store, maxFileSize)
 
-		log.Println("knowledge: database and S3 configured")
+		log.Println("[knowledge.app] PostgreSQL и S3 настроены")
 	} else {
-		log.Println("knowledge: DATABASE_DSN not set, document endpoints unavailable")
+		log.Println("[knowledge.db] DATABASE_DSN не задан, документные ручки недоступны")
 	}
 
 	// --- gRPC-сервер ---
@@ -88,7 +88,7 @@ func main() {
 
 	grpcLis, err := net.Listen("tcp", ":"+grpcPort)
 	if err != nil {
-		log.Fatalf("failed to listen grpc: %v", err)
+		log.Fatalf("[knowledge.grpc] не удалось открыть порт gRPC: %v", err)
 	}
 
 	// --- HTTP mux ---
@@ -109,12 +109,12 @@ func main() {
 	)
 	err = knowledgev1.RegisterKnowledgeServiceHandlerServer(context.Background(), gwMux, serverImpl)
 	if err != nil {
-		log.Fatalf("failed to register knowledge handlers: %v", err)
+		log.Fatalf("[knowledge.http] не удалось зарегистрировать knowledge-обработчики: %v", err)
 	}
 
 	grpcConn, err := grpc.NewClient("127.0.0.1:"+grpcPort, grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
-		log.Fatalf("failed to create grpc client: %v", err)
+		log.Fatalf("[knowledge.http-upload] не удалось создать локальный gRPC-клиент: %v", err)
 	}
 	closer.Add(func() { _ = grpcConn.Close() })
 
@@ -131,9 +131,9 @@ func main() {
 
 	httpServer := &http.Server{Addr: ":" + port, Handler: mux}
 
-	log.Printf("knowledge grpc listening on :%s", grpcPort)
-	log.Printf("knowledge listening on :%s", port)
-	log.Printf("docs: http://localhost/knowledge/docs")
+	log.Printf("[knowledge.grpc] слушает порт :%s", grpcPort)
+	log.Printf("[knowledge.http] слушает порт :%s", port)
+	log.Printf("[knowledge.docs] Swagger UI: http://localhost/knowledge/docs")
 
 	app.Add(func() error {
 		return grpcServer.Serve(grpcLis)
@@ -150,6 +150,6 @@ func main() {
 	closer.Add(grpcLis.Close)
 
 	if err := app.Run(); err != nil {
-		log.Fatalf("application stopped with error: %v", err)
+		log.Fatalf("[knowledge.app] приложение остановлено с ошибкой: %v", err)
 	}
 }

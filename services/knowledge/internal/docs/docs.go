@@ -135,7 +135,7 @@ func applyMultipartUploadOverlay(specJSON []byte) ([]byte, error) {
 func RegisterAt(mux *http.ServeMux, serviceName string, docsPath string) {
 	specJSON, err := loadSpecJSON()
 	if err != nil {
-		log.Printf("warning: %v", err)
+		log.Printf("[knowledge.docs] Swagger UI недоступен: %v", err)
 		return
 	}
 

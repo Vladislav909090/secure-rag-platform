@@ -28,7 +28,7 @@ func (s *Service) Generate(ctx context.Context, req GenerateRequest) (*GenerateR
 
 	req.Params = mergeGenerationParams(alias.GenerationDefaults, req.Params)
 
-	s.logger.Printf("[ai-inference] Generate request_id=%s alias=%s provider=%s model=%s", req.RequestID, req.ModelAlias, alias.Provider, alias.Model)
+	s.logger.Printf("[ai-inference.generation] запрос request_id=%s alias=%s provider=%s model=%s", req.RequestID, req.ModelAlias, alias.Provider, alias.Model)
 
 	result, err := provider.Generate(ctx, alias, req)
 	if err != nil {

@@ -26,11 +26,10 @@ func (s *Server) QueryRAG(ctx context.Context, req *pb.QueryRAGRequest) (*pb.Que
 	contexts := make([]*pb.QueryContext, 0, len(result.Contexts))
 	for _, ctxItem := range result.Contexts {
 		contexts = append(contexts, &pb.QueryContext{
-			DocumentUuid:  ctxItem.DocumentUUID,
-			VersionNumber: ctxItem.VersionNumber,
-			ChunkIndex:    ctxItem.ChunkIndex,
-			Text:          ctxItem.Text,
-			Score:         ctxItem.Score,
+			DocumentUuid: ctxItem.DocumentUUID,
+			ChunkIndex:   ctxItem.ChunkIndex,
+			Text:         ctxItem.Text,
+			Score:        ctxItem.Score,
 		})
 	}
 

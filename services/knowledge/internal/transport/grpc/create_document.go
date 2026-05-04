@@ -88,6 +88,5 @@ func (s *KnowledgeServiceServerImpl) CreateDocumentStream(stream pb.KnowledgeSer
 
 	return stream.SendAndClose(&pb.CreateDocumentResponse{
 		Document: documentToProto(res.out.Document),
-		Version:  versionToProto(res.out.Version),
 	})
 }

@@ -114,11 +114,10 @@ func (s *Service) Query(ctx context.Context, req QueryRequest) (*QueryResult, er
 			}
 			score := float32(1.0) - match.Distance
 			contexts = append(contexts, QueryContext{
-				DocumentUUID:  match.DocumentUUID,
-				VersionNumber: match.VersionNumber,
-				ChunkIndex:    match.ChunkIndex,
-				Text:          match.ChunkText,
-				Score:         score,
+				DocumentUUID: match.DocumentUUID,
+				ChunkIndex:   match.ChunkIndex,
+				Text:         match.ChunkText,
+				Score:        score,
 			})
 			if len(contexts) >= maxChunks {
 				break
@@ -159,7 +158,7 @@ func (s *Service) Query(ctx context.Context, req QueryRequest) (*QueryResult, er
 func buildPrompts(question string, contexts []QueryContext) (string, string) {
 	parts := make([]string, 0, len(contexts))
 	for _, ctx := range contexts {
-		parts = append(parts, fmt.Sprintf("[%s#%d:%d]\n%s", ctx.DocumentUUID, ctx.VersionNumber, ctx.ChunkIndex, ctx.Text))
+		parts = append(parts, fmt.Sprintf("[%s:%d]\n%s", ctx.DocumentUUID, ctx.ChunkIndex, ctx.Text))
 	}
 
 	system := systemPromptTemplate

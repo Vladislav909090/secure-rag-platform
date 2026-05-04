@@ -18,13 +18,7 @@ func (s *KnowledgeServiceServerImpl) GetDocument(
 		return nil, toGRPCError(err)
 	}
 
-	pbVersions := make([]*pb.DocumentVersion, 0, len(result.Versions))
-	for _, v := range result.Versions {
-		pbVersions = append(pbVersions, versionToProto(v))
-	}
-
 	return &pb.GetDocumentResponse{
 		Document: documentToProto(result.Document),
-		Versions: pbVersions,
 	}, nil
 }

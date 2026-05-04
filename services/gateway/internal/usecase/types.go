@@ -9,11 +9,10 @@ type QueryRequest struct {
 }
 
 type QueryContext struct {
-	DocumentUUID  string
-	VersionNumber int32
-	ChunkIndex    int32
-	Text          string
-	Score         float32
+	DocumentUUID string
+	ChunkIndex   int32
+	Text         string
+	Score        float32
 }
 
 type QueryResult struct {
@@ -23,20 +22,34 @@ type QueryResult struct {
 	ResolvedGenerationModel string
 }
 
-type IndexRequest struct {
+type ReindexRequest struct {
 	DocumentUUID        string
-	VersionNumber       int32
 	EmbeddingModelAlias string
 	ChunkSize           int32
 	ChunkOverlap        int32
 }
 
-type IndexResult struct {
+type ReindexResult struct {
 	DocumentUUID           string
-	VersionNumber          int32
 	ChunkCount             int32
 	EmbeddingDimension     int32
 	ResolvedEmbeddingModel string
+}
+
+type ReindexItemResult struct {
+	DocumentUUID           string
+	Indexed                bool
+	Error                  string
+	ChunkCount             int32
+	EmbeddingDimension     int32
+	ResolvedEmbeddingModel string
+}
+
+type ReindexAllResult struct {
+	TotalCount   int32
+	IndexedCount int32
+	FailedCount  int32
+	Items        []ReindexItemResult
 }
 
 type LoginRequest struct {
@@ -65,22 +78,11 @@ type SubjectContext struct {
 }
 
 type Document struct {
-	ID                   int64
-	UUID                 string
-	Title                string
-	Description          string
-	Attributes           map[string]any
-	CurrentVersionNumber int32
-	CreatedAt            string
-	UpdatedAt            string
-	DeletedAt            string
-}
-
-type DocumentVersion struct {
 	ID             int64
 	UUID           string
-	DocumentID     int64
-	VersionNumber  int32
+	Title          string
+	Description    string
+	Attributes     map[string]any
 	FileName       string
 	FileExtension  string
 	MimeType       string
@@ -89,14 +91,22 @@ type DocumentVersion struct {
 	StorageKey     string
 	IndexStatus    string
 	CreatedAt      string
+	UpdatedAt      string
+	DeletedAt      string
 }
 
-type DocumentWithVersions struct {
+type DocumentItem struct {
 	Document Document
-	Versions []DocumentVersion
 }
 
 type FileResult struct {
 	ContentType string
 	Data        []byte
+}
+
+type DeleteDocumentResult struct {
+	DocumentUUID string
+	Deleted      bool
+	DeletedAt    string
+	IndexDeleted bool
 }

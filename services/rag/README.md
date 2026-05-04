@@ -19,7 +19,8 @@ Retrieval-Augmented Generation сервис.
 
 - `GET /health`
 - `GET /docs` (Swagger UI, OpenAPI встроен в HTML)
-- `POST /rag/api/v1/documents/{document_uuid}/versions/{version_number}/index`
+- `POST /rag/api/v1/documents/{document_uuid}/index`
+- `DELETE /rag/api/v1/documents/{document_uuid}/index`
 - `POST /rag/api/v1/query`
 
 Через Traefik с хоста:

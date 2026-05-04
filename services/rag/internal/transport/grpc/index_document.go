@@ -7,17 +7,16 @@ import (
 	"secure-rag-platform/services/rag/internal/usecase"
 )
 
-func (s *Server) IndexDocumentVersion(
+func (s *Server) IndexDocument(
 	ctx context.Context,
-	req *pb.IndexDocumentVersionRequest,
-) (*pb.IndexDocumentVersionResponse, error) {
+	req *pb.IndexDocumentRequest,
+) (*pb.IndexDocumentResponse, error) {
 	if err := s.requireUC(); err != nil {
 		return nil, err
 	}
 
-	result, err := s.uc.IndexDocumentVersion(ctx, usecase.IndexDocumentVersionRequest{
+	result, err := s.uc.IndexDocument(ctx, usecase.IndexDocumentRequest{
 		DocumentUUID:        req.GetDocumentUuid(),
-		VersionNumber:       req.GetVersionNumber(),
 		EmbeddingModelAlias: req.GetEmbeddingModelAlias(),
 		ChunkSize:           int(req.GetChunkSize()),
 		ChunkOverlap:        int(req.GetChunkOverlap()),
@@ -26,9 +25,8 @@ func (s *Server) IndexDocumentVersion(
 		return nil, toGRPCError(err)
 	}
 
-	return &pb.IndexDocumentVersionResponse{
+	return &pb.IndexDocumentResponse{
 		DocumentUuid:           result.DocumentUUID,
-		VersionNumber:          result.VersionNumber,
 		ChunkCount:             int32(result.ChunkCount),
 		EmbeddingDimension:     result.EmbeddingDimension,
 		ResolvedEmbeddingModel: result.ResolvedEmbeddingModel,

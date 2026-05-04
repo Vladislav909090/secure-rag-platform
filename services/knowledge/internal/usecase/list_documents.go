@@ -5,21 +5,16 @@ import (
 	"fmt"
 )
 
-// ListDocuments возвращает активные документы с версиями.
-func (uc *DocumentUsecase) ListDocuments(ctx context.Context) ([]*DocumentWithVersions, error) {
+// ListDocuments возвращает активные документы.
+func (uc *DocumentUsecase) ListDocuments(ctx context.Context) ([]*DocumentDetail, error) {
 	docs, err := uc.repo.ListActiveDocuments(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("list documents: %w", err)
 	}
 
-	result := make([]*DocumentWithVersions, 0, len(docs))
+	result := make([]*DocumentDetail, 0, len(docs))
 	for _, doc := range docs {
-		versions, err := uc.repo.GetVersionsByDocumentID(ctx, doc.ID)
-		if err != nil {
-			return nil, fmt.Errorf("get versions for doc %d: %w", doc.ID, err)
-		}
-
-		result = append(result, &DocumentWithVersions{Document: doc, Versions: versions})
+		result = append(result, &DocumentDetail{Document: doc})
 	}
 
 	return result, nil

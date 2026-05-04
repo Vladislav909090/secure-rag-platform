@@ -1,16 +1,14 @@
 package usecase
 
-type IndexDocumentVersionRequest struct {
+type IndexDocumentRequest struct {
 	DocumentUUID        string
-	VersionNumber       int32
 	EmbeddingModelAlias string
 	ChunkSize           int
 	ChunkOverlap        int
 }
 
-type IndexDocumentVersionResult struct {
+type IndexDocumentResult struct {
 	DocumentUUID           string
-	VersionNumber          int32
 	ChunkCount             int
 	EmbeddingDimension     int32
 	ResolvedEmbeddingModel string
@@ -25,11 +23,10 @@ type QueryRequest struct {
 }
 
 type QueryContext struct {
-	DocumentUUID  string
-	VersionNumber int32
-	ChunkIndex    int32
-	Text          string
-	Score         float32
+	DocumentUUID string
+	ChunkIndex   int32
+	Text         string
+	Score        float32
 }
 
 type QueryResult struct {

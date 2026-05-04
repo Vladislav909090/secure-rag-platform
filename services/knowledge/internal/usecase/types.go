@@ -17,15 +17,6 @@ type CreateDocumentInput struct {
 // CreateDocumentOutput — результат создания документа.
 type CreateDocumentOutput struct {
 	Document *model.Document
-	Version  *model.DocumentVersion
-}
-
-// UploadVersionOutput — результат загрузки новой версии.
-type UploadVersionOutput struct {
-	DocumentID     int64
-	DocumentUUID   string
-	CurrentVersion int32
-	Version        *model.DocumentVersion
 }
 
 // DeleteDocumentOutput — результат soft delete.
@@ -34,16 +25,9 @@ type DeleteDocumentOutput struct {
 	DeletedAt    time.Time
 }
 
-// DocumentWithVersions — документ со всеми версиями.
-type DocumentWithVersions struct {
+// DocumentDetail — документ с метаданными файла.
+type DocumentDetail struct {
 	Document *model.Document
-	Versions []*model.DocumentVersion
-}
-
-// DocumentVersionDetail — документ с одной версией.
-type DocumentVersionDetail struct {
-	Document *model.Document
-	Version  *model.DocumentVersion
 }
 
 // FileDownload — данные для скачивания файла.
@@ -56,7 +40,6 @@ type FileDownload struct {
 
 // ReindexOutput — результат запроса на переиндексацию.
 type ReindexOutput struct {
-	DocumentUUID  string
-	VersionNumber int32
-	IndexStatus   string
+	DocumentUUID string
+	IndexStatus  string
 }

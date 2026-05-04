@@ -16,11 +16,17 @@ func (r *Repo) CreateDocument(ctx context.Context, doc *model.Document) error {
 			title,
 			description,
 			attributes,
-			current_version_number,
+			file_name,
+			file_extension,
+			mime_type,
+			size_bytes,
+			checksum_sha256,
+			storage_key,
+			index_status,
 			created_at,
 			updated_at
 		)
-		VALUES ($1, $2, $3, $4, $5, $6, $7)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
 		RETURNING id
 	`
 
@@ -31,7 +37,9 @@ func (r *Repo) CreateDocument(ctx context.Context, doc *model.Document) error {
 
 	err = r.pool.QueryRow(ctx, query,
 		doc.UUID, doc.Title, doc.Description, attrJSON,
-		doc.CurrentVersionNumber, doc.CreatedAt, doc.UpdatedAt,
+		doc.FileName, doc.FileExtension, doc.MimeType,
+		doc.SizeBytes, doc.ChecksumSHA256, doc.StorageKey, doc.IndexStatus,
+		doc.CreatedAt, doc.UpdatedAt,
 	).Scan(&doc.ID)
 
 	return err

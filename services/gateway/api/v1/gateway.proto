@@ -61,41 +61,42 @@ service GatewayKnowledgeService {
     };
   }
 
-  // GetDocument возвращает доступный документ и его версии.
+  // GetDocument возвращает доступный документ.
   rpc GetDocument(GetDocumentRequest) returns (GetDocumentResponse) {
     option (google.api.http) = {
       get: "/gateway/api/v1/documents/{document_uuid}"
     };
   }
 
-  // GetDocumentVersion возвращает доступную версию документа.
-  rpc GetDocumentVersion(GetDocumentVersionRequest) returns (GetDocumentVersionResponse) {
-    option (google.api.http) = {
-      get: "/gateway/api/v1/documents/{document_uuid}/versions/{version_number}"
-    };
-  }
-
-  // DownloadFile скачивает файл текущей версии, если документ доступен текущему субъекту.
+  // DownloadFile скачивает файл документа, если документ доступен текущему субъекту.
   rpc DownloadFile(DownloadFileRequest) returns (google.api.HttpBody) {
     option (google.api.http) = {
       get: "/gateway/api/v1/documents/{document_uuid}/file"
     };
   }
 
-  // DownloadVersionFile скачивает файл версии, если документ доступен текущему субъекту.
-  rpc DownloadVersionFile(DownloadVersionFileRequest) returns (google.api.HttpBody) {
+  // DeleteDocument удаляет документ, если документ доступен текущему субъекту.
+  rpc DeleteDocument(DeleteDocumentRequest) returns (DeleteDocumentResponse) {
     option (google.api.http) = {
-      get: "/gateway/api/v1/documents/{document_uuid}/versions/{version_number}/file"
+      delete: "/gateway/api/v1/documents/{document_uuid}"
     };
   }
 }
 
 // GatewayRAGService предоставляет RAG-операции через gateway.
 service GatewayRAGService {
-  // IndexDocumentVersion индексирует версию документа через RAG.
-  rpc IndexDocumentVersion(IndexDocumentVersionRequest) returns (IndexDocumentVersionResponse) {
+  // ReindexDocument переиндексирует один документ. Доступно только администратору.
+  rpc ReindexDocument(ReindexDocumentRequest) returns (ReindexDocumentResponse) {
     option (google.api.http) = {
-      post: "/gateway/api/v1/rag/documents/{document_uuid}/versions/{version_number}/index"
+      post: "/gateway/api/v1/admin/rag/documents/{document_uuid}/reindex"
+      body: "*"
+    };
+  }
+
+  // ReindexAllDocuments переиндексирует все активные документы. Доступно только администратору.
+  rpc ReindexAllDocuments(ReindexAllDocumentsRequest) returns (ReindexAllDocumentsResponse) {
+    option (google.api.http) = {
+      post: "/gateway/api/v1/admin/rag/reindex"
       body: "*"
     };
   }
@@ -158,36 +159,26 @@ message Document {
   string title = 3;
   string description = 4;
   google.protobuf.Struct attributes = 5;
-  int32 current_version_number = 6;
-  string created_at = 7;
-  string updated_at = 8;
-  string deleted_at = 9;
+  string file_name = 6;
+  string file_extension = 7;
+  string mime_type = 8;
+  int64 size_bytes = 9;
+  string checksum_sha256 = 10;
+  string storage_key = 11;
+  string index_status = 12;
+  string created_at = 13;
+  string updated_at = 14;
+  string deleted_at = 15;
 }
 
-message DocumentVersion {
-  int64 id = 1;
-  string uuid = 2;
-  int64 document_id = 3;
-  int32 version_number = 4;
-  string file_name = 5;
-  string file_extension = 6;
-  string mime_type = 7;
-  int64 size_bytes = 8;
-  string checksum_sha256 = 9;
-  string storage_key = 10;
-  string index_status = 11;
-  string created_at = 12;
-}
-
-message DocumentWithVersions {
+message DocumentItem {
   Document document = 1;
-  repeated DocumentVersion versions = 2;
 }
 
 message ListDocumentsRequest {}
 
 message ListDocumentsResponse {
-  repeated DocumentWithVersions items = 1;
+  repeated DocumentItem items = 1;
 }
 
 message GetDocumentRequest {
@@ -196,42 +187,57 @@ message GetDocumentRequest {
 
 message GetDocumentResponse {
   Document document = 1;
-  repeated DocumentVersion versions = 2;
-}
-
-message GetDocumentVersionRequest {
-  string document_uuid = 1;
-  int32 version_number = 2;
-}
-
-message GetDocumentVersionResponse {
-  Document document = 1;
-  DocumentVersion version = 2;
 }
 
 message DownloadFileRequest {
   string document_uuid = 1;
 }
 
-message DownloadVersionFileRequest {
+message DeleteDocumentRequest {
   string document_uuid = 1;
-  int32 version_number = 2;
 }
 
-message IndexDocumentVersionRequest {
+message DeleteDocumentResponse {
   string document_uuid = 1;
-  int32 version_number = 2;
-  string embedding_model_alias = 3;
-  int32 chunk_size = 4;
-  int32 chunk_overlap = 5;
+  bool deleted = 2;
+  string deleted_at = 3;
+  bool index_deleted = 4;
 }
 
-message IndexDocumentVersionResponse {
+message ReindexDocumentRequest {
   string document_uuid = 1;
-  int32 version_number = 2;
-  int32 chunk_count = 3;
-  int32 embedding_dimension = 4;
-  string resolved_embedding_model = 5;
+  string embedding_model_alias = 2;
+  int32 chunk_size = 3;
+  int32 chunk_overlap = 4;
+}
+
+message ReindexDocumentResponse {
+  string document_uuid = 1;
+  int32 chunk_count = 2;
+  int32 embedding_dimension = 3;
+  string resolved_embedding_model = 4;
+}
+
+message ReindexAllDocumentsRequest {
+  string embedding_model_alias = 1;
+  int32 chunk_size = 2;
+  int32 chunk_overlap = 3;
+}
+
+message ReindexDocumentResult {
+  string document_uuid = 1;
+  bool indexed = 2;
+  string error = 3;
+  int32 chunk_count = 4;
+  int32 embedding_dimension = 5;
+  string resolved_embedding_model = 6;
+}
+
+message ReindexAllDocumentsResponse {
+  int32 total_count = 1;
+  int32 indexed_count = 2;
+  int32 failed_count = 3;
+  repeated ReindexDocumentResult items = 4;
 }
 
 message QueryRAGRequest {
@@ -244,10 +250,9 @@ message QueryRAGRequest {
 
 message QueryContext {
   string document_uuid = 1;
-  int32 version_number = 2;
-  int32 chunk_index = 3;
-  string text = 4;
-  float score = 5;
+  int32 chunk_index = 2;
+  string text = 3;
+  float score = 4;
 }
 
 message QueryRAGResponse {

@@ -120,6 +120,18 @@ func (s *Service) validateAccessToken(ctx context.Context, token string) (*iamv1
 	return resp.GetSubject(), nil
 }
 
+func requireAdmin(subject *iamv1.SubjectContext) error {
+	if subject == nil {
+		return nil
+	}
+	for _, role := range subject.GetRoles() {
+		if role == "super_admin" || role == "access_admin" {
+			return nil
+		}
+	}
+	return ErrForbidden
+}
+
 func outgoingAuthContext(ctx context.Context, accessToken string) (context.Context, error) {
 	accessToken = strings.TrimSpace(accessToken)
 	if accessToken == "" {

@@ -14,11 +14,11 @@ import (
 	"github.com/pgvector/pgvector-go"
 )
 
-// IndexDocumentVersion индексирует версию документа в векторное хранилище.
-func (s *Service) IndexDocumentVersion(
+// IndexDocument индексирует документ в векторное хранилище.
+func (s *Service) IndexDocument(
 	ctx context.Context,
-	req IndexDocumentVersionRequest,
-) (*IndexDocumentVersionResult, error) {
+	req IndexDocumentRequest,
+) (*IndexDocumentResult, error) {
 	if !s.Ready() {
 		return nil, ErrNotConfigured
 	}
@@ -28,41 +28,23 @@ func (s *Service) IndexDocumentVersion(
 		return nil, ErrInvalidRequest
 	}
 
-	versionNumber := req.VersionNumber
-	if versionNumber <= 0 {
-		docResp, err := s.knowledge.GetDocument(ctx, &knowledgev1.GetDocumentRequest{DocumentUuid: docUUID})
-		if err != nil {
-			return nil, fmt.Errorf("get document: %w", err)
-		}
-		if docResp.GetDocument() == nil {
-			return nil, ErrInvalidRequest
-		}
-		versionNumber = docResp.GetDocument().GetCurrentVersionNumber()
-		if versionNumber <= 0 {
-			return nil, ErrInvalidRequest
-		}
-	}
-
-	resp, err := s.knowledge.GetDocumentVersion(ctx, &knowledgev1.GetDocumentVersionRequest{
-		DocumentUuid:  docUUID,
-		VersionNumber: versionNumber,
-	})
+	resp, err := s.knowledge.GetDocument(ctx, &knowledgev1.GetDocumentRequest{DocumentUuid: docUUID})
 	if err != nil {
-		return nil, fmt.Errorf("get document version: %w", err)
+		return nil, fmt.Errorf("get document: %w", err)
 	}
 
-	version := resp.GetVersion()
-	if version == nil {
+	doc := resp.GetDocument()
+	if doc == nil {
 		return nil, ErrInvalidRequest
 	}
 
-	storageKey := strings.TrimSpace(version.GetStorageKey())
+	storageKey := strings.TrimSpace(doc.GetStorageKey())
 	if storageKey == "" {
 		return nil, ErrInvalidRequest
 	}
 
-	if !isTextMime(version.GetMimeType()) {
-		return nil, fmt.Errorf("%w: unsupported mime type: %s", ErrInvalidRequest, version.GetMimeType())
+	if !isTextMime(doc.GetMimeType()) {
+		return nil, fmt.Errorf("%w: unsupported mime type: %s", ErrInvalidRequest, doc.GetMimeType())
 	}
 
 	reader, err := s.storage.Download(ctx, storageKey)
@@ -129,7 +111,6 @@ func (s *Service) IndexDocumentVersion(
 		vec := embedResp.GetVectors()[i].GetValues()
 		entries = append(entries, repository.Chunk{
 			DocumentUUID:       docUUID,
-			VersionNumber:      versionNumber,
 			ChunkIndex:         int32(i),
 			ChunkText:          chunk,
 			Embedding:          pgvector.NewVector(vec),
@@ -143,15 +124,13 @@ func (s *Service) IndexDocumentVersion(
 	}
 
 	s.logger.Printf(
-		"[rag.index] документ проиндексирован document=%s version=%d chunks=%d",
+		"[rag.index] документ проиндексирован document=%s chunks=%d",
 		docUUID,
-		versionNumber,
 		len(chunks),
 	)
 
-	return &IndexDocumentVersionResult{
+	return &IndexDocumentResult{
 		DocumentUUID:           docUUID,
-		VersionNumber:          versionNumber,
 		ChunkCount:             len(chunks),
 		EmbeddingDimension:     embedResp.GetDimension(),
 		ResolvedEmbeddingModel: resolvedModel,

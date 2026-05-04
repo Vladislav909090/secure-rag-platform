@@ -24,6 +24,9 @@
 
 - `GET http://localhost/knowledge/api/health`
 - `GET http://localhost/knowledge/api/v1/documents`
+- `POST http://localhost/knowledge/api/v1/documents`
+- `GET http://localhost/knowledge/api/v1/documents/{document_uuid}`
+- `GET http://localhost/knowledge/api/v1/documents/{document_uuid}/file`
 - `GET http://localhost/knowledge/docs`
 
 Примечание: в `docker-compose` сервис использует только `expose`, прямой URL `http://localhost:8082` не публикуется.

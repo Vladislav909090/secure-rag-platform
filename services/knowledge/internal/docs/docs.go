@@ -113,32 +113,6 @@ func applyMultipartUploadOverlay(specJSON []byte) ([]byte, error) {
 		},
 	}
 
-	pathVersions, _ := paths["/knowledge/api/v1/documents/{document_uuid}/versions"].(map[string]any)
-	if pathVersions == nil {
-		pathVersions = map[string]any{}
-		paths["/knowledge/api/v1/documents/{document_uuid}/versions"] = pathVersions
-	}
-	pathVersions["post"] = map[string]any{
-		"summary":     "UploadVersion загружает версию как multipart и стримит её в gRPC",
-		"operationId": "KnowledgeService_UploadVersionMultipart",
-		"tags":        []any{"KnowledgeService"},
-		"consumes":    []any{"multipart/form-data"},
-		"produces":    []any{"application/json"},
-		"parameters": []any{
-			map[string]any{"name": "document_uuid", "in": "path", "required": true, "type": "string"},
-			map[string]any{"name": "file", "in": "formData", "required": true, "type": "file"},
-		},
-		"responses": map[string]any{
-			"200": map[string]any{
-				"description": "OK",
-				"schema": map[string]any{
-					"$ref": "#/definitions/v1UploadVersionResponse",
-				},
-			},
-			"400": map[string]any{"description": "Bad Request", "schema": map[string]any{"$ref": "#/definitions/rpcStatus"}},
-		},
-	}
-
 	out, err := json.Marshal(root)
 	if err != nil {
 		return nil, fmt.Errorf("marshal swagger spec: %w", err)

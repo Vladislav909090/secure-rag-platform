@@ -25,11 +25,11 @@ Gateway-сервис, единая точка входа для API.
 - `GET /gateway/api/v1/auth/me`
 - `GET /gateway/api/v1/documents`
 - `GET /gateway/api/v1/documents/{document_uuid}`
-- `GET /gateway/api/v1/documents/{document_uuid}/versions/{version_number}`
 - `GET /gateway/api/v1/documents/{document_uuid}/file`
-- `GET /gateway/api/v1/documents/{document_uuid}/versions/{version_number}/file`
+- `DELETE /gateway/api/v1/documents/{document_uuid}`
 - `POST /gateway/api/v1/rag/query`
-- `POST /gateway/api/v1/rag/documents/{document_uuid}/versions/{version_number}/index`
+- `POST /gateway/api/v1/admin/rag/documents/{document_uuid}/reindex`
+- `POST /gateway/api/v1/admin/rag/reindex`
 
 Через Traefik с хоста:
 

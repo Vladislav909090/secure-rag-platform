@@ -120,7 +120,7 @@ func main() {
 
 	uploadHandlers := transporthttpupload.New(knowledgev1.NewKnowledgeServiceClient(grpcConn), uc)
 	mux.HandleFunc("/knowledge/api/v1/documents", uploadHandlers.CreateDocument(gwMux))
-	mux.HandleFunc("/knowledge/api/v1/documents/", uploadHandlers.UploadVersion(gwMux))
+	mux.HandleFunc("/knowledge/api/v1/documents/", uploadHandlers.DocumentFiles(gwMux))
 	mux.Handle("/knowledge/api/", gwMux)
 
 	docs.RegisterAt(mux, "Knowledge", "/knowledge/docs")

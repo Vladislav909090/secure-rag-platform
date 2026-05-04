@@ -65,11 +65,10 @@ func (s *Service) Query(ctx context.Context, req QueryRequest, accessToken strin
 	contexts := make([]QueryContext, 0, len(resp.GetContexts()))
 	for _, ctxItem := range resp.GetContexts() {
 		contexts = append(contexts, QueryContext{
-			DocumentUUID:  ctxItem.GetDocumentUuid(),
-			VersionNumber: ctxItem.GetVersionNumber(),
-			ChunkIndex:    ctxItem.GetChunkIndex(),
-			Text:          ctxItem.GetText(),
-			Score:         ctxItem.GetScore(),
+			DocumentUUID: ctxItem.GetDocumentUuid(),
+			ChunkIndex:   ctxItem.GetChunkIndex(),
+			Text:         ctxItem.GetText(),
+			Score:        ctxItem.GetScore(),
 		})
 	}
 

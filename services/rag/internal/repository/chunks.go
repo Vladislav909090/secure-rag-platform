@@ -11,7 +11,6 @@ import (
 // Chunk представляет сегмент документа с эмбеддингом.
 type Chunk struct {
 	DocumentUUID       string
-	VersionNumber      int32
 	ChunkIndex         int32
 	ChunkText          string
 	Embedding          pgvector.Vector
@@ -21,11 +20,10 @@ type Chunk struct {
 
 // ChunkMatch возвращается при поиске по вектору.
 type ChunkMatch struct {
-	DocumentUUID  string
-	VersionNumber int32
-	ChunkIndex    int32
-	ChunkText     string
-	Distance      float32
+	DocumentUUID string
+	ChunkIndex   int32
+	ChunkText    string
+	Distance     float32
 }
 
 // DeleteChunks удаляет все сегменты документа.
@@ -54,9 +52,9 @@ func (r *Repo) InsertChunks(ctx context.Context, chunks []Chunk) error {
 
 		var chunkID int64
 		query := `
-			INSERT INTO rag_chunks (document_uuid, version_number, chunk_index, chunk_text)
-			 VALUES ($1, $2, $3, $4)
-			 ON CONFLICT (document_uuid, version_number, chunk_index)
+			INSERT INTO rag_chunks (document_uuid, chunk_index, chunk_text)
+			 VALUES ($1, $2, $3)
+			 ON CONFLICT (document_uuid, chunk_index)
 			 DO UPDATE SET chunk_text = EXCLUDED.chunk_text
 			 RETURNING id
 		`
@@ -64,7 +62,6 @@ func (r *Repo) InsertChunks(ctx context.Context, chunks []Chunk) error {
 			ctx,
 			query,
 			chunk.DocumentUUID,
-			chunk.VersionNumber,
 			chunk.ChunkIndex,
 			chunk.ChunkText,
 		).Scan(&chunkID)
@@ -127,7 +124,7 @@ func (r *Repo) SearchSimilar(
 	}
 
 	query := strings.Join([]string{
-		"SELECT c.document_uuid, c.version_number, c.chunk_index, c.chunk_text,",
+		"SELECT c.document_uuid, c.chunk_index, c.chunk_text,",
 		"  (e.embedding <=> $1) AS distance",
 		"FROM rag_chunks c",
 		"JOIN rag_embeddings e ON e.chunk_id = c.id",
@@ -149,7 +146,6 @@ func (r *Repo) SearchSimilar(
 		var distance float64
 		if scanErr := rows.Scan(
 			&match.DocumentUUID,
-			&match.VersionNumber,
 			&match.ChunkIndex,
 			&match.ChunkText,
 			&distance,

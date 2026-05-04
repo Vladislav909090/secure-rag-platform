@@ -15,7 +15,6 @@ var (
 	ErrDocumentNotFound   = errors.New("document not found")
 	ErrDocumentDeleted    = errors.New("document is deleted")
 	ErrDocumentNotDeleted = errors.New("document is not deleted")
-	ErrVersionNotFound    = errors.New("version not found")
 	ErrFileNotFound       = errors.New("file not found in storage")
 	ErrFileTooLarge       = errors.New("file too large")
 	ErrInvalidRequest     = errors.New("invalid request")

@@ -4,23 +4,11 @@ import "time"
 
 // Document — логическая сущность документа.
 type Document struct {
-	ID                   int64
-	UUID                 string
-	Title                string
-	Description          *string
-	Attributes           map[string]any
-	CurrentVersionNumber int32
-	CreatedAt            time.Time
-	UpdatedAt            time.Time
-	DeletedAt            *time.Time
-}
-
-// DocumentVersion — неизменяемая версия документа.
-type DocumentVersion struct {
 	ID             int64
 	UUID           string
-	DocumentID     int64
-	VersionNumber  int32
+	Title          string
+	Description    *string
+	Attributes     map[string]any
 	FileName       string
 	FileExtension  string
 	MimeType       string
@@ -29,6 +17,8 @@ type DocumentVersion struct {
 	StorageKey     string
 	IndexStatus    string
 	CreatedAt      time.Time
+	UpdatedAt      time.Time
+	DeletedAt      *time.Time
 }
 
 const (

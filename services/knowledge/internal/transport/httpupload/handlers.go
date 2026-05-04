@@ -41,11 +41,6 @@ type createDocumentMultipartState struct {
 	fileSent       bool
 }
 
-type uploadVersionMultipartState struct {
-	metaSent bool
-	fileSent bool
-}
-
 func New(client knowledgev1.KnowledgeServiceClient, uc *usecase.DocumentUsecase) *UploadHandlers {
 	return &UploadHandlers{client: client, uc: uc, chunkSize: defaultChunkSize}
 }
@@ -68,46 +63,18 @@ func (h *UploadHandlers) CreateDocument(gateway http.Handler) http.HandlerFunc {
 	}
 }
 
-func (h *UploadHandlers) UploadVersion(gateway http.Handler) http.HandlerFunc {
+func (h *UploadHandlers) DocumentFiles(gateway http.Handler) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		// Перехватываем скачивание файлов:
-		// - GET /knowledge/api/v1/documents/{uuid}/file
-		// - GET /knowledge/api/v1/documents/{uuid}/versions/{version}/file
+		// Перехватываем скачивание файла: GET /knowledge/api/v1/documents/{uuid}/file.
 		if r.Method == http.MethodGet &&
 			strings.HasPrefix(r.URL.Path, knowledgeDocumentsPrefix+"/") &&
 			strings.HasSuffix(r.URL.Path, "/file") &&
 			h.uc != nil {
-			trimmed := strings.TrimPrefix(r.URL.Path, knowledgeDocumentsPrefix+"/")
-			if strings.Contains(trimmed, "/versions/") {
-				h.handleDownloadVersionFile(w, r)
-				return
-			}
-
 			h.handleDownloadFile(w, r)
 			return
 		}
 
-		if r.Method != http.MethodPost ||
-			!strings.HasPrefix(r.URL.Path, knowledgeDocumentsPrefix+"/") ||
-			!strings.HasSuffix(r.URL.Path, "/versions") {
-			gateway.ServeHTTP(w, r)
-			return
-		}
-
-		if !isMultipart(r.Header.Get("Content-Type")) {
-			gateway.ServeHTTP(w, r)
-			return
-		}
-
-		docUUID, ok := extractDocumentUUID(r.URL.Path)
-		if !ok {
-			writeError(w, http.StatusBadRequest, "invalid upload path")
-			return
-		}
-
-		if err := h.handleUploadVersionMultipart(r.Context(), w, r, docUUID); err != nil {
-			writeError(w, http.StatusBadRequest, err.Error())
-		}
+		gateway.ServeHTTP(w, r)
 	}
 }
 
@@ -144,50 +111,6 @@ func (h *UploadHandlers) handleCreateDocumentMultipart(
 
 	if !state.metaSent || !state.fileSent {
 		return errors.New("multipart payload must contain title and file fields")
-	}
-
-	resp, err := stream.CloseAndRecv()
-	if err != nil {
-		return err
-	}
-
-	return writeProtoJSON(w, http.StatusOK, resp)
-}
-
-func (h *UploadHandlers) handleUploadVersionMultipart(
-	ctx context.Context,
-	w http.ResponseWriter,
-	r *http.Request,
-	docUUID string,
-) error {
-	reader, err := r.MultipartReader()
-	if err != nil {
-		return err
-	}
-
-	stream, err := h.client.UploadVersionStream(ctx)
-	if err != nil {
-		return err
-	}
-
-	state := &uploadVersionMultipartState{}
-
-	for {
-		part, nextErr := reader.NextPart()
-		if errors.Is(nextErr, io.EOF) {
-			break
-		}
-		if nextErr != nil {
-			return nextErr
-		}
-
-		if partErr := h.processUploadVersionPart(part, stream, docUUID, state); partErr != nil {
-			return partErr
-		}
-	}
-
-	if !state.metaSent || !state.fileSent {
-		return errors.New("multipart payload must contain file field")
 	}
 
 	resp, err := stream.CloseAndRecv()
@@ -287,56 +210,6 @@ func (h *UploadHandlers) sendCreateDocumentFilePart(
 	return nil
 }
 
-func (h *UploadHandlers) processUploadVersionPart(
-	part *multipart.Part,
-	stream knowledgev1.KnowledgeService_UploadVersionStreamClient,
-	docUUID string,
-	state *uploadVersionMultipartState,
-) error {
-	if part.FormName() != "file" {
-		_, _ = io.Copy(io.Discard, part)
-		return nil
-	}
-
-	if state.metaSent {
-		return errors.New("multiple file parts are not supported")
-	}
-
-	fileName := strings.TrimSpace(part.FileName())
-	if fileName == "" {
-		return errors.New("uploaded file must include filename")
-	}
-
-	mimeType := part.Header.Get("Content-Type")
-	if mimeType == "" {
-		mimeType = mime.TypeByExtension("." + extension(fileName))
-	}
-
-	if err := stream.Send(&knowledgev1.UploadVersionStreamRequest{
-		Payload: &knowledgev1.UploadVersionStreamRequest_Meta{Meta: &knowledgev1.UploadVersionMeta{
-			DocumentUuid: docUUID,
-			FileName:     fileName,
-			MimeType:     mimeType,
-		}},
-	}); err != nil {
-		return err
-	}
-	state.metaSent = true
-
-	if err := sendChunks(part, h.chunkSize, func(chunk []byte) error {
-		return stream.Send(&knowledgev1.UploadVersionStreamRequest{
-			Payload: &knowledgev1.UploadVersionStreamRequest_Chunk{
-				Chunk: &knowledgev1.FileChunk{Data: chunk},
-			},
-		})
-	}); err != nil {
-		return err
-	}
-
-	state.fileSent = true
-	return nil
-}
-
 func readLimitedPart(part *multipart.Part, limit int64) ([]byte, error) {
 	return io.ReadAll(io.LimitReader(part, limit))
 }
@@ -418,42 +291,12 @@ func (h *UploadHandlers) handleDownloadFile(w http.ResponseWriter, r *http.Reque
 	if err != nil {
 		switch {
 		case errors.Is(err, usecase.ErrDocumentNotFound),
-			errors.Is(err, usecase.ErrVersionNotFound),
 			errors.Is(err, usecase.ErrFileNotFound):
 			writeError(w, http.StatusNotFound, err.Error())
 		case errors.Is(err, usecase.ErrDocumentDeleted):
 			writeError(w, http.StatusGone, err.Error())
 		default:
 			// Разворачиваем gRPC status errors после возможных gateway-вызовов.
-			if st, ok := status.FromError(err); ok && st.Code() == codes.NotFound {
-				writeError(w, http.StatusNotFound, st.Message())
-				return
-			}
-			writeError(w, http.StatusInternalServerError, "internal error")
-		}
-		return
-	}
-	defer dl.Body.Close()
-	h.writeDownloadResponse(w, dl)
-}
-
-func (h *UploadHandlers) handleDownloadVersionFile(w http.ResponseWriter, r *http.Request) {
-	docUUID, versionNumber, ok := extractVersionDownloadPath(r.URL.Path)
-	if !ok {
-		http.Error(w, "invalid path", http.StatusBadRequest)
-		return
-	}
-
-	dl, err := h.uc.DownloadVersionFile(r.Context(), docUUID, versionNumber)
-	if err != nil {
-		switch {
-		case errors.Is(err, usecase.ErrDocumentNotFound),
-			errors.Is(err, usecase.ErrVersionNotFound),
-			errors.Is(err, usecase.ErrFileNotFound):
-			writeError(w, http.StatusNotFound, err.Error())
-		case errors.Is(err, usecase.ErrDocumentDeleted):
-			writeError(w, http.StatusGone, err.Error())
-		default:
 			if st, ok := status.FromError(err); ok && st.Code() == codes.NotFound {
 				writeError(w, http.StatusNotFound, st.Message())
 				return
@@ -486,33 +329,6 @@ func (h *UploadHandlers) writeDownloadResponse(w http.ResponseWriter, dl *usecas
 	w.Header().Set("Content-Length", strconv.FormatInt(dl.SizeBytes, 10))
 	w.WriteHeader(http.StatusOK)
 	_, _ = io.Copy(w, dl.Body)
-}
-
-func extractVersionDownloadPath(path string) (string, int32, bool) {
-	trimmed := strings.TrimPrefix(path, knowledgeDocumentsPrefix+"/")
-	parts := strings.Split(strings.Trim(trimmed, "/"), "/")
-	if len(parts) != 4 ||
-		parts[1] != "versions" ||
-		parts[3] != "file" ||
-		strings.TrimSpace(parts[0]) == "" {
-		return "", 0, false
-	}
-
-	v, err := strconv.ParseInt(parts[2], 10, 32)
-	if err != nil || v <= 0 {
-		return "", 0, false
-	}
-
-	return parts[0], int32(v), true
-}
-
-func extractDocumentUUID(path string) (string, bool) {
-	trimmed := strings.TrimPrefix(path, knowledgeDocumentsPrefix+"/")
-	parts := strings.Split(strings.Trim(trimmed, "/"), "/")
-	if len(parts) != 2 || parts[1] != "versions" || strings.TrimSpace(parts[0]) == "" {
-		return "", false
-	}
-	return parts[0], true
 }
 
 func extension(fileName string) string {

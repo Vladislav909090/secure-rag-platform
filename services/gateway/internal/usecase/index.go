@@ -5,21 +5,25 @@ import (
 	"fmt"
 	"strings"
 
+	knowledgev1 "secure-rag-platform/services/knowledge/gen/v1"
 	ragv1 "secure-rag-platform/services/rag/gen/v1"
 )
 
-// IndexDocumentVersion инициирует индексацию документа через RAG.
-func (s *Service) IndexDocumentVersion(
+// ReindexDocument переиндексирует один документ через RAG. Доступно только администратору.
+func (s *Service) ReindexDocument(
 	ctx context.Context,
-	req IndexRequest,
+	req ReindexRequest,
 	accessToken string,
-) (*IndexResult, error) {
+) (*ReindexResult, error) {
 	if !s.Ready() {
 		return nil, ErrNotConfigured
 	}
 
-	_, err := s.validateAccessToken(ctx, accessToken)
+	subject, err := s.validateAccessToken(ctx, accessToken)
 	if err != nil {
+		return nil, err
+	}
+	if err := requireAdmin(subject); err != nil {
 		return nil, err
 	}
 
@@ -27,13 +31,15 @@ func (s *Service) IndexDocumentVersion(
 	if docUUID == "" {
 		return nil, ErrInvalidRequest
 	}
-	if req.VersionNumber <= 0 {
-		return nil, ErrInvalidRequest
+
+	if _, err := s.knowledge.ReindexDocument(ctx, &knowledgev1.ReindexDocumentRequest{
+		DocumentUuid: docUUID,
+	}); err != nil {
+		return nil, mapUpstreamError(err, "reindex document")
 	}
 
-	resp, err := s.rag.IndexDocumentVersion(ctx, &ragv1.IndexDocumentVersionRequest{
+	resp, err := s.rag.IndexDocument(ctx, &ragv1.IndexDocumentRequest{
 		DocumentUuid:        docUUID,
-		VersionNumber:       req.VersionNumber,
 		EmbeddingModelAlias: req.EmbeddingModelAlias,
 		ChunkSize:           req.ChunkSize,
 		ChunkOverlap:        req.ChunkOverlap,
@@ -42,11 +48,78 @@ func (s *Service) IndexDocumentVersion(
 		return nil, fmt.Errorf("rag index: %w", err)
 	}
 
-	return &IndexResult{
+	return &ReindexResult{
 		DocumentUUID:           resp.GetDocumentUuid(),
-		VersionNumber:          resp.GetVersionNumber(),
 		ChunkCount:             resp.GetChunkCount(),
 		EmbeddingDimension:     resp.GetEmbeddingDimension(),
 		ResolvedEmbeddingModel: resp.GetResolvedEmbeddingModel(),
 	}, nil
+}
+
+// ReindexAllDocuments переиндексирует все активные документы. Доступно только администратору.
+func (s *Service) ReindexAllDocuments(
+	ctx context.Context,
+	req ReindexRequest,
+	accessToken string,
+) (*ReindexAllResult, error) {
+	if !s.Ready() {
+		return nil, ErrNotConfigured
+	}
+
+	subject, err := s.validateAccessToken(ctx, accessToken)
+	if err != nil {
+		return nil, err
+	}
+	if err := requireAdmin(subject); err != nil {
+		return nil, err
+	}
+
+	listResp, err := s.knowledge.ListDocuments(ctx, &knowledgev1.ListDocumentsRequest{})
+	if err != nil {
+		return nil, mapUpstreamError(err, "list documents")
+	}
+
+	result := &ReindexAllResult{
+		Items: make([]ReindexItemResult, 0, len(listResp.GetItems())),
+	}
+
+	for _, item := range listResp.GetItems() {
+		doc := item.GetDocument()
+		if doc == nil {
+			continue
+		}
+
+		result.TotalCount++
+		docUUID := doc.GetUuid()
+		itemResult := ReindexItemResult{DocumentUUID: docUUID}
+
+		if _, err := s.knowledge.ReindexDocument(ctx, &knowledgev1.ReindexDocumentRequest{DocumentUuid: docUUID}); err != nil {
+			itemResult.Error = mapUpstreamError(err, "reindex document").Error()
+			result.FailedCount++
+			result.Items = append(result.Items, itemResult)
+			continue
+		}
+
+		indexResp, err := s.rag.IndexDocument(ctx, &ragv1.IndexDocumentRequest{
+			DocumentUuid:        docUUID,
+			EmbeddingModelAlias: req.EmbeddingModelAlias,
+			ChunkSize:           req.ChunkSize,
+			ChunkOverlap:        req.ChunkOverlap,
+		})
+		if err != nil {
+			itemResult.Error = fmt.Errorf("rag index: %w", err).Error()
+			result.FailedCount++
+			result.Items = append(result.Items, itemResult)
+			continue
+		}
+
+		itemResult.Indexed = true
+		itemResult.ChunkCount = indexResp.GetChunkCount()
+		itemResult.EmbeddingDimension = indexResp.GetEmbeddingDimension()
+		itemResult.ResolvedEmbeddingModel = indexResp.GetResolvedEmbeddingModel()
+		result.IndexedCount++
+		result.Items = append(result.Items, itemResult)
+	}
+
+	return result, nil
 }

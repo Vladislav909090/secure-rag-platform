@@ -4,15 +4,14 @@ CREATE EXTENSION IF NOT EXISTS vector;
 CREATE TABLE IF NOT EXISTS rag_chunks (
     id BIGSERIAL PRIMARY KEY,
     document_uuid TEXT NOT NULL,
-    version_number INT NOT NULL,
     chunk_index INT NOT NULL,
     chunk_text TEXT NOT NULL,
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-    UNIQUE (document_uuid, version_number, chunk_index)
+    UNIQUE (document_uuid, chunk_index)
 );
 
 CREATE INDEX IF NOT EXISTS rag_chunks_document_idx
-    ON rag_chunks (document_uuid, version_number);
+    ON rag_chunks (document_uuid);
 
 CREATE TABLE IF NOT EXISTS rag_embeddings (
     id BIGSERIAL PRIMARY KEY,

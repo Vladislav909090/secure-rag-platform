@@ -5,8 +5,8 @@ import (
 	"fmt"
 )
 
-// GetDocument возвращает документ с версиями.
-func (uc *DocumentUsecase) GetDocument(ctx context.Context, docUUID string) (*DocumentWithVersions, error) {
+// GetDocument возвращает документ.
+func (uc *DocumentUsecase) GetDocument(ctx context.Context, docUUID string) (*DocumentDetail, error) {
 	doc, err := uc.repo.GetDocumentByUUID(ctx, docUUID)
 	if err != nil {
 		return nil, fmt.Errorf("get document: %w", err)
@@ -20,10 +20,5 @@ func (uc *DocumentUsecase) GetDocument(ctx context.Context, docUUID string) (*Do
 		return nil, ErrDocumentDeleted
 	}
 
-	versions, err := uc.repo.GetVersionsByDocumentID(ctx, doc.ID)
-	if err != nil {
-		return nil, fmt.Errorf("get versions: %w", err)
-	}
-
-	return &DocumentWithVersions{Document: doc, Versions: versions}, nil
+	return &DocumentDetail{Document: doc}, nil
 }

@@ -24,9 +24,9 @@ func (s *Server) ListDocuments(
 		return nil, toGRPCError(err)
 	}
 
-	out := make([]*pb.DocumentWithVersions, 0, len(items))
+	out := make([]*pb.DocumentItem, 0, len(items))
 	for _, item := range items {
-		out = append(out, documentWithVersionsToProto(item))
+		out = append(out, documentItemToProto(item))
 	}
 	return &pb.ListDocumentsResponse{Items: out}, nil
 }
@@ -46,36 +46,6 @@ func (s *Server) GetDocument(
 
 	return &pb.GetDocumentResponse{
 		Document: documentToProto(item.Document),
-		Versions: versionsToProto(item.Versions),
-	}, nil
-}
-
-func (s *Server) GetDocumentVersion(
-	ctx context.Context,
-	req *pb.GetDocumentVersionRequest,
-) (*pb.GetDocumentVersionResponse, error) {
-	if err := s.requireUC(); err != nil {
-		return nil, err
-	}
-
-	item, err := s.uc.GetDocumentVersion(
-		ctx,
-		req.GetDocumentUuid(),
-		req.GetVersionNumber(),
-		extractAccessToken(ctx),
-	)
-	if err != nil {
-		return nil, toGRPCError(err)
-	}
-
-	var version *pb.DocumentVersion
-	if len(item.Versions) > 0 {
-		version = versionToProto(item.Versions[0])
-	}
-
-	return &pb.GetDocumentVersionResponse{
-		Document: documentToProto(item.Document),
-		Version:  version,
 	}, nil
 }
 
@@ -87,7 +57,7 @@ func (s *Server) DownloadFile(
 		return nil, err
 	}
 
-	file, err := s.uc.DownloadFile(ctx, req.GetDocumentUuid(), 0, extractAccessToken(ctx))
+	file, err := s.uc.DownloadFile(ctx, req.GetDocumentUuid(), extractAccessToken(ctx))
 	if err != nil {
 		return nil, toGRPCError(err)
 	}
@@ -95,69 +65,49 @@ func (s *Server) DownloadFile(
 	return &httpbody.HttpBody{ContentType: file.ContentType, Data: file.Data}, nil
 }
 
-func (s *Server) DownloadVersionFile(
+func (s *Server) DeleteDocument(
 	ctx context.Context,
-	req *pb.DownloadVersionFileRequest,
-) (*httpbody.HttpBody, error) {
+	req *pb.DeleteDocumentRequest,
+) (*pb.DeleteDocumentResponse, error) {
 	if err := s.requireUC(); err != nil {
 		return nil, err
 	}
 
-	file, err := s.uc.DownloadFile(
-		ctx,
-		req.GetDocumentUuid(),
-		req.GetVersionNumber(),
-		extractAccessToken(ctx),
-	)
+	result, err := s.uc.DeleteDocument(ctx, req.GetDocumentUuid(), extractAccessToken(ctx))
 	if err != nil {
 		return nil, toGRPCError(err)
 	}
 
-	return &httpbody.HttpBody{ContentType: file.ContentType, Data: file.Data}, nil
+	return &pb.DeleteDocumentResponse{
+		DocumentUuid: result.DocumentUUID,
+		Deleted:      result.Deleted,
+		DeletedAt:    result.DeletedAt,
+		IndexDeleted: result.IndexDeleted,
+	}, nil
 }
 
-func documentWithVersionsToProto(item usecase.DocumentWithVersions) *pb.DocumentWithVersions {
-	return &pb.DocumentWithVersions{
+func documentItemToProto(item usecase.DocumentItem) *pb.DocumentItem {
+	return &pb.DocumentItem{
 		Document: documentToProto(item.Document),
-		Versions: versionsToProto(item.Versions),
 	}
 }
 
 func documentToProto(doc usecase.Document) *pb.Document {
 	return &pb.Document{
-		Id:                   doc.ID,
-		Uuid:                 doc.UUID,
-		Title:                doc.Title,
-		Description:          doc.Description,
-		Attributes:           mapToStruct(doc.Attributes),
-		CurrentVersionNumber: doc.CurrentVersionNumber,
-		CreatedAt:            doc.CreatedAt,
-		UpdatedAt:            doc.UpdatedAt,
-		DeletedAt:            doc.DeletedAt,
-	}
-}
-
-func versionsToProto(versions []usecase.DocumentVersion) []*pb.DocumentVersion {
-	out := make([]*pb.DocumentVersion, 0, len(versions))
-	for _, version := range versions {
-		out = append(out, versionToProto(version))
-	}
-	return out
-}
-
-func versionToProto(version usecase.DocumentVersion) *pb.DocumentVersion {
-	return &pb.DocumentVersion{
-		Id:             version.ID,
-		Uuid:           version.UUID,
-		DocumentId:     version.DocumentID,
-		VersionNumber:  version.VersionNumber,
-		FileName:       version.FileName,
-		FileExtension:  version.FileExtension,
-		MimeType:       version.MimeType,
-		SizeBytes:      version.SizeBytes,
-		ChecksumSha256: version.ChecksumSHA256,
-		StorageKey:     version.StorageKey,
-		IndexStatus:    version.IndexStatus,
-		CreatedAt:      version.CreatedAt,
+		Id:             doc.ID,
+		Uuid:           doc.UUID,
+		Title:          doc.Title,
+		Description:    doc.Description,
+		Attributes:     mapToStruct(doc.Attributes),
+		FileName:       doc.FileName,
+		FileExtension:  doc.FileExtension,
+		MimeType:       doc.MimeType,
+		SizeBytes:      doc.SizeBytes,
+		ChecksumSha256: doc.ChecksumSHA256,
+		StorageKey:     doc.StorageKey,
+		IndexStatus:    doc.IndexStatus,
+		CreatedAt:      doc.CreatedAt,
+		UpdatedAt:      doc.UpdatedAt,
+		DeletedAt:      doc.DeletedAt,
 	}
 }

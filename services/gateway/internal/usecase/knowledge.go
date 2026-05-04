@@ -107,11 +107,29 @@ func (s *Service) DeleteDocument(
 	documentUUID string,
 	accessToken string,
 ) (*DeleteDocumentResult, error) {
-	if _, err := s.GetDocument(ctx, documentUUID, accessToken); err != nil {
-		return nil, err
+	if !s.Ready() {
+		return nil, ErrNotConfigured
 	}
 
 	documentUUID = strings.TrimSpace(documentUUID)
+	if documentUUID == "" {
+		return nil, ErrInvalidRequest
+	}
+
+	subject, err := s.validateAccessToken(ctx, accessToken)
+	if err != nil {
+		return nil, err
+	}
+	if err := requireDocumentEditor(subject); err != nil {
+		return nil, err
+	}
+
+	doc, err := s.getAllowedDocument(ctx, documentUUID, subject)
+	if err != nil {
+		return nil, err
+	}
+	documentUUID = doc.GetUuid()
+
 	resp, err := s.knowledge.DeleteDocument(ctx, &knowledgev1.DeleteDocumentRequest{
 		DocumentUuid: documentUUID,
 	})
@@ -129,6 +147,28 @@ func (s *Service) DeleteDocument(
 		DeletedAt:    resp.GetDeletedAt(),
 		IndexDeleted: true,
 	}, nil
+}
+
+func (s *Service) getAllowedDocument(
+	ctx context.Context,
+	documentUUID string,
+	subject *iamv1.SubjectContext,
+) (*knowledgev1.Document, error) {
+	resp, err := s.knowledge.GetDocument(ctx, &knowledgev1.GetDocumentRequest{DocumentUuid: documentUUID})
+	if err != nil {
+		return nil, mapUpstreamError(err, "get document")
+	}
+
+	doc := resp.GetDocument()
+	allowed, err := s.isDocumentAllowed(ctx, subject, doc)
+	if err != nil {
+		return nil, err
+	}
+	if !allowed {
+		return nil, ErrForbidden
+	}
+
+	return doc, nil
 }
 
 func (s *Service) isDocumentAllowed(

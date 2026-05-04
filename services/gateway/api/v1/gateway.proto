@@ -75,7 +75,7 @@ service GatewayKnowledgeService {
     };
   }
 
-  // DeleteDocument удаляет документ, если документ доступен текущему субъекту.
+  // DeleteDocument удаляет документ, если текущий субъект может редактировать документы и документ ему доступен.
   rpc DeleteDocument(DeleteDocumentRequest) returns (DeleteDocumentResponse) {
     option (google.api.http) = {
       delete: "/gateway/api/v1/documents/{document_uuid}"
@@ -85,7 +85,7 @@ service GatewayKnowledgeService {
 
 // GatewayRAGService предоставляет RAG-операции через gateway.
 service GatewayRAGService {
-  // ReindexDocument переиндексирует один документ. Доступно только администратору.
+  // ReindexDocument переиндексирует один документ. Доступно редактору документов.
   rpc ReindexDocument(ReindexDocumentRequest) returns (ReindexDocumentResponse) {
     option (google.api.http) = {
       post: "/gateway/api/v1/admin/rag/documents/{document_uuid}/reindex"
@@ -93,7 +93,7 @@ service GatewayRAGService {
     };
   }
 
-  // ReindexAllDocuments переиндексирует все активные документы. Доступно только администратору.
+  // ReindexAllDocuments переиндексирует доступные активные документы. Доступно редактору документов.
   rpc ReindexAllDocuments(ReindexAllDocumentsRequest) returns (ReindexAllDocumentsResponse) {
     option (google.api.http) = {
       post: "/gateway/api/v1/admin/rag/reindex"

@@ -9,7 +9,7 @@ import (
 	ragv1 "secure-rag-platform/services/rag/gen/v1"
 )
 
-// ReindexDocument переиндексирует один документ через RAG. Доступно только администратору.
+// ReindexDocument переиндексирует один документ через RAG. Доступно редактору документов.
 func (s *Service) ReindexDocument(
 	ctx context.Context,
 	req ReindexRequest,
@@ -23,8 +23,7 @@ func (s *Service) ReindexDocument(
 	if err != nil {
 		return nil, err
 	}
-	err = requireAdmin(subject)
-	if err != nil {
+	if err := requireDocumentEditor(subject); err != nil {
 		return nil, err
 	}
 
@@ -32,6 +31,11 @@ func (s *Service) ReindexDocument(
 	if docUUID == "" {
 		return nil, ErrInvalidRequest
 	}
+	doc, err := s.getAllowedDocument(ctx, docUUID, subject)
+	if err != nil {
+		return nil, err
+	}
+	docUUID = doc.GetUuid()
 
 	_, err = s.knowledge.ReindexDocument(ctx, &knowledgev1.ReindexDocumentRequest{
 		DocumentUuid: docUUID,
@@ -58,7 +62,7 @@ func (s *Service) ReindexDocument(
 	}, nil
 }
 
-// ReindexAllDocuments переиндексирует все активные документы. Доступно только администратору.
+// ReindexAllDocuments переиндексирует доступные активные документы. Доступно редактору документов.
 func (s *Service) ReindexAllDocuments(
 	ctx context.Context,
 	req ReindexRequest,
@@ -72,8 +76,7 @@ func (s *Service) ReindexAllDocuments(
 	if err != nil {
 		return nil, err
 	}
-	err = requireAdmin(subject)
-	if err != nil {
+	if err := requireDocumentEditor(subject); err != nil {
 		return nil, err
 	}
 
@@ -89,6 +92,13 @@ func (s *Service) ReindexAllDocuments(
 	for _, item := range listResp.GetItems() {
 		doc := item.GetDocument()
 		if doc == nil {
+			continue
+		}
+		allowed, err := s.isDocumentAllowed(ctx, subject, doc)
+		if err != nil {
+			return nil, err
+		}
+		if !allowed {
 			continue
 		}
 

@@ -9,6 +9,13 @@ import (
 	"google.golang.org/grpc/metadata"
 )
 
+const (
+	roleUser            = "user"
+	roleKnowledgeEditor = "knowledge_editor"
+	roleAccessAdmin     = "access_admin"
+	roleSuperAdmin      = "super_admin"
+)
+
 func (s *Service) Login(ctx context.Context, req LoginRequest) (*TokenPair, error) {
 	if s.disableAuth {
 		return nil, ErrNotConfigured
@@ -124,12 +131,34 @@ func requireAdmin(subject *iamv1.SubjectContext) error {
 	if subject == nil {
 		return nil
 	}
-	for _, role := range subject.GetRoles() {
-		if role == "super_admin" || role == "access_admin" {
-			return nil
-		}
+	if hasAnyRole(subject, roleSuperAdmin, roleAccessAdmin) {
+		return nil
 	}
 	return ErrForbidden
+}
+
+func requireDocumentEditor(subject *iamv1.SubjectContext) error {
+	if subject == nil {
+		return nil
+	}
+	if hasAnyRole(subject, roleSuperAdmin, roleKnowledgeEditor) {
+		return nil
+	}
+	return ErrForbidden
+}
+
+func hasAnyRole(subject *iamv1.SubjectContext, allowed ...string) bool {
+	if subject == nil {
+		return false
+	}
+	for _, role := range subject.GetRoles() {
+		for _, expected := range allowed {
+			if role == expected {
+				return true
+			}
+		}
+	}
+	return false
 }
 
 func outgoingAuthContext(ctx context.Context, accessToken string) (context.Context, error) {

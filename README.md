@@ -121,9 +121,6 @@ make grpc:stubs
 make migrate:status
 make migrate:up
 make migrate:down
-make migrate:create:iam MIGRATION_NAME=add_tokens_table
-make migrate:create:knowledge MIGRATION_NAME=add_documents_table
-make migrate:create:rag MIGRATION_NAME=add_jobs_table
 ```
 
 ## Примечания

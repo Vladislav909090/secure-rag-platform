@@ -63,5 +63,4 @@ make build:knowledge
 make migrate:status:knowledge
 make migrate:up:knowledge
 make migrate:down:knowledge
-make migrate:create:knowledge MIGRATION_NAME=add_knowledge_table
 ```

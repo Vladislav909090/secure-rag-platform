@@ -23,7 +23,8 @@ func (s *Service) ReindexDocument(
 	if err != nil {
 		return nil, err
 	}
-	if err := requireAdmin(subject); err != nil {
+	err = requireAdmin(subject)
+	if err != nil {
 		return nil, err
 	}
 
@@ -32,9 +33,10 @@ func (s *Service) ReindexDocument(
 		return nil, ErrInvalidRequest
 	}
 
-	if _, err := s.knowledge.ReindexDocument(ctx, &knowledgev1.ReindexDocumentRequest{
+	_, err = s.knowledge.ReindexDocument(ctx, &knowledgev1.ReindexDocumentRequest{
 		DocumentUuid: docUUID,
-	}); err != nil {
+	})
+	if err != nil {
 		return nil, mapUpstreamError(err, "reindex document")
 	}
 
@@ -70,7 +72,8 @@ func (s *Service) ReindexAllDocuments(
 	if err != nil {
 		return nil, err
 	}
-	if err := requireAdmin(subject); err != nil {
+	err = requireAdmin(subject)
+	if err != nil {
 		return nil, err
 	}
 
@@ -93,14 +96,16 @@ func (s *Service) ReindexAllDocuments(
 		docUUID := doc.GetUuid()
 		itemResult := ReindexItemResult{DocumentUUID: docUUID}
 
-		if _, err := s.knowledge.ReindexDocument(ctx, &knowledgev1.ReindexDocumentRequest{DocumentUuid: docUUID}); err != nil {
+		_, err = s.knowledge.ReindexDocument(ctx, &knowledgev1.ReindexDocumentRequest{DocumentUuid: docUUID})
+		if err != nil {
 			itemResult.Error = mapUpstreamError(err, "reindex document").Error()
 			result.FailedCount++
 			result.Items = append(result.Items, itemResult)
 			continue
 		}
 
-		indexResp, err := s.rag.IndexDocument(ctx, &ragv1.IndexDocumentRequest{
+		var indexResp *ragv1.IndexDocumentResponse
+		indexResp, err = s.rag.IndexDocument(ctx, &ragv1.IndexDocumentRequest{
 			DocumentUuid:        docUUID,
 			EmbeddingModelAlias: req.EmbeddingModelAlias,
 			ChunkSize:           req.ChunkSize,

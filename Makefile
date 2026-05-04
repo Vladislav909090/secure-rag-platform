@@ -244,16 +244,6 @@ migrate\:down\:rag:
 
 migrate\:down: migrate\:down\:iam migrate\:down\:knowledge migrate\:down\:rag
 
-migrate\:create\:iam:
-	@$(GOOSE) -dir $(IAM_MIGRATIONS_DIR) create $(MIGRATION_NAME) sql
-
-migrate\:create\:knowledge:
-	@$(GOOSE) -dir $(KNOWLEDGE_MIGRATIONS_DIR) create $(MIGRATION_NAME) sql
-
-migrate\:create\:rag:
-	@$(GOOSE) -dir $(RAG_MIGRATIONS_DIR) create $(MIGRATION_NAME) sql
-
-
 # ── Docker Compose ───────────────────────────────────
 
 compose\:up:

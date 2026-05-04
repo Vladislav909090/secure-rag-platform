@@ -97,7 +97,8 @@ func (s *Service) IndexDocument(
 		return nil, fmt.Errorf("embedding size mismatch")
 	}
 
-	if err := s.repo.DeleteChunks(ctx, docUUID); err != nil {
+	err = s.repo.DeleteChunks(ctx, docUUID)
+	if err != nil {
 		return nil, fmt.Errorf("delete previous chunks: %w", err)
 	}
 
@@ -119,7 +120,8 @@ func (s *Service) IndexDocument(
 		})
 	}
 
-	if err := s.repo.InsertChunks(ctx, entries); err != nil {
+	err = s.repo.InsertChunks(ctx, entries)
+	if err != nil {
 		return nil, fmt.Errorf("insert chunks: %w", err)
 	}
 

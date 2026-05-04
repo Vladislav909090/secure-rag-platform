@@ -32,11 +32,14 @@ jobs:
       - name: Setup protoc
         uses: arduino/setup-protoc@v3
 
+      - name: Setup Go workspace
+        run: go work init ./services/ai-inference ./services/gateway ./services/iam ./services/knowledge ./services/rag ./tools/grpcstubgen
+
       - name: Install proto tools
         run: make proto:tools
 
-      - name: Generate proto stubs (${{ matrix.service }})
-        run: make proto:gen:${{ matrix.service }}
+      - name: Generate proto stubs
+        run: make proto:gen
 
       - name: Run golangci-lint (${{ matrix.service }})
         uses: golangci/golangci-lint-action@v6

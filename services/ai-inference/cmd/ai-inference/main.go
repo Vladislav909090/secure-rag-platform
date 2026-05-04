@@ -37,7 +37,8 @@ func main() {
 
 	providerTimeout := 180 * time.Second
 	if runtimeCfg.ProviderTimeout != "" {
-		parsed, err := time.ParseDuration(runtimeCfg.ProviderTimeout)
+		var parsed time.Duration
+		parsed, err = time.ParseDuration(runtimeCfg.ProviderTimeout)
 		if err != nil {
 			log.Fatalf("[ai-inference.config] не удалось разобрать provider_timeout: %v", err)
 		}
@@ -52,7 +53,8 @@ func main() {
 	startupCheckTimeout := providerTimeout + 5*time.Second
 	startupCtx, cancel := context.WithTimeout(context.Background(), startupCheckTimeout)
 	defer cancel()
-	if err := inferenceService.CheckDependencies(startupCtx); err != nil {
+	err = inferenceService.CheckDependencies(startupCtx)
+	if err != nil {
 		log.Fatalf("[ai-inference.health] проверка зависимостей не прошла: %v", err)
 	}
 
@@ -76,7 +78,8 @@ func main() {
 
 	log.Printf("[ai-inference.grpc] слушает порт :%s", grpcPort)
 
-	if err := app.Run(); err != nil && !errors.Is(err, context.Canceled) {
+	err = app.Run()
+	if err != nil && !errors.Is(err, context.Canceled) {
 		log.Fatalf("[ai-inference.app] приложение остановлено с ошибкой: %v", err)
 	}
 }

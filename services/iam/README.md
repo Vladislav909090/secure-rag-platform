@@ -59,5 +59,4 @@ make build:iam
 make migrate:status:iam
 make migrate:up:iam
 make migrate:down:iam
-make migrate:create:iam MIGRATION_NAME=add_iam_table
 ```

@@ -41,30 +41,30 @@ func (a *OPAAuthorizer) AllowDocument(
 		return allowedByAttributes(documentAttributes, subject), nil
 	}
 
+	subjectInput := map[string]any{
+		"user_id":    "",
+		"login":      "",
+		"is_active":  false,
+		"roles":      []string{},
+		"attributes": map[string]any{},
+	}
+	if subject != nil {
+		subjectInput["user_id"] = subject.GetUserId()
+		subjectInput["login"] = subject.GetLogin()
+		subjectInput["is_active"] = subject.GetIsActive()
+		subjectInput["roles"] = subject.GetRoles()
+		if subject.GetAttributes() != nil {
+			subjectInput["attributes"] = subject.GetAttributes().AsMap()
+		}
+	}
+
 	payload := map[string]any{
 		"input": map[string]any{
-			"subject": map[string]any{
-				"user_id":    "",
-				"login":      "",
-				"is_active":  false,
-				"roles":      []string{},
-				"attributes": map[string]any{},
-			},
+			"subject": subjectInput,
 			"document": map[string]any{
 				"attributes": documentAttributes,
 			},
 		},
-	}
-
-	if subject != nil {
-		subj := payload["input"].(map[string]any)["subject"].(map[string]any)
-		subj["user_id"] = subject.GetUserId()
-		subj["login"] = subject.GetLogin()
-		subj["is_active"] = subject.GetIsActive()
-		subj["roles"] = subject.GetRoles()
-		if subject.GetAttributes() != nil {
-			subj["attributes"] = subject.GetAttributes().AsMap()
-		}
 	}
 
 	body, err := json.Marshal(payload)

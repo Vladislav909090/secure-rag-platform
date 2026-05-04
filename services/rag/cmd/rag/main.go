@@ -144,7 +144,8 @@ func buildUsecase(chunkSize int, chunkOverlap int, topK int32, embedAlias string
 	if err != nil {
 		log.Fatalf("[rag.s3] не удалось инициализировать S3-хранилище: %v", err)
 	}
-	if err := s3Store.EnsureBucket(context.Background()); err != nil {
+	err = s3Store.EnsureBucket(context.Background())
+	if err != nil {
 		log.Fatalf("[rag.s3] не удалось подготовить bucket: %v", err)
 	}
 

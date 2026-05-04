@@ -27,6 +27,7 @@ go.work.sum
 # Local linter cache
 .golangci/
 .golangci-cache/
+.golangci-cache-*/
 .gocache/
 
 # env file

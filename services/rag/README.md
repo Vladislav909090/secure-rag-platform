@@ -70,5 +70,4 @@ make build:rag
 make migrate:status:rag
 make migrate:up:rag
 make migrate:down:rag
-make migrate:create:rag MIGRATION_NAME=add_rag_table
 ```

@@ -2,6 +2,7 @@
 package docs
 
 import (
+	"encoding/json"
 	"fmt"
 	"log/slog"
 	"net/http"
@@ -96,7 +97,223 @@ func loadSpecJSON() ([]byte, error) {
 		return nil, fmt.Errorf("swagger spec not loaded from %q: %w", specPath, err)
 	}
 
-	return specJSON, nil
+	overlaid, err := applyMultipartUploadOverlay(specJSON)
+	if err != nil {
+		return nil, err
+	}
+
+	return overlaid, nil
+}
+
+func applyMultipartUploadOverlay(specJSON []byte) ([]byte, error) {
+	var root map[string]any
+	if err := json.Unmarshal(specJSON, &root); err != nil {
+		return nil, fmt.Errorf("unmarshal swagger spec: %w", err)
+	}
+
+	paths, _ := root["paths"].(map[string]any)
+	if paths == nil {
+		paths = map[string]any{}
+		root["paths"] = paths
+	}
+
+	pathDocuments, _ := paths["/gateway/api/v1/documents"].(map[string]any)
+	if pathDocuments == nil {
+		pathDocuments = map[string]any{}
+		paths["/gateway/api/v1/documents"] = pathDocuments
+	}
+	pathDocuments["post"] = map[string]any{
+		"summary":     "CreateDocument загружает файл как multipart через gateway",
+		"operationId": "GatewayKnowledgeService_CreateDocumentMultipart",
+		"tags":        []any{"GatewayKnowledgeService"},
+		"security":    []any{map[string]any{"BearerAuth": []any{}}},
+		"consumes":    []any{"multipart/form-data"},
+		"produces":    []any{"application/json"},
+		"parameters": []any{
+			map[string]any{"name": "title", "in": "formData", "required": true, "type": "string"},
+			map[string]any{"name": "description", "in": "formData", "required": false, "type": "string"},
+			map[string]any{
+				"name":        "attributes",
+				"in":          "formData",
+				"required":    false,
+				"type":        "string",
+				"description": "JSON object as string",
+			},
+			map[string]any{"name": "file", "in": "formData", "required": true, "type": "file"},
+		},
+		"responses": map[string]any{
+			"200": map[string]any{
+				"description": "OK",
+				"schema": map[string]any{
+					"$ref": "#/definitions/v1GetDocumentResponse",
+				},
+			},
+			"400": map[string]any{"description": "Bad Request", "schema": map[string]any{"$ref": "#/definitions/rpcStatus"}},
+			"401": map[string]any{"description": "Unauthorized", "schema": map[string]any{"$ref": "#/definitions/rpcStatus"}},
+			"403": map[string]any{"description": "Forbidden", "schema": map[string]any{"$ref": "#/definitions/rpcStatus"}},
+		},
+	}
+
+	pathDocument, _ := paths["/gateway/api/v1/documents/{document_uuid}"].(map[string]any)
+	if pathDocument == nil {
+		pathDocument = map[string]any{}
+		paths["/gateway/api/v1/documents/{document_uuid}"] = pathDocument
+	}
+	pathDocument["patch"] = jsonOperation(
+		"UpdateDocument обновляет title и/или description документа",
+		"GatewayKnowledgeService_UpdateDocument",
+		"GatewayKnowledgeService",
+		[]any{
+			pathParam("document_uuid"),
+			bodyParam(map[string]any{
+				"type": "object",
+				"properties": map[string]any{
+					"title":       map[string]any{"type": "string"},
+					"description": map[string]any{"type": "string"},
+				},
+			}),
+		},
+		map[string]any{"$ref": "#/definitions/v1GetDocumentResponse"},
+	)
+
+	pathDocumentAttrs, _ := paths["/gateway/api/v1/documents/{document_uuid}/attributes"].(map[string]any)
+	if pathDocumentAttrs == nil {
+		pathDocumentAttrs = map[string]any{}
+		paths["/gateway/api/v1/documents/{document_uuid}/attributes"] = pathDocumentAttrs
+	}
+	pathDocumentAttrs["patch"] = jsonOperation(
+		"UpdateDocumentAttributes заменяет attributes документа",
+		"GatewayKnowledgeService_UpdateDocumentAttributes",
+		"GatewayKnowledgeService",
+		[]any{
+			pathParam("document_uuid"),
+			bodyParam(map[string]any{
+				"type": "object",
+				"properties": map[string]any{
+					"attributes": map[string]any{"type": "object"},
+				},
+			}),
+		},
+		map[string]any{"$ref": "#/definitions/v1GetDocumentResponse"},
+	)
+
+	pathAdminRoles, _ := paths["/gateway/api/v1/admin/roles"].(map[string]any)
+	if pathAdminRoles == nil {
+		pathAdminRoles = map[string]any{}
+		paths["/gateway/api/v1/admin/roles"] = pathAdminRoles
+	}
+	pathAdminRoles["get"] = jsonOperation(
+		"ListRoles возвращает роли IAM через gateway",
+		"GatewayAdmin_ListRoles",
+		"GatewayAdmin",
+		nil,
+		map[string]any{"type": "object"},
+	)
+
+	pathAdminUser, _ := paths["/gateway/api/v1/admin/users/{user_id}"].(map[string]any)
+	if pathAdminUser == nil {
+		pathAdminUser = map[string]any{}
+		paths["/gateway/api/v1/admin/users/{user_id}"] = pathAdminUser
+	}
+	pathAdminUser["patch"] = jsonOperation(
+		"UpdateUser обновляет пользователя IAM через gateway",
+		"GatewayAdmin_UpdateUser",
+		"GatewayAdmin",
+		[]any{
+			pathParam("user_id"),
+			bodyParam(map[string]any{
+				"type": "object",
+				"properties": map[string]any{
+					"login":     map[string]any{"type": "string"},
+					"password":  map[string]any{"type": "string"},
+					"is_active": map[string]any{"type": "boolean"},
+				},
+			}),
+		},
+		map[string]any{"type": "object"},
+	)
+
+	pathAdminUserAttrs, _ := paths["/gateway/api/v1/admin/users/{user_id}/attributes"].(map[string]any)
+	if pathAdminUserAttrs == nil {
+		pathAdminUserAttrs = map[string]any{}
+		paths["/gateway/api/v1/admin/users/{user_id}/attributes"] = pathAdminUserAttrs
+	}
+	pathAdminUserAttrs["put"] = jsonOperation(
+		"ReplaceUserAttributes заменяет attributes пользователя IAM через gateway",
+		"GatewayAdmin_ReplaceUserAttributes",
+		"GatewayAdmin",
+		[]any{
+			pathParam("user_id"),
+			bodyParam(map[string]any{
+				"type": "object",
+				"properties": map[string]any{
+					"attributes": map[string]any{"type": "object"},
+				},
+			}),
+		},
+		map[string]any{"type": "object"},
+	)
+
+	pathAdminUserRoles, _ := paths["/gateway/api/v1/admin/users/{user_id}/roles"].(map[string]any)
+	if pathAdminUserRoles == nil {
+		pathAdminUserRoles = map[string]any{}
+		paths["/gateway/api/v1/admin/users/{user_id}/roles"] = pathAdminUserRoles
+	}
+	pathAdminUserRoles["put"] = jsonOperation(
+		"SetUserRoles полностью заменяет роли пользователя IAM через gateway",
+		"GatewayAdmin_SetUserRoles",
+		"GatewayAdmin",
+		[]any{
+			pathParam("user_id"),
+			bodyParam(map[string]any{
+				"type": "object",
+				"properties": map[string]any{
+					"role_codes": map[string]any{
+						"type":  "array",
+						"items": map[string]any{"type": "string"},
+					},
+				},
+			}),
+		},
+		map[string]any{"type": "object"},
+	)
+
+	out, err := json.Marshal(root)
+	if err != nil {
+		return nil, fmt.Errorf("marshal swagger spec: %w", err)
+	}
+
+	return out, nil
+}
+
+func jsonOperation(summary string, operationID string, tag string, params []any, responseSchema map[string]any) map[string]any {
+	if params == nil {
+		params = []any{}
+	}
+	return map[string]any{
+		"summary":     summary,
+		"operationId": operationID,
+		"tags":        []any{tag},
+		"security":    []any{map[string]any{"BearerAuth": []any{}}},
+		"consumes":    []any{"application/json"},
+		"produces":    []any{"application/json"},
+		"parameters":  params,
+		"responses": map[string]any{
+			"200": map[string]any{"description": "OK", "schema": responseSchema},
+			"400": map[string]any{"description": "Bad Request", "schema": map[string]any{"$ref": "#/definitions/rpcStatus"}},
+			"401": map[string]any{"description": "Unauthorized", "schema": map[string]any{"$ref": "#/definitions/rpcStatus"}},
+			"403": map[string]any{"description": "Forbidden", "schema": map[string]any{"$ref": "#/definitions/rpcStatus"}},
+			"404": map[string]any{"description": "Not Found", "schema": map[string]any{"$ref": "#/definitions/rpcStatus"}},
+		},
+	}
+}
+
+func pathParam(name string) map[string]any {
+	return map[string]any{"name": name, "in": "path", "required": true, "type": "string"}
+}
+
+func bodyParam(schema map[string]any) map[string]any {
+	return map[string]any{"name": "body", "in": "body", "required": true, "schema": schema}
 }
 
 // RegisterAt регистрирует Swagger UI по заданному пути.

@@ -11,6 +11,7 @@ import (
 
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
+	"google.golang.org/protobuf/types/known/structpb"
 )
 
 func (s *Service) ListDocuments(ctx context.Context, accessToken string) ([]DocumentItem, error) {
@@ -120,7 +121,7 @@ func (s *Service) DeleteDocument(
 	if err != nil {
 		return nil, err
 	}
-	if err := requireDocumentEditor(subject); err != nil {
+	if err = requireDocumentEditor(subject); err != nil {
 		return nil, err
 	}
 
@@ -147,6 +148,114 @@ func (s *Service) DeleteDocument(
 		DeletedAt:    resp.GetDeletedAt(),
 		IndexDeleted: true,
 	}, nil
+}
+
+// UpdateDocument обновляет основные поля документа через gateway.
+func (s *Service) UpdateDocument(
+	ctx context.Context,
+	req UpdateDocumentRequest,
+	accessToken string,
+) (*DocumentItem, error) {
+	if !s.Ready() {
+		return nil, ErrNotConfigured
+	}
+
+	documentUUID := strings.TrimSpace(req.DocumentUUID)
+	if documentUUID == "" || (req.Title == nil && req.Description == nil) {
+		return nil, ErrInvalidRequest
+	}
+
+	subject, err := s.validateAccessToken(ctx, accessToken)
+	if err != nil {
+		return nil, err
+	}
+	if err = requireDocumentEditor(subject); err != nil {
+		return nil, err
+	}
+
+	doc, err := s.getAllowedDocument(ctx, documentUUID, subject)
+	if err != nil {
+		return nil, err
+	}
+
+	resp, err := s.knowledge.UpdateDocument(ctx, &knowledgev1.UpdateDocumentRequest{
+		DocumentUuid: doc.GetUuid(),
+		Title:        req.Title,
+		Description:  req.Description,
+	})
+	if err != nil {
+		return nil, mapUpstreamError(err, "update document")
+	}
+
+	return &DocumentItem{Document: documentFromProto(resp.GetDocument())}, nil
+}
+
+// UpdateDocumentAttributes заменяет attributes документа через gateway.
+func (s *Service) UpdateDocumentAttributes(
+	ctx context.Context,
+	req UpdateDocumentAttributesRequest,
+	accessToken string,
+) (*DocumentItem, error) {
+	if !s.Ready() {
+		return nil, ErrNotConfigured
+	}
+
+	documentUUID := strings.TrimSpace(req.DocumentUUID)
+	if documentUUID == "" {
+		return nil, ErrInvalidRequest
+	}
+
+	subject, err := s.validateAccessToken(ctx, accessToken)
+	if err != nil {
+		return nil, err
+	}
+	if err = requireDocumentEditor(subject); err != nil {
+		return nil, err
+	}
+
+	doc, err := s.getAllowedDocument(ctx, documentUUID, subject)
+	if err != nil {
+		return nil, err
+	}
+
+	attrs, err := structpb.NewStruct(req.Attributes)
+	if err != nil {
+		return nil, ErrInvalidRequest
+	}
+
+	resp, err := s.knowledge.UpdateDocumentAttributes(ctx, &knowledgev1.UpdateDocumentAttributesRequest{
+		DocumentUuid: doc.GetUuid(),
+		Attributes:   attrs,
+	})
+	if err != nil {
+		return nil, mapUpstreamError(err, "update document attributes")
+	}
+
+	return &DocumentItem{Document: documentFromProto(resp.GetDocument())}, nil
+}
+
+func (s *Service) OpenCreateDocumentStream(
+	ctx context.Context,
+	accessToken string,
+) (knowledgev1.KnowledgeService_CreateDocumentStreamClient, error) {
+	if !s.Ready() {
+		return nil, ErrNotConfigured
+	}
+
+	subject, err := s.validateAccessToken(ctx, accessToken)
+	if err != nil {
+		return nil, err
+	}
+	if err = requireDocumentEditor(subject); err != nil {
+		return nil, err
+	}
+
+	stream, err := s.knowledge.CreateDocumentStream(ctx)
+	if err != nil {
+		return nil, mapUpstreamError(err, "create document stream")
+	}
+
+	return stream, nil
 }
 
 func (s *Service) getAllowedDocument(

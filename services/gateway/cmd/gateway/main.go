@@ -16,6 +16,8 @@ import (
 	"secure-rag-platform/services/gateway/internal/config"
 	"secure-rag-platform/services/gateway/internal/docs"
 	transportgrpc "secure-rag-platform/services/gateway/internal/transport/grpc"
+	transporthttpadmin "secure-rag-platform/services/gateway/internal/transport/httpadmin"
+	transporthttpupload "secure-rag-platform/services/gateway/internal/transport/httpupload"
 	"secure-rag-platform/services/gateway/internal/usecase"
 	iamv1 "secure-rag-platform/services/iam/gen/v1"
 	knowledgev1 "secure-rag-platform/services/knowledge/gen/v1"
@@ -88,6 +90,14 @@ func main() {
 	if err := gatewayv1.RegisterGatewayRAGServiceHandlerServer(context.Background(), gwMux, serverImpl); err != nil {
 		fatal(logger, "не удалось зарегистрировать rag-обработчики", err)
 	}
+	userHandlers := transporthttpadmin.NewUserHandlers(uc, logger)
+	documentHandlers := transporthttpadmin.NewDocumentHandlers(uc, logger)
+	uploadHandlers := transporthttpupload.New(uc, logger)
+	mux.HandleFunc("/gateway/api/v1/admin/users", userHandlers.CreateUser)
+	mux.HandleFunc("/gateway/api/v1/admin/users/", userHandlers.Users)
+	mux.HandleFunc("/gateway/api/v1/admin/roles", userHandlers.ListRoles)
+	mux.HandleFunc("/gateway/api/v1/documents", uploadHandlers.CreateDocument(gwMux))
+	mux.HandleFunc("/gateway/api/v1/documents/", documentHandlers.Documents(gwMux))
 	mux.Handle("/gateway/", gwMux)
 
 	docs.RegisterAt(mux, "Gateway", "/gateway/docs")
@@ -141,6 +151,9 @@ func buildUsecase(
 
 	var iamClient iamv1.InternalIAMServiceClient
 	var authClient iamv1.AuthServiceClient
+	var userClient iamv1.UserServiceClient
+	var roleClient iamv1.RoleServiceClient
+	var attributeClient iamv1.AttributeServiceClient
 	if !disableAuth {
 		iamAddr := valueOrDefault(config.GetValue(config.IAMGRPC), "127.0.0.1:9091")
 		iamConn, connErr := grpc.NewClient(iamAddr, grpc.WithTransportCredentials(insecure.NewCredentials()))
@@ -150,6 +163,9 @@ func buildUsecase(
 		closer.Add(func() { _ = iamConn.Close() })
 		iamClient = iamv1.NewInternalIAMServiceClient(iamConn)
 		authClient = iamv1.NewAuthServiceClient(iamConn)
+		userClient = iamv1.NewUserServiceClient(iamConn)
+		roleClient = iamv1.NewRoleServiceClient(iamConn)
+		attributeClient = iamv1.NewAttributeServiceClient(iamConn)
 	}
 
 	return usecase.NewService(
@@ -157,6 +173,9 @@ func buildUsecase(
 		knowledgev1.NewKnowledgeServiceClient(knowledgeConn),
 		iamClient,
 		authClient,
+		userClient,
+		roleClient,
+		attributeClient,
 		usecase.NewOPAAuthorizer(config.GetValue(config.OPAURL)),
 		defaults,
 		disableAuth,

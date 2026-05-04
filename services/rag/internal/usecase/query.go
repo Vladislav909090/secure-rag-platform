@@ -17,8 +17,6 @@ const (
 	contextMaxChunks = 12
 	// contextMaxDistance отсекает чанки, которые слишком далеко от вектора запроса.
 	contextMaxDistance = 0.8
-	// contextDistanceEpsilon даёт небольшой запас относительно лучшего расстояния.
-	contextDistanceEpsilon = 0.05
 	// defaultTopK — значение по умолчанию для TopK, если не задано в запросе или конфиге.
 	defaultTopK = 3
 )
@@ -26,12 +24,13 @@ const (
 const (
 	// systemPromptTemplate — системная инструкция для модели.
 	// Описывает, как отвечать и как ссылаться на источники.
-	systemPromptTemplate = "You answer questions using the provided context. " +
-		"If the answer is not in the context, say you don't know. " +
-		"Keep the answer concise. Do not include source IDs or citations in the answer; " +
-		"sources are returned separately in the structured contexts field."
+	systemPromptTemplate = "Отвечай на русском языке только по предоставленному контексту. " +
+		"Если в контексте есть факты, числа, таблицы или CSV-строки, используй их для ответа. " +
+		"Если ответа нет в контексте, напиши: Не знаю. " +
+		"Отвечай кратко. Не добавляй source IDs и цитирования в текст ответа; " +
+		"источники возвращаются отдельно в structured contexts field."
 	// userPromptTemplate — шаблон пользовательской части промпта.
-	userPromptTemplate = "Question:\n%s\n\nContext:\n%s"
+	userPromptTemplate = "Вопрос:\n%s\n\nКонтекст:\n%s"
 )
 
 // Query выполняет поиск контекста и генерацию ответа.
@@ -83,9 +82,7 @@ func (s *Service) Query(ctx context.Context, req QueryRequest) (*QueryResult, er
 		resolvedModel = embedAlias
 	}
 
-	candidateLimit := max(int(topK)*4, int(topK))
-	candidateLimit = min(candidateLimit, contextMaxCandidates)
-	candidateLimit = min(candidateLimit, int(topK))
+	candidateLimit := min(max(int(topK)*4, int(topK)), contextMaxCandidates)
 
 	matches, err := s.repo.SearchSimilar(
 		ctx,
@@ -98,18 +95,12 @@ func (s *Service) Query(ctx context.Context, req QueryRequest) (*QueryResult, er
 		return nil, fmt.Errorf("search chunks: %w", err)
 	}
 
-	maxChunks := max(int(topK), contextMaxChunks)
+	maxChunks := min(int(topK), contextMaxChunks)
 
 	contexts := make([]QueryContext, 0, len(matches))
 	if len(matches) > 0 {
-		bestDistance := matches[0].Distance
-		allowedDistance := bestDistance + contextDistanceEpsilon
-		if allowedDistance > contextMaxDistance {
-			allowedDistance = contextMaxDistance
-		}
-
 		for _, match := range matches {
-			if match.Distance > allowedDistance {
+			if match.Distance > contextMaxDistance {
 				continue
 			}
 			score := float32(1.0) - match.Distance

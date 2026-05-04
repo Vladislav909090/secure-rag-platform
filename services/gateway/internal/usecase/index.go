@@ -23,7 +23,7 @@ func (s *Service) ReindexDocument(
 	if err != nil {
 		return nil, err
 	}
-	if err := requireDocumentEditor(subject); err != nil {
+	if err = requireDocumentEditor(subject); err != nil {
 		return nil, err
 	}
 
@@ -76,7 +76,7 @@ func (s *Service) ReindexAllDocuments(
 	if err != nil {
 		return nil, err
 	}
-	if err := requireDocumentEditor(subject); err != nil {
+	if err = requireDocumentEditor(subject); err != nil {
 		return nil, err
 	}
 

@@ -15,6 +15,9 @@ networks:
     driver: bridge
     internal: true
 
+  egress-net:
+    driver: bridge
+
   iam-db-net:
     driver: bridge
     internal: true
@@ -57,6 +60,7 @@ services:
       - IAM_GRPC_ADDR=iam:9091
       - KNOWLEDGE_GRPC_ADDR=knowledge:9092
       - RAG_GRPC_ADDR=rag:9093
+      - GATEWAY_DEFAULT_TOP_K=8
       - DISABLE_AUTH=false
       - DISABLE_DOC_FILTER=false
       - OPA_URL=http://opa:8181
@@ -252,7 +256,10 @@ services:
       - AI_INFERENCE_PROVIDER_TIMEOUT=180s
     volumes:
       - ../../services/ai-inference/config/models.json:/app/config/models.json:ro
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     expose:
       - "9094"
     networks:
       - app-net
+      - egress-net

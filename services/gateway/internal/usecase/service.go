@@ -20,6 +20,9 @@ type Service struct {
 	knowledge     knowledgev1.KnowledgeServiceClient
 	iam           iamv1.InternalIAMServiceClient
 	auth          iamv1.AuthServiceClient
+	users         iamv1.UserServiceClient
+	roles         iamv1.RoleServiceClient
+	attributes    iamv1.AttributeServiceClient
 	policy        PolicyAuthorizer
 	defaults      Defaults
 	disableAuth   bool
@@ -33,6 +36,9 @@ func NewService(
 	knowledge knowledgev1.KnowledgeServiceClient,
 	iam iamv1.InternalIAMServiceClient,
 	auth iamv1.AuthServiceClient,
+	users iamv1.UserServiceClient,
+	roles iamv1.RoleServiceClient,
+	attributes iamv1.AttributeServiceClient,
 	policy PolicyAuthorizer,
 	defaults Defaults,
 	disableAuth bool,
@@ -47,6 +53,9 @@ func NewService(
 		knowledge:     knowledge,
 		iam:           iam,
 		auth:          auth,
+		users:         users,
+		roles:         roles,
+		attributes:    attributes,
 		policy:        policy,
 		defaults:      defaults,
 		disableAuth:   disableAuth,
@@ -60,11 +69,12 @@ func (s *Service) Ready() bool {
 	if s == nil || s.rag == nil || s.knowledge == nil {
 		return false
 	}
-	if !s.disableAuth && s.iam == nil {
-		return false
+	if s.disableAuth {
+		return true
 	}
-	if !s.disableAuth && s.auth == nil {
-		return false
-	}
-	return true
+	return s.iam != nil &&
+		s.auth != nil &&
+		s.users != nil &&
+		s.roles != nil &&
+		s.attributes != nil
 }

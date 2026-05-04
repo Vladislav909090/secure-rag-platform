@@ -77,6 +77,63 @@ type SubjectContext struct {
 	CtxVer     int64
 }
 
+type CreateUserRequest struct {
+	Login      string
+	Password   string
+	IsActive   *bool
+	RoleCodes  []string
+	Attributes map[string]any
+}
+
+type UpdateUserRequest struct {
+	UserID   string
+	Login    *string
+	Password *string
+	IsActive *bool
+}
+
+type User struct {
+	ID         string
+	Login      string
+	IsActive   bool
+	CtxVer     int64
+	Roles      []string
+	Attributes map[string]any
+	CreatedAt  string
+	UpdatedAt  string
+}
+
+type Role struct {
+	ID          int64
+	Code        string
+	Name        string
+	Description string
+	CreatedAt   string
+}
+
+type UserRolesResult struct {
+	UserID string
+	Roles  []Role
+	CtxVer int64
+}
+
+type UserAttributesResult struct {
+	UserID     string
+	Attributes map[string]any
+	CtxVer     int64
+}
+
+type UpdateDocumentRequest struct {
+	DocumentUUID string
+	Title        *string
+	Description  *string
+}
+
+type UpdateDocumentAttributesRequest struct {
+	DocumentUUID string
+	Attributes   map[string]any
+}
+
 type Document struct {
 	ID             int64
 	UUID           string

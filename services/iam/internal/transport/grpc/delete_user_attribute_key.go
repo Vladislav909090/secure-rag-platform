@@ -9,7 +9,7 @@ import (
 )
 
 func (s *AttributeServiceServerImpl) DeleteUserAttributeKey(ctx context.Context, req *pb.DeleteUserAttributeKeyRequest) (*pb.DeleteUserAttributeKeyResponse, error) {
-	principal, _, err := s.deps.authenticate(ctx)
+	principal, _, err := authenticate(s.svc, ctx)
 	if err != nil {
 		return nil, toGRPCError(err)
 	}
@@ -24,7 +24,7 @@ func (s *AttributeServiceServerImpl) DeleteUserAttributeKey(ctx context.Context,
 	}
 
 	updatedBy := principal.UserID
-	attributes, ctxVer, err := s.deps.uc.DeleteUserAttributeKey(ctx, targetUserID, req.GetKey(), &updatedBy)
+	attributes, ctxVer, err := s.svc.DeleteUserAttributeKey(ctx, targetUserID, req.GetKey(), &updatedBy)
 	if err != nil {
 		return nil, toGRPCError(err)
 	}

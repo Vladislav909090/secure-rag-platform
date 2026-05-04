@@ -49,7 +49,12 @@ func (uc *IAMUsecase) GetUserRoles(ctx context.Context, userID string) ([]*model
 }
 
 // SetUserRoles полностью заменяет набор ролей и увеличивает версию контекста.
-func (uc *IAMUsecase) SetUserRoles(ctx context.Context, userID string, roleCodes []string, assignedBy *string) ([]*model.Role, int64, error) {
+func (uc *IAMUsecase) SetUserRoles(
+	ctx context.Context,
+	userID string,
+	roleCodes []string,
+	assignedBy *string,
+) ([]*model.Role, int64, error) {
 	userID = strings.TrimSpace(userID)
 	if userID == "" {
 		return nil, 0, ErrInvalidArgument
@@ -84,7 +89,12 @@ func (uc *IAMUsecase) SetUserRoles(ctx context.Context, userID string, roleCodes
 }
 
 // AddUserRole добавляет роль и увеличивает версию контекста.
-func (uc *IAMUsecase) AddUserRole(ctx context.Context, userID string, roleCode string, assignedBy *string) ([]*model.Role, int64, error) {
+func (uc *IAMUsecase) AddUserRole(
+	ctx context.Context,
+	userID string,
+	roleCode string,
+	assignedBy *string,
+) ([]*model.Role, int64, error) {
 	userID = strings.TrimSpace(userID)
 	roleCode = strings.TrimSpace(roleCode)
 	if userID == "" || roleCode == "" {
@@ -113,7 +123,11 @@ func (uc *IAMUsecase) AddUserRole(ctx context.Context, userID string, roleCode s
 }
 
 // RemoveUserRole удаляет роль и увеличивает версию контекста.
-func (uc *IAMUsecase) RemoveUserRole(ctx context.Context, userID string, roleCode string) ([]*model.Role, int64, error) {
+func (uc *IAMUsecase) RemoveUserRole(
+	ctx context.Context,
+	userID string,
+	roleCode string,
+) ([]*model.Role, int64, error) {
 	userID = strings.TrimSpace(userID)
 	roleCode = strings.TrimSpace(roleCode)
 	if userID == "" || roleCode == "" {

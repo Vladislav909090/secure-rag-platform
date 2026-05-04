@@ -46,11 +46,20 @@ func scanUser(row pgx.Row) (*model.User, error) {
 
 // GetUserByID возвращает пользователя по UUID.
 func (r *Repo) GetUserByID(ctx context.Context, userID string) (*model.User, error) {
-	user, err := scanUser(r.pool.QueryRow(ctx, `
-		SELECT id, login, password_hash, is_active, ctx_ver, created_at, updated_at
+	query := `
+		SELECT
+			id,
+			login,
+			password_hash,
+			is_active,
+			ctx_ver,
+			created_at,
+			updated_at
 		FROM users
 		WHERE id = $1
-	`, userID))
+	`
+
+	user, err := scanUser(r.pool.QueryRow(ctx, query, userID))
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
 			return nil, nil
@@ -62,11 +71,20 @@ func (r *Repo) GetUserByID(ctx context.Context, userID string) (*model.User, err
 
 // GetUserByLogin возвращает пользователя по уникальному логину.
 func (r *Repo) GetUserByLogin(ctx context.Context, login string) (*model.User, error) {
-	user, err := scanUser(r.pool.QueryRow(ctx, `
-		SELECT id, login, password_hash, is_active, ctx_ver, created_at, updated_at
+	query := `
+		SELECT
+			id,
+			login,
+			password_hash,
+			is_active,
+			ctx_ver,
+			created_at,
+			updated_at
 		FROM users
 		WHERE login = $1
-	`, login))
+	`
+
+	user, err := scanUser(r.pool.QueryRow(ctx, query, login))
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
 			return nil, nil
@@ -78,11 +96,20 @@ func (r *Repo) GetUserByLogin(ctx context.Context, login string) (*model.User, e
 
 // ListUsers возвращает всех пользователей, отсортированных по времени создания.
 func (r *Repo) ListUsers(ctx context.Context) ([]*model.User, error) {
-	rows, err := r.pool.Query(ctx, `
-		SELECT id, login, password_hash, is_active, ctx_ver, created_at, updated_at
+	query := `
+		SELECT
+			id,
+			login,
+			password_hash,
+			is_active,
+			ctx_ver,
+			created_at,
+			updated_at
 		FROM users
 		ORDER BY created_at ASC
-	`)
+	`
+
+	rows, err := r.pool.Query(ctx, query)
 	if err != nil {
 		return nil, fmt.Errorf("query users: %w", err)
 	}
@@ -108,11 +135,30 @@ func (r *Repo) CreateUser(ctx context.Context, input CreateUserInput) (*model.Us
 	var created *model.User
 
 	if err := withTx(ctx, r.pool, func(tx pgx.Tx) error {
-		user, err := scanUser(tx.QueryRow(ctx, `
-			INSERT INTO users (login, password_hash, is_active)
+		query := `
+			INSERT INTO users (
+				login,
+				password_hash,
+				is_active
+			)
 			VALUES ($1, $2, $3)
-			RETURNING id, login, password_hash, is_active, ctx_ver, created_at, updated_at
-		`, input.Login, input.PasswordHash, input.IsActive))
+			RETURNING
+				id,
+				login,
+				password_hash,
+				is_active,
+				ctx_ver,
+				created_at,
+				updated_at
+		`
+
+		user, err := scanUser(tx.QueryRow(
+			ctx,
+			query,
+			input.Login,
+			input.PasswordHash,
+			input.IsActive,
+		))
 		if err != nil {
 			return fmt.Errorf("insert user: %w", err)
 		}
@@ -122,14 +168,22 @@ func (r *Repo) CreateUser(ctx context.Context, input CreateUserInput) (*model.Us
 			return err
 		}
 
-		if _, err := tx.Exec(ctx, `
-			INSERT INTO user_attributes (user_id, attributes, updated_at, updated_by)
+		query = `
+			INSERT INTO user_attributes (
+				user_id,
+				attributes,
+				updated_at,
+				updated_by
+			)
 			VALUES ($1, $2::jsonb, NOW(), $3)
 			ON CONFLICT (user_id) DO UPDATE
-			SET attributes = EXCLUDED.attributes,
-			    updated_at = NOW(),
-			    updated_by = EXCLUDED.updated_by
-		`, user.ID, attrsJSON, input.CreatedBy); err != nil {
+			SET
+				attributes = EXCLUDED.attributes,
+				updated_at = NOW(),
+				updated_by = EXCLUDED.updated_by
+		`
+
+		if _, err := tx.Exec(ctx, query, user.ID, attrsJSON, input.CreatedBy); err != nil {
 			return fmt.Errorf("upsert user attributes: %w", err)
 		}
 
@@ -164,15 +218,25 @@ func (r *Repo) UpdateUser(ctx context.Context, input UpdateUserInput) (*model.Us
 		isActive = *input.IsActive
 	}
 
-	user, err := scanUser(r.pool.QueryRow(ctx, `
+	query := `
 		UPDATE users
-		SET login = COALESCE($2::text, login),
-		    password_hash = COALESCE($3::text, password_hash),
-		    is_active = COALESCE($4::boolean, is_active),
-		    updated_at = NOW()
+		SET
+			login = COALESCE($2::text, login),
+			password_hash = COALESCE($3::text, password_hash),
+			is_active = COALESCE($4::boolean, is_active),
+			updated_at = NOW()
 		WHERE id = $1
-		RETURNING id, login, password_hash, is_active, ctx_ver, created_at, updated_at
-	`, input.UserID, login, passwordHash, isActive))
+		RETURNING
+			id,
+			login,
+			password_hash,
+			is_active,
+			ctx_ver,
+			created_at,
+			updated_at
+	`
+
+	user, err := scanUser(r.pool.QueryRow(ctx, query, input.UserID, login, passwordHash, isActive))
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
 			return nil, ErrNotFound
@@ -185,14 +249,17 @@ func (r *Repo) UpdateUser(ctx context.Context, input UpdateUserInput) (*model.Us
 
 // IncrementContextVersion увеличивает ctx_ver и возвращает новое значение.
 func (r *Repo) IncrementContextVersion(ctx context.Context, userID string) (int64, error) {
-	var ctxVer int64
-	if err := r.pool.QueryRow(ctx, `
+	query := `
 		UPDATE users
-		SET ctx_ver = ctx_ver + 1,
-		    updated_at = NOW()
+		SET
+			ctx_ver = ctx_ver + 1,
+			updated_at = NOW()
 		WHERE id = $1
 		RETURNING ctx_ver
-	`, userID).Scan(&ctxVer); err != nil {
+	`
+
+	var ctxVer int64
+	if err := r.pool.QueryRow(ctx, query, userID).Scan(&ctxVer); err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
 			return 0, ErrNotFound
 		}

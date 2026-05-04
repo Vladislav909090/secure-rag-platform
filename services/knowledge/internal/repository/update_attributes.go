@@ -8,7 +8,12 @@ import (
 )
 
 // UpdateAttributes полностью заменяет attributes документа.
-func (r *Repo) UpdateAttributes(ctx context.Context, uuid string, attributes map[string]any, updatedAt time.Time) error {
+func (r *Repo) UpdateAttributes(
+	ctx context.Context,
+	uuid string,
+	attributes map[string]any,
+	updatedAt time.Time,
+) error {
 	query := `
 		UPDATE documents
 		SET

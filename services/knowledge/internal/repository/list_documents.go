@@ -17,7 +17,13 @@ func (r *Repo) ListActiveDocuments(ctx context.Context) ([]*model.Document, erro
 			title,
 			description,
 			attributes,
-			current_version_number,
+			file_name,
+			file_extension,
+			mime_type,
+			size_bytes,
+			checksum_sha256,
+			storage_key,
+			index_status,
 			created_at,
 			updated_at,
 			deleted_at
@@ -39,7 +45,9 @@ func (r *Repo) ListActiveDocuments(ctx context.Context) ([]*model.Document, erro
 
 		if err := rows.Scan(
 			&doc.ID, &doc.UUID, &doc.Title, &doc.Description, &attrJSON,
-			&doc.CurrentVersionNumber, &doc.CreatedAt, &doc.UpdatedAt, &doc.DeletedAt,
+			&doc.FileName, &doc.FileExtension, &doc.MimeType, &doc.SizeBytes,
+			&doc.ChecksumSHA256, &doc.StorageKey, &doc.IndexStatus,
+			&doc.CreatedAt, &doc.UpdatedAt, &doc.DeletedAt,
 		); err != nil {
 			return nil, err
 		}

@@ -9,11 +9,11 @@ import (
 
 type SessionServiceServerImpl struct {
 	pb.UnimplementedSessionServiceServer
-	deps *serverDeps
+	svc *usecase.IAMUsecase
 }
 
 func NewSessionServiceServer(uc *usecase.IAMUsecase) *SessionServiceServerImpl {
-	return &SessionServiceServerImpl{deps: newServerDeps(uc)}
+	return &SessionServiceServerImpl{svc: uc}
 }
 
 var _ pb.SessionServiceServer = (*SessionServiceServerImpl)(nil)

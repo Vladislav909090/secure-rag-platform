@@ -9,7 +9,7 @@ import (
 )
 
 func (s *UserServiceServerImpl) UpdateUser(ctx context.Context, req *pb.UpdateUserRequest) (*pb.UpdateUserResponse, error) {
-	principal, _, err := s.deps.authenticate(ctx)
+	principal, _, err := authenticate(s.svc, ctx)
 	if err != nil {
 		return nil, toGRPCError(err)
 	}
@@ -35,7 +35,7 @@ func (s *UserServiceServerImpl) UpdateUser(ctx context.Context, req *pb.UpdateUs
 		isActive = &v
 	}
 
-	updated, err := s.deps.uc.UpdateUser(ctx, usecase.UpdateUserInput{
+	updated, err := s.svc.UpdateUser(ctx, usecase.UpdateUserInput{
 		UserID:   req.GetUserId(),
 		Login:    login,
 		Password: password,

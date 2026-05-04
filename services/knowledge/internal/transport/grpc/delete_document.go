@@ -7,7 +7,10 @@ import (
 	pb "secure-rag-platform/services/knowledge/gen/v1"
 )
 
-func (s *KnowledgeServiceServerImpl) DeleteDocument(ctx context.Context, req *pb.DeleteDocumentRequest) (*pb.DeleteDocumentResponse, error) {
+func (s *KnowledgeServiceServerImpl) DeleteDocument(
+	ctx context.Context,
+	req *pb.DeleteDocumentRequest,
+) (*pb.DeleteDocumentResponse, error) {
 	if err := s.requireUC(); err != nil {
 		return nil, err
 	}

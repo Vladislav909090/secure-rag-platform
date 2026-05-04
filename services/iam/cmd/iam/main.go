@@ -3,9 +3,10 @@ package main
 import (
 	"context"
 	"errors"
-	"log"
+	"log/slog"
 	"net"
 	"net/http"
+	"os"
 
 	iamv1 "secure-rag-platform/services/iam/gen/v1"
 	application "secure-rag-platform/services/iam/internal/app"
@@ -39,21 +40,22 @@ type serverSet struct {
 }
 
 func main() {
+	logger := slog.Default()
 	ctx := context.Background()
 
 	pool, err := connectPostgres(ctx)
 	if err != nil {
-		log.Fatal(err)
+		fatal(logger, "не удалось подготовить PostgreSQL", err)
 	}
 	closer.Add(func() { pool.Close() })
 
 	repo := repository.NewRepo(pool)
-	redisClient := connectRedis(ctx)
-	uc := usecase.NewIAMUsecase(repo, redisClient, usecaseConfig())
+	redisClient := connectRedis(ctx, logger)
+	uc := usecase.NewIAMUsecase(repo, redisClient, usecaseConfig(), logger)
 
-	err = bootstrapSuperAdmin(ctx, uc)
+	err = bootstrapSuperAdmin(ctx, uc, logger)
 	if err != nil {
-		log.Fatal(err)
+		fatal(logger, "не удалось подготовить начального администратора", err)
 	}
 
 	servers := newServerSet(uc)
@@ -62,23 +64,28 @@ func main() {
 	grpcPort := valueOrDefault(config.GetValue(config.GRPCPort), defaultGRPCPort)
 	grpcLis, err := net.Listen("tcp", ":"+grpcPort)
 	if err != nil {
-		log.Fatalf("failed to listen on gRPC port: %v", err)
+		fatal(logger, "не удалось открыть порт gRPC", err)
 	}
 
-	mux := newHTTPMux(ctx, servers)
+	mux := newHTTPMux(ctx, servers, logger)
 	port := valueOrDefault(config.GetValue(config.Port), defaultHTTPPort)
 	httpServer := &http.Server{Addr: ":" + port, Handler: mux}
 
 	app := application.New()
 	registerRunners(app, grpcServer, grpcLis, httpServer)
 
-	log.Printf("iam gRPC listening on :%s", grpcPort)
-	log.Printf("iam listening on :%s", port)
-	log.Printf("docs: http://localhost/iam/docs")
+	logger.Info("gRPC слушает порт", "component", "iam.grpc", "port", grpcPort)
+	logger.Info("HTTP слушает порт", "component", "iam.http", "port", port)
+	logger.Info("Swagger UI доступен", "component", "iam.docs", "url", "http://localhost/iam/docs")
 
 	if err := app.Run(); err != nil {
-		log.Fatalf("application stopped with error: %v", err)
+		fatal(logger, "приложение остановлено с ошибкой", err)
 	}
+}
+
+func fatal(logger *slog.Logger, message string, err error) {
+	logger.Error(message, "error", err)
+	os.Exit(1)
 }
 
 func valueOrDefault(value string, fallback string) string {
@@ -101,7 +108,7 @@ func connectPostgres(ctx context.Context) (*pgxpool.Pool, error) {
 	return pool, nil
 }
 
-func connectRedis(ctx context.Context) *redis.Client {
+func connectRedis(ctx context.Context, logger *slog.Logger) *redis.Client {
 	redisAddr := config.GetValue(config.RedisAddr)
 	if redisAddr == "" {
 		return nil
@@ -114,13 +121,16 @@ func connectRedis(ctx context.Context) *redis.Client {
 	})
 
 	if err := client.Ping(ctx).Err(); err != nil {
-		log.Printf("[iam] failed to connect to Redis, cache/rate-limit disabled: %v", err)
+		logger.WarnContext(ctx, "Redis недоступен, кеш и rate limit отключены",
+			"component", "iam.cache",
+			"error", err,
+		)
 		_ = client.Close()
 		return nil
 	}
 
 	closer.Add(func() { _ = client.Close() })
-	log.Printf("[iam] Redis connected: %s", redisAddr)
+	logger.InfoContext(ctx, "Redis подключен", "component", "iam.cache", "addr", redisAddr)
 	return client
 }
 
@@ -132,10 +142,14 @@ func usecaseConfig() usecase.Config {
 	return ucCfg
 }
 
-func bootstrapSuperAdmin(ctx context.Context, uc *usecase.IAMUsecase) error {
+func bootstrapSuperAdmin(ctx context.Context, uc *usecase.IAMUsecase, logger *slog.Logger) error {
 	bootstrapLogin := valueOrDefault(config.GetValue(config.BootstrapAdminLogin), defaultBootstrapAdminLogin)
 
-	bootstrapPassword, created, err := uc.BootstrapSuperAdmin(ctx, bootstrapLogin, config.GetValue(config.BootstrapAdminPassword))
+	bootstrapPassword, created, err := uc.BootstrapSuperAdmin(
+		ctx,
+		bootstrapLogin,
+		config.GetValue(config.BootstrapAdminPassword),
+	)
 	if err != nil {
 		return errors.New("failed to bootstrap super admin: " + err.Error())
 	}
@@ -144,11 +158,18 @@ func bootstrapSuperAdmin(ctx context.Context, uc *usecase.IAMUsecase) error {
 	}
 
 	if bootstrapPassword != "" {
-		log.Printf("[iam] bootstrap super admin created: login=%s password=%s", bootstrapLogin, bootstrapPassword)
+		logger.InfoContext(ctx, "создан начальный superadmin",
+			"component", "iam.bootstrap",
+			"login", bootstrapLogin,
+			"password", bootstrapPassword,
+		)
 		return nil
 	}
 
-	log.Printf("[iam] bootstrap super admin created: login=%s", bootstrapLogin)
+	logger.InfoContext(ctx, "создан начальный superadmin",
+		"component", "iam.bootstrap",
+		"login", bootstrapLogin,
+	)
 	return nil
 }
 
@@ -176,38 +197,38 @@ func newGRPCServer(servers serverSet) *grpc.Server {
 	return grpcServer
 }
 
-func newHTTPMux(ctx context.Context, servers serverSet) *http.ServeMux {
+func newHTTPMux(ctx context.Context, servers serverSet, logger *slog.Logger) *http.ServeMux {
 	mux := http.NewServeMux()
 	gwMux := runtime.NewServeMux()
 
-	registerGatewayHandlers(ctx, gwMux, servers)
+	registerGatewayHandlers(ctx, gwMux, servers, logger)
 	mux.Handle("/iam/", gwMux)
 	docs.RegisterAt(mux, "IAM", "/iam/docs")
 
 	return mux
 }
 
-func registerGatewayHandlers(ctx context.Context, gwMux *runtime.ServeMux, servers serverSet) {
+func registerGatewayHandlers(ctx context.Context, gwMux *runtime.ServeMux, servers serverSet, logger *slog.Logger) {
 	if err := iamv1.RegisterIAMServiceHandlerServer(ctx, gwMux, servers.iam); err != nil {
-		log.Fatalf("failed to register IAM handlers: %v", err)
+		fatal(logger, "не удалось зарегистрировать IAM-обработчики", err)
 	}
 	if err := iamv1.RegisterAuthServiceHandlerServer(ctx, gwMux, servers.auth); err != nil {
-		log.Fatalf("failed to register Auth handlers: %v", err)
+		fatal(logger, "не удалось зарегистрировать auth-обработчики", err)
 	}
 	if err := iamv1.RegisterUserServiceHandlerServer(ctx, gwMux, servers.user); err != nil {
-		log.Fatalf("failed to register User handlers: %v", err)
+		fatal(logger, "не удалось зарегистрировать user-обработчики", err)
 	}
 	if err := iamv1.RegisterRoleServiceHandlerServer(ctx, gwMux, servers.role); err != nil {
-		log.Fatalf("failed to register Role handlers: %v", err)
+		fatal(logger, "не удалось зарегистрировать role-обработчики", err)
 	}
 	if err := iamv1.RegisterAttributeServiceHandlerServer(ctx, gwMux, servers.attribute); err != nil {
-		log.Fatalf("failed to register Attribute handlers: %v", err)
+		fatal(logger, "не удалось зарегистрировать attribute-обработчики", err)
 	}
 	if err := iamv1.RegisterSessionServiceHandlerServer(ctx, gwMux, servers.session); err != nil {
-		log.Fatalf("failed to register Session handlers: %v", err)
+		fatal(logger, "не удалось зарегистрировать session-обработчики", err)
 	}
 	if err := iamv1.RegisterInternalIAMServiceHandlerServer(ctx, gwMux, servers.internalIAM); err != nil {
-		log.Fatalf("failed to register InternalIAM handlers: %v", err)
+		fatal(logger, "не удалось зарегистрировать internal IAM-обработчики", err)
 	}
 }
 

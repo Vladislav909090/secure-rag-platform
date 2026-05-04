@@ -9,7 +9,7 @@ import (
 )
 
 func (s *AttributeServiceServerImpl) ReplaceUserAttributes(ctx context.Context, req *pb.ReplaceUserAttributesRequest) (*pb.ReplaceUserAttributesResponse, error) {
-	principal, _, err := s.deps.authenticate(ctx)
+	principal, _, err := authenticate(s.svc, ctx)
 	if err != nil {
 		return nil, toGRPCError(err)
 	}
@@ -24,7 +24,7 @@ func (s *AttributeServiceServerImpl) ReplaceUserAttributes(ctx context.Context, 
 	}
 
 	updatedBy := principal.UserID
-	attributes, ctxVer, err := s.deps.uc.ReplaceUserAttributes(ctx, targetUserID, structToMap(req.GetAttributes()), &updatedBy)
+	attributes, ctxVer, err := s.svc.ReplaceUserAttributes(ctx, targetUserID, structToMap(req.GetAttributes()), &updatedBy)
 	if err != nil {
 		return nil, toGRPCError(err)
 	}

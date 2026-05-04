@@ -9,7 +9,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"log"
+	"log/slog"
 	"slices"
 	"strings"
 	"time"
@@ -52,13 +52,18 @@ type accessTokenClaims struct {
 
 // IAMUsecase содержит бизнес-логику IAM.
 type IAMUsecase struct {
-	repo  *repository.Repo
-	redis *redis.Client
-	cfg   Config
+	repo   *repository.Repo
+	redis  *redis.Client
+	cfg    Config
+	logger *slog.Logger
 }
 
 // NewIAMUsecase создает слой бизнес-логики IAM с переданными зависимостями.
-func NewIAMUsecase(repo *repository.Repo, redisClient *redis.Client, cfg Config) *IAMUsecase {
+func NewIAMUsecase(repo *repository.Repo, redisClient *redis.Client, cfg Config, logger *slog.Logger) *IAMUsecase {
+	if logger == nil {
+		logger = slog.Default()
+	}
+
 	defaults := DefaultConfig()
 	if cfg.JWTIssuer == "" {
 		cfg.JWTIssuer = defaults.JWTIssuer
@@ -89,13 +94,16 @@ func NewIAMUsecase(repo *repository.Repo, redisClient *redis.Client, cfg Config)
 	}
 	if cfg.JWTSecret == "" {
 		cfg.JWTSecret = uuid.NewString()
-		log.Printf("[iam] JWT secret is empty; generated ephemeral secret for current run")
+		logger.Warn("JWT_SECRET пустой, создан временный секрет для текущего запуска",
+			"component", "iam.auth",
+		)
 	}
 
 	return &IAMUsecase{
-		repo:  repo,
-		redis: redisClient,
-		cfg:   cfg,
+		repo:   repo,
+		redis:  redisClient,
+		cfg:    cfg,
+		logger: logger,
 	}
 }
 
@@ -233,13 +241,19 @@ func (uc *IAMUsecase) getSubjectContextFromCache(ctx context.Context, userID str
 		if errors.Is(err, redis.Nil) {
 			return nil, false
 		}
-		log.Printf("[iam] redis get subject context failed: %v", err)
+		uc.logger.WarnContext(ctx, "не удалось прочитать контекст субъекта из Redis",
+			"component", "iam.cache",
+			"error", err,
+		)
 		return nil, false
 	}
 
 	var cached model.SubjectContext
 	if err := json.Unmarshal([]byte(raw), &cached); err != nil {
-		log.Printf("[iam] redis unmarshal subject context failed: %v", err)
+		uc.logger.WarnContext(ctx, "не удалось разобрать контекст субъекта из Redis",
+			"component", "iam.cache",
+			"error", err,
+		)
 		return nil, false
 	}
 
@@ -253,12 +267,18 @@ func (uc *IAMUsecase) storeSubjectContextInCache(ctx context.Context, subject *m
 
 	raw, err := json.Marshal(subject)
 	if err != nil {
-		log.Printf("[iam] redis marshal subject context failed: %v", err)
+		uc.logger.WarnContext(ctx, "не удалось сериализовать контекст субъекта для Redis",
+			"component", "iam.cache",
+			"error", err,
+		)
 		return
 	}
 
 	if err := uc.redis.Set(ctx, subjectCacheKey(subject.UserID), raw, uc.cfg.SubjectCacheTTL).Err(); err != nil {
-		log.Printf("[iam] redis set subject context failed: %v", err)
+		uc.logger.WarnContext(ctx, "не удалось сохранить контекст субъекта в Redis",
+			"component", "iam.cache",
+			"error", err,
+		)
 	}
 }
 
@@ -268,7 +288,11 @@ func (uc *IAMUsecase) InvalidateSubjectContextCache(ctx context.Context, userID 
 		return
 	}
 	if err := uc.redis.Del(ctx, subjectCacheKey(userID)).Err(); err != nil {
-		log.Printf("[iam] redis invalidate subject context failed: %v", err)
+		uc.logger.WarnContext(ctx, "не удалось сбросить контекст субъекта в Redis",
+			"component", "iam.cache",
+			"user_id", userID,
+			"error", err,
+		)
 	}
 }
 
@@ -279,13 +303,19 @@ func (uc *IAMUsecase) checkRateLimit(ctx context.Context, key string, limit int,
 
 	count, err := uc.redis.Incr(ctx, key).Result()
 	if err != nil {
-		log.Printf("[iam] redis rate limit incr failed: %v", err)
+		uc.logger.WarnContext(ctx, "не удалось увеличить счетчик Redis",
+			"component", "iam.rate-limit",
+			"error", err,
+		)
 		return nil
 	}
 
 	if count == 1 {
 		if err := uc.redis.Expire(ctx, key, window).Err(); err != nil {
-			log.Printf("[iam] redis rate limit expire failed: %v", err)
+			uc.logger.WarnContext(ctx, "не удалось выставить TTL счетчика Redis",
+				"component", "iam.rate-limit",
+				"error", err,
+			)
 		}
 	}
 
@@ -359,7 +389,10 @@ func (uc *IAMUsecase) GetSubjectContext(ctx context.Context, userID string) (*mo
 }
 
 // AuthenticateAccessToken проверяет токен доступа и возвращает данные принципала с актуальным контекстом субъекта.
-func (uc *IAMUsecase) AuthenticateAccessToken(ctx context.Context, accessToken string) (*Principal, *model.SubjectContext, error) {
+func (uc *IAMUsecase) AuthenticateAccessToken(
+	ctx context.Context,
+	accessToken string,
+) (*Principal, *model.SubjectContext, error) {
 	claims, err := uc.parseAccessToken(accessToken)
 	if err != nil {
 		return nil, nil, ErrUnauthorized
@@ -406,7 +439,11 @@ func (uc *IAMUsecase) AuthenticateAccessToken(ctx context.Context, accessToken s
 }
 
 // BootstrapSuperAdmin создает начального суперадмина, если он отсутствует.
-func (uc *IAMUsecase) BootstrapSuperAdmin(ctx context.Context, login string, password string) (generatedPassword string, created bool, err error) {
+func (uc *IAMUsecase) BootstrapSuperAdmin(
+	ctx context.Context,
+	login string,
+	password string,
+) (generatedPassword string, created bool, err error) {
 	exists, err := uc.repo.HasUserWithRole(ctx, RoleSuperAdmin)
 	if err != nil {
 		return "", false, fmt.Errorf("check super admin existence: %w", err)

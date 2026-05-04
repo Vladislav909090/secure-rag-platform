@@ -9,7 +9,7 @@ import (
 )
 
 func (s *UserServiceServerImpl) GetUser(ctx context.Context, req *pb.GetUserRequest) (*pb.GetUserResponse, error) {
-	principal, _, err := s.deps.authenticate(ctx)
+	principal, _, err := authenticate(s.svc, ctx)
 	if err != nil {
 		return nil, toGRPCError(err)
 	}
@@ -23,7 +23,7 @@ func (s *UserServiceServerImpl) GetUser(ctx context.Context, req *pb.GetUserRequ
 		return nil, toGRPCError(usecase.ErrForbidden)
 	}
 
-	user, err := s.deps.uc.GetUser(ctx, targetUserID)
+	user, err := s.svc.GetUser(ctx, targetUserID)
 	if err != nil {
 		return nil, toGRPCError(err)
 	}

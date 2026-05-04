@@ -3,9 +3,10 @@ package main
 import (
 	"context"
 	"errors"
-	"log"
+	"log/slog"
 	"net"
 	"net/http"
+	"os"
 	"strconv"
 
 	knowledgev1 "secure-rag-platform/services/knowledge/gen/v1"
@@ -29,6 +30,8 @@ import (
 const defaultMaxFileSize = 100 * 1024 * 1024 // 100 MB
 
 func main() {
+	logger := slog.Default()
+
 	port := config.GetValue(config.Port)
 	if port == "" {
 		port = "8082"
@@ -46,14 +49,14 @@ func main() {
 		}
 	}
 
-	// --- optional infrastructure: DB + S3 ---
+	// --- Опциональная инфраструктура: БД + S3 ---
 
 	var uc *usecase.DocumentUsecase
 
 	if dbDSN := config.GetValue(config.DatabaseDSN); dbDSN != "" {
 		pool, err := pgxpool.New(context.Background(), dbDSN)
 		if err != nil {
-			log.Fatalf("failed to connect to database: %v", err)
+			fatal(logger, "не удалось подключиться к PostgreSQL", err)
 		}
 		closer.Add(func() { pool.Close() })
 
@@ -65,22 +68,22 @@ func main() {
 			config.GetValue(config.S3UseSSL) == "true",
 		)
 		if err != nil {
-			log.Fatalf("failed to init S3 storage: %v", err)
+			fatal(logger, "не удалось инициализировать S3-хранилище", err)
 		}
 
 		if err := s3Store.EnsureBucket(context.Background()); err != nil {
-			log.Fatalf("failed to ensure S3 bucket: %v", err)
+			fatal(logger, "не удалось подготовить bucket", err)
 		}
 
 		repo := repository.NewRepo(pool)
 		uc = usecase.NewDocumentUsecase(repo, s3Store, maxFileSize)
 
-		log.Println("knowledge: database and S3 configured")
+		logger.Info("PostgreSQL и S3 настроены", "component", "knowledge.app")
 	} else {
-		log.Println("knowledge: DATABASE_DSN not set, document endpoints unavailable")
+		logger.Warn("DATABASE_DSN не задан, документные ручки недоступны", "component", "knowledge.db")
 	}
 
-	// --- gRPC server ---
+	// --- gRPC-сервер ---
 
 	serverImpl := transportgrpc.NewKnowledgeServiceServer(uc)
 	grpcServer := grpc.NewServer()
@@ -88,7 +91,7 @@ func main() {
 
 	grpcLis, err := net.Listen("tcp", ":"+grpcPort)
 	if err != nil {
-		log.Fatalf("failed to listen grpc: %v", err)
+		fatal(logger, "не удалось открыть порт gRPC", err)
 	}
 
 	// --- HTTP mux ---
@@ -109,31 +112,31 @@ func main() {
 	)
 	err = knowledgev1.RegisterKnowledgeServiceHandlerServer(context.Background(), gwMux, serverImpl)
 	if err != nil {
-		log.Fatalf("failed to register knowledge handlers: %v", err)
+		fatal(logger, "не удалось зарегистрировать knowledge-обработчики", err)
 	}
 
 	grpcConn, err := grpc.NewClient("127.0.0.1:"+grpcPort, grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
-		log.Fatalf("failed to create grpc client: %v", err)
+		fatal(logger, "не удалось создать локальный gRPC-клиент", err)
 	}
 	closer.Add(func() { _ = grpcConn.Close() })
 
 	uploadHandlers := transporthttpupload.New(knowledgev1.NewKnowledgeServiceClient(grpcConn), uc)
 	mux.HandleFunc("/knowledge/api/v1/documents", uploadHandlers.CreateDocument(gwMux))
-	mux.HandleFunc("/knowledge/api/v1/documents/", uploadHandlers.UploadVersion(gwMux))
+	mux.HandleFunc("/knowledge/api/v1/documents/", uploadHandlers.DocumentFiles(gwMux))
 	mux.Handle("/knowledge/api/", gwMux)
 
 	docs.RegisterAt(mux, "Knowledge", "/knowledge/docs")
 
-	// --- run ---
+	// --- Запуск ---
 
 	app := application.New()
 
 	httpServer := &http.Server{Addr: ":" + port, Handler: mux}
 
-	log.Printf("knowledge grpc listening on :%s", grpcPort)
-	log.Printf("knowledge listening on :%s", port)
-	log.Printf("docs: http://localhost/knowledge/docs")
+	logger.Info("gRPC слушает порт", "component", "knowledge.grpc", "port", grpcPort)
+	logger.Info("HTTP слушает порт", "component", "knowledge.http", "port", port)
+	logger.Info("Swagger UI доступен", "component", "knowledge.docs", "url", "http://localhost/knowledge/docs")
 
 	app.Add(func() error {
 		return grpcServer.Serve(grpcLis)
@@ -150,6 +153,11 @@ func main() {
 	closer.Add(grpcLis.Close)
 
 	if err := app.Run(); err != nil {
-		log.Fatalf("application stopped with error: %v", err)
+		fatal(logger, "приложение остановлено с ошибкой", err)
 	}
+}
+
+func fatal(logger *slog.Logger, message string, err error) {
+	logger.Error(message, "error", err)
+	os.Exit(1)
 }

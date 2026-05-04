@@ -14,10 +14,74 @@ service RAGService {
       get: "/rag/health"
     };
   }
+
+  // IndexDocument индексирует документ в векторное хранилище.
+  rpc IndexDocument(IndexDocumentRequest) returns (IndexDocumentResponse) {
+    option (google.api.http) = {
+      post: "/rag/api/v1/documents/{document_uuid}/index"
+      body: "*"
+    };
+  }
+
+  // DeleteDocumentIndex удаляет документ из векторного хранилища.
+  rpc DeleteDocumentIndex(DeleteDocumentIndexRequest) returns (DeleteDocumentIndexResponse);
+
+  // Query выполняет поиск контекста и генерацию ответа.
+  rpc Query(QueryRequest) returns (QueryResponse) {
+    option (google.api.http) = {
+      post: "/rag/api/v1/query"
+      body: "*"
+    };
+  }
 }
 
 message HealthRequest {}
 
 message HealthResponse {
   string status = 1;
+}
+
+message IndexDocumentRequest {
+  string document_uuid = 1;
+  string embedding_model_alias = 2;
+  int32 chunk_size = 3;
+  int32 chunk_overlap = 4;
+}
+
+message IndexDocumentResponse {
+  string document_uuid = 1;
+  int32 chunk_count = 2;
+  int32 embedding_dimension = 3;
+  string resolved_embedding_model = 4;
+}
+
+message DeleteDocumentIndexRequest {
+  string document_uuid = 1;
+}
+
+message DeleteDocumentIndexResponse {
+  string document_uuid = 1;
+  bool deleted = 2;
+}
+
+message QueryRequest {
+  string query = 1;
+  int32 top_k = 2;
+  repeated string document_uuids = 3;
+  string embedding_model_alias = 4;
+  string generation_model_alias = 5;
+}
+
+message QueryContext {
+  string document_uuid = 1;
+  int32 chunk_index = 2;
+  string text = 3;
+  float score = 4;
+}
+
+message QueryResponse {
+  string answer = 1;
+  repeated QueryContext contexts = 2;
+  string resolved_embedding_model = 3;
+  string resolved_generation_model = 4;
 }

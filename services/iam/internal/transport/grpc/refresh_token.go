@@ -9,11 +9,11 @@ import (
 )
 
 func (s *AuthServiceServerImpl) RefreshToken(ctx context.Context, req *pb.RefreshTokenRequest) (*pb.TokenPairResponse, error) {
-	if err := s.deps.requireUC(); err != nil {
+	if err := requireUC(s.svc); err != nil {
 		return nil, err
 	}
 
-	tokens, err := s.deps.uc.RefreshToken(ctx, usecase.RefreshTokenInput{
+	tokens, err := s.svc.RefreshToken(ctx, usecase.RefreshTokenInput{
 		RefreshToken: req.GetRefreshToken(),
 	})
 	if err != nil {

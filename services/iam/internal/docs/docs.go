@@ -3,7 +3,7 @@ package docs
 
 import (
 	"fmt"
-	"log"
+	"log/slog"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -25,7 +25,7 @@ const uiTemplate = `<!DOCTYPE html>
   <script>
 	const spec = JSON.parse(%s);
 
-	// Inject Bearer auth schema for generated specs that do not include securityDefinitions.
+	// Добавляем Bearer auth schema для сгенерированных спецификаций без securityDefinitions.
 	if (!spec.securityDefinitions) {
 	  spec.securityDefinitions = {};
 	}
@@ -34,7 +34,7 @@ const uiTemplate = `<!DOCTYPE html>
 		type: 'apiKey',
 		name: 'Authorization',
 		in: 'header',
-		description: 'Bearer access token, example: Bearer eyJ...'
+		description: 'Bearer access token, пример: Bearer eyJ...'
 	  };
 	}
 	if (!spec.security) {
@@ -103,7 +103,10 @@ func loadSpecJSON() ([]byte, error) {
 func RegisterAt(mux *http.ServeMux, serviceName string, docsPath string) {
 	specJSON, err := loadSpecJSON()
 	if err != nil {
-		log.Printf("warning: %v", err)
+		slog.Warn("Swagger UI недоступен",
+			"component", "iam.docs",
+			"error", err,
+		)
 		return
 	}
 

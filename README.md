@@ -1,6 +1,6 @@
 # secure-rag-platform
 
-Минималистичное монорепо из 4 Go-сервисов на `gRPC + grpc-gateway`.
+Минималистичное монорепо из 5 Go-сервисов на `gRPC + grpc-gateway`.
 
 ## Архитектура
 
@@ -10,6 +10,7 @@ services/
   iam/
   knowledge/
   rag/
+  ai-inference/
 deploy/
   compose/              # docker-compose для локального запуска
   traefik/              # конфиг Traefik
@@ -42,15 +43,34 @@ services/<svc>/
 
 | Сервис    | HTTP | gRPC | PostgreSQL |
 |-----------|------|------|------------|
-| gateway   | 8080 | 9090 |    5432    |
+| gateway   | 8080 | 9090 |      -     |
 | iam       | 8081 | 9091 |    5433    |
 | knowledge | 8082 | 9092 |    5434    |
 | rag       | 8083 | 9093 |    5435    |
+| ai-inference |  -  | 9094 |      -     |
 
 
 - Единственный публичный вход: Traefik (`http://localhost`, dashboard: `http://localhost:8090`).
 - HTTP-порты сервисов и порты PostgreSQL не публикуются на хост, используются только через `expose` внутри сети `traefik-net`.
 - Прямые адреса вида `http://localhost:8081` и `localhost:5433` недоступны с хоста.
+- `ai-inference` является внутренним gRPC-сервисом и не публикуется через Traefik.
+
+## Инфраструктурные порты
+
+В обычном режиме (`make compose:up`) Redis/MinIO/PostgreSQL доступны только внутри docker-сетей.
+
+В dev-режиме (`make compose:up DEV=1`) публикуются следующие порты на хост:
+
+| Компонент | Host порт | Container порт | Назначение |
+|-----------|-----------|----------------|------------|
+| iam-db | 5433 | 5432 | PostgreSQL iam |
+| knowledge-db | 5434 | 5432 | PostgreSQL knowledge |
+| rag-db | 5435 | 5432 | PostgreSQL rag |
+| iam-redis | 6380 | 6379 | Redis iam |
+| knowledge-minio | 9001 | 9001 | MinIO Console |
+| ai-inference | 9094 | 9094 | gRPC ai-inference |
+
+Примечание: S3 API MinIO работает на порту `9000` внутри контейнера (`knowledge-minio:9000`) и используется сервисом `knowledge` по внутренней сети; на хост по умолчанию не публикуется.
 
 Внешние маршруты через Traefik:
 
@@ -101,10 +121,6 @@ make grpc:stubs
 make migrate:status
 make migrate:up
 make migrate:down
-make migrate:create:gateway MIGRATION_NAME=add_users_table
-make migrate:create:iam MIGRATION_NAME=add_tokens_table
-make migrate:create:knowledge MIGRATION_NAME=add_documents_table
-make migrate:create:rag MIGRATION_NAME=add_jobs_table
 ```
 
 ## Примечания
@@ -113,4 +129,5 @@ make migrate:create:rag MIGRATION_NAME=add_jobs_table
 - `grpcstubgen` не удаляет устаревшие файлы автоматически: лишние стабы удаляются вручную.
 - Папки-каркасы, где пока нет кода (`repository`, `usecase`), удерживаются в git через `doc.go`.
 - Для всех сервисов используется сервисный namespace в Traefik: `/gateway/*`, `/iam/*`, `/knowledge/*`, `/rag/*`.
+- `ai-inference` не имеет HTTP API и предназначен для межсервисного gRPC-вызова.
 - HTTP-доступ к сервисам оставлен только через Traefik; даже в `DEV=1` порты `8080-8083` на хост не публикуются.

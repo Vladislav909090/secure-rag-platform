@@ -9,7 +9,7 @@ import (
 )
 
 func (s *RoleServiceServerImpl) RemoveUserRole(ctx context.Context, req *pb.RemoveUserRoleRequest) (*pb.RemoveUserRoleResponse, error) {
-	principal, _, err := s.deps.authenticate(ctx)
+	principal, _, err := authenticate(s.svc, ctx)
 	if err != nil {
 		return nil, toGRPCError(err)
 	}
@@ -17,7 +17,7 @@ func (s *RoleServiceServerImpl) RemoveUserRole(ctx context.Context, req *pb.Remo
 		return nil, toGRPCError(usecase.ErrForbidden)
 	}
 
-	roles, ctxVer, err := s.deps.uc.RemoveUserRole(ctx, req.GetUserId(), req.GetRoleCode())
+	roles, ctxVer, err := s.svc.RemoveUserRole(ctx, req.GetUserId(), req.GetRoleCode())
 	if err != nil {
 		return nil, toGRPCError(err)
 	}

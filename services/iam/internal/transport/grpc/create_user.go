@@ -9,7 +9,7 @@ import (
 )
 
 func (s *UserServiceServerImpl) CreateUser(ctx context.Context, req *pb.CreateUserRequest) (*pb.CreateUserResponse, error) {
-	principal, _, err := s.deps.authenticate(ctx)
+	principal, _, err := authenticate(s.svc, ctx)
 	if err != nil {
 		return nil, toGRPCError(err)
 	}
@@ -24,7 +24,7 @@ func (s *UserServiceServerImpl) CreateUser(ctx context.Context, req *pb.CreateUs
 	}
 
 	createdBy := principal.UserID
-	user, err := s.deps.uc.CreateUser(ctx, usecase.CreateUserInput{
+	user, err := s.svc.CreateUser(ctx, usecase.CreateUserInput{
 		Login:      req.GetLogin(),
 		Password:   req.GetPassword(),
 		IsActive:   isActive,

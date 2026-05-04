@@ -1,0 +1,125 @@
+syntax = "proto3";
+
+package aiinference.v1;
+
+option go_package = "secure-rag-platform/services/ai-inference/gen/v1;aiinferencev1";
+
+import "google/protobuf/wrappers.proto";
+
+// AIInferenceService — служебные методы ai-inference.
+service AIInferenceService {
+  // Health проверяет работоспособность ai-inference.
+  rpc Health(HealthRequest) returns (HealthResponse);
+}
+
+// GenerationService — генерация текста через модельные алиасы.
+service GenerationService {
+  // Generate генерирует текст по сообщениям и параметрам генерации.
+  rpc Generate(GenerateRequest) returns (GenerateResponse);
+
+  // ListModels возвращает список доступных alias-моделей генерации/эмбеддингов.
+  rpc ListModels(ListModelsRequest) returns (ListModelsResponse);
+}
+
+// EmbeddingService — построение эмбеддингов через модельные алиасы.
+service EmbeddingService {
+  // Embed строит эмбеддинг для одного текста.
+  rpc Embed(EmbedRequest) returns (EmbedResponse);
+
+  // BatchEmbed строит эмбеддинги для набора текстов.
+  rpc BatchEmbed(BatchEmbedRequest) returns (BatchEmbedResponse);
+}
+
+message HealthRequest {}
+
+message HealthResponse {
+  string status = 1;
+}
+
+enum TaskType {
+  TASK_TYPE_UNSPECIFIED = 0;
+  TASK_TYPE_GENERATION = 1;
+  TASK_TYPE_EMBEDDING = 2;
+}
+
+message Usage {
+  int32 prompt_tokens = 1;
+  int32 completion_tokens = 2;
+  int32 total_tokens = 3;
+}
+
+message Message {
+  string role = 1;
+  string content = 2;
+}
+
+message GenerationParams {
+  google.protobuf.FloatValue temperature = 1;
+  google.protobuf.FloatValue top_p = 2;
+  google.protobuf.Int32Value max_tokens = 3;
+  google.protobuf.FloatValue presence_penalty = 4;
+  google.protobuf.FloatValue frequency_penalty = 5;
+}
+
+message GenerateRequest {
+  string request_id = 1;
+  string model_alias = 2;
+  repeated Message messages = 3;
+  GenerationParams params = 4;
+}
+
+message GenerateResponse {
+  string content = 1;
+  string finish_reason = 2;
+  Usage usage = 3;
+  string resolved_provider = 4;
+  string resolved_model = 5;
+}
+
+message ListModelsRequest {
+  TaskType task_type = 1;
+}
+
+message ModelAliasInfo {
+  string alias = 1;
+  TaskType task_type = 2;
+  string provider = 3;
+  string model = 4;
+  string base_url = 5;
+}
+
+message ListModelsResponse {
+  repeated ModelAliasInfo models = 1;
+}
+
+message EmbedRequest {
+  string request_id = 1;
+  string model_alias = 2;
+  string text = 3;
+  bool normalize = 4;
+}
+
+message EmbedResponse {
+  repeated float vector = 1;
+  int32 dimension = 2;
+  string resolved_provider = 3;
+  string resolved_model = 4;
+}
+
+message BatchEmbedRequest {
+  string request_id = 1;
+  string model_alias = 2;
+  repeated string texts = 3;
+  bool normalize = 4;
+}
+
+message EmbeddingVector {
+  repeated float values = 1;
+}
+
+message BatchEmbedResponse {
+  repeated EmbeddingVector vectors = 1;
+  int32 dimension = 2;
+  string resolved_provider = 3;
+  string resolved_model = 4;
+}

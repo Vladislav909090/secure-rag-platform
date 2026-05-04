@@ -24,6 +24,12 @@ profile.cov
 go.work
 go.work.sum
 
+# Local linter cache
+.golangci/
+.golangci-cache/
+.golangci-cache-*/
+.gocache/
+
 # env file
 .env
 
@@ -36,3 +42,12 @@ services/*/gen/*
 
 # Downloaded third-party protos
 third_party/google/
+
+# postman files
+postman
+
+# test data
+demo_docs
+
+# ai-inference local config
+services/ai-inference/config/models.json

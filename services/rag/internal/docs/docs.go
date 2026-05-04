@@ -3,7 +3,7 @@ package docs
 
 import (
 	"fmt"
-	"log"
+	"log/slog"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -65,7 +65,10 @@ func loadSpecJSON() ([]byte, error) {
 func RegisterAt(mux *http.ServeMux, serviceName string, docsPath string) {
 	specJSON, err := loadSpecJSON()
 	if err != nil {
-		log.Printf("warning: %v", err)
+		slog.Warn("Swagger UI недоступен",
+			"component", "rag.docs",
+			"error", err,
+		)
 		return
 	}
 

@@ -15,7 +15,6 @@ var (
 	ErrDocumentNotFound   = errors.New("document not found")
 	ErrDocumentDeleted    = errors.New("document is deleted")
 	ErrDocumentNotDeleted = errors.New("document is not deleted")
-	ErrVersionNotFound    = errors.New("version not found")
 	ErrFileNotFound       = errors.New("file not found in storage")
 	ErrFileTooLarge       = errors.New("file too large")
 	ErrInvalidRequest     = errors.New("invalid request")
@@ -55,7 +54,12 @@ func (r *sizeLimitReader) Read(p []byte) (int, error) {
 	return n, err
 }
 
-func (uc *DocumentUsecase) uploadAndHash(ctx context.Context, storageKey string, file io.Reader, mimeType string) (int64, string, error) {
+func (uc *DocumentUsecase) uploadAndHash(
+	ctx context.Context,
+	storageKey string,
+	file io.Reader,
+	mimeType string,
+) (int64, string, error) {
 	hasher := sha256.New()
 	limited := &sizeLimitReader{r: file, max: uc.maxSize}
 	stream := io.TeeReader(limited, hasher)

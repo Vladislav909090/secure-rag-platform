@@ -5,8 +5,10 @@ package gateway.v1;
 option go_package = "secure-rag-platform/services/gateway/gen/v1;gatewayv1";
 
 import "google/api/annotations.proto";
+import "google/api/httpbody.proto";
+import "google/protobuf/struct.proto";
 
-// GatewayService — единая точка входа для внешних клиентов.
+// GatewayService предоставляет базовые операции gateway.
 service GatewayService {
   // Health проверяет работоспособность gateway.
   rpc Health(HealthRequest) returns (HealthResponse) {
@@ -16,8 +18,246 @@ service GatewayService {
   }
 }
 
+// GatewayAuthService предоставляет операции аутентификации через gateway.
+service GatewayAuthService {
+  // Login аутентифицирует пользователя через IAM.
+  rpc Login(LoginRequest) returns (TokenPairResponse) {
+    option (google.api.http) = {
+      post: "/gateway/api/v1/auth/login"
+      body: "*"
+    };
+  }
+
+  // RefreshToken обновляет access token через IAM.
+  rpc RefreshToken(RefreshTokenRequest) returns (TokenPairResponse) {
+    option (google.api.http) = {
+      post: "/gateway/api/v1/auth/refresh"
+      body: "*"
+    };
+  }
+
+  // Logout отзывает текущую сессию через IAM.
+  rpc Logout(LogoutRequest) returns (LogoutResponse) {
+    option (google.api.http) = {
+      post: "/gateway/api/v1/auth/logout"
+      body: "*"
+    };
+  }
+
+  // GetMe возвращает текущего аутентифицированного субъекта.
+  rpc GetMe(GetMeRequest) returns (GetMeResponse) {
+    option (google.api.http) = {
+      get: "/gateway/api/v1/auth/me"
+    };
+  }
+}
+
+// GatewayKnowledgeService предоставляет доступные пользователю операции knowledge через gateway.
+service GatewayKnowledgeService {
+  // ListDocuments возвращает документы, доступные текущему субъекту.
+  rpc ListDocuments(ListDocumentsRequest) returns (ListDocumentsResponse) {
+    option (google.api.http) = {
+      get: "/gateway/api/v1/documents"
+    };
+  }
+
+  // GetDocument возвращает доступный документ.
+  rpc GetDocument(GetDocumentRequest) returns (GetDocumentResponse) {
+    option (google.api.http) = {
+      get: "/gateway/api/v1/documents/{document_uuid}"
+    };
+  }
+
+  // DownloadFile скачивает файл документа, если документ доступен текущему субъекту.
+  rpc DownloadFile(DownloadFileRequest) returns (google.api.HttpBody) {
+    option (google.api.http) = {
+      get: "/gateway/api/v1/documents/{document_uuid}/file"
+    };
+  }
+
+  // DeleteDocument удаляет документ, если текущий субъект может редактировать документы и документ ему доступен.
+  rpc DeleteDocument(DeleteDocumentRequest) returns (DeleteDocumentResponse) {
+    option (google.api.http) = {
+      delete: "/gateway/api/v1/documents/{document_uuid}"
+    };
+  }
+}
+
+// GatewayRAGService предоставляет RAG-операции через gateway.
+service GatewayRAGService {
+  // ReindexDocument переиндексирует один документ. Доступно редактору документов.
+  rpc ReindexDocument(ReindexDocumentRequest) returns (ReindexDocumentResponse) {
+    option (google.api.http) = {
+      post: "/gateway/api/v1/admin/rag/documents/{document_uuid}/reindex"
+      body: "*"
+    };
+  }
+
+  // ReindexAllDocuments переиндексирует доступные активные документы. Доступно редактору документов.
+  rpc ReindexAllDocuments(ReindexAllDocumentsRequest) returns (ReindexAllDocumentsResponse) {
+    option (google.api.http) = {
+      post: "/gateway/api/v1/admin/rag/reindex"
+      body: "*"
+    };
+  }
+
+  // QueryRAG выполняет поиск и генерацию ответа через RAG.
+  rpc QueryRAG(QueryRAGRequest) returns (QueryRAGResponse) {
+    option (google.api.http) = {
+      post: "/gateway/api/v1/rag/query"
+      body: "*"
+    };
+  }
+}
+
 message HealthRequest {}
 
 message HealthResponse {
   string status = 1;
+}
+
+message LoginRequest {
+  string login = 1;
+  string password = 2;
+}
+
+message RefreshTokenRequest {
+  string refresh_token = 1;
+}
+
+message TokenPairResponse {
+  string access_token = 1;
+  string refresh_token = 2;
+  int64 expires_in = 3;
+  string token_type = 4;
+}
+
+message LogoutRequest {}
+
+message LogoutResponse {
+  bool revoked = 1;
+}
+
+message GetMeRequest {}
+
+message SubjectContext {
+  string user_id = 1;
+  string login = 2;
+  bool is_active = 3;
+  repeated string roles = 4;
+  google.protobuf.Struct attributes = 5;
+  int64 ctx_ver = 6;
+}
+
+message GetMeResponse {
+  SubjectContext me = 1;
+}
+
+message Document {
+  int64 id = 1;
+  string uuid = 2;
+  string title = 3;
+  string description = 4;
+  google.protobuf.Struct attributes = 5;
+  string file_name = 6;
+  string file_extension = 7;
+  string mime_type = 8;
+  int64 size_bytes = 9;
+  string checksum_sha256 = 10;
+  string storage_key = 11;
+  string index_status = 12;
+  string created_at = 13;
+  string updated_at = 14;
+  string deleted_at = 15;
+}
+
+message DocumentItem {
+  Document document = 1;
+}
+
+message ListDocumentsRequest {}
+
+message ListDocumentsResponse {
+  repeated DocumentItem items = 1;
+}
+
+message GetDocumentRequest {
+  string document_uuid = 1;
+}
+
+message GetDocumentResponse {
+  Document document = 1;
+}
+
+message DownloadFileRequest {
+  string document_uuid = 1;
+}
+
+message DeleteDocumentRequest {
+  string document_uuid = 1;
+}
+
+message DeleteDocumentResponse {
+  string document_uuid = 1;
+  bool deleted = 2;
+  string deleted_at = 3;
+  bool index_deleted = 4;
+}
+
+message ReindexDocumentRequest {
+  string document_uuid = 1;
+  string embedding_model_alias = 2;
+  int32 chunk_size = 3;
+  int32 chunk_overlap = 4;
+}
+
+message ReindexDocumentResponse {
+  string document_uuid = 1;
+  int32 chunk_count = 2;
+  int32 embedding_dimension = 3;
+  string resolved_embedding_model = 4;
+}
+
+message ReindexAllDocumentsRequest {
+  string embedding_model_alias = 1;
+  int32 chunk_size = 2;
+  int32 chunk_overlap = 3;
+}
+
+message ReindexDocumentResult {
+  string document_uuid = 1;
+  bool indexed = 2;
+  string error = 3;
+  int32 chunk_count = 4;
+  int32 embedding_dimension = 5;
+  string resolved_embedding_model = 6;
+}
+
+message ReindexAllDocumentsResponse {
+  int32 total_count = 1;
+  int32 indexed_count = 2;
+  int32 failed_count = 3;
+  repeated ReindexDocumentResult items = 4;
+}
+
+message QueryRAGRequest {
+  string query = 1;
+  int32 top_k = 2;
+  repeated string document_uuids = 3;
+  string embedding_model_alias = 4;
+  string generation_model_alias = 5;
+}
+
+message QueryContext {
+  string document_uuid = 1;
+  int32 chunk_index = 2;
+  string text = 3;
+  float score = 4;
+}
+
+message QueryRAGResponse {
+  string answer = 1;
+  repeated QueryContext contexts = 2;
+  string resolved_embedding_model = 3;
+  string resolved_generation_model = 4;
 }

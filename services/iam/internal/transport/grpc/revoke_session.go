@@ -8,12 +8,12 @@ import (
 )
 
 func (s *SessionServiceServerImpl) RevokeSession(ctx context.Context, req *pb.RevokeSessionRequest) (*pb.RevokeSessionResponse, error) {
-	principal, _, err := s.deps.authenticate(ctx)
+	principal, _, err := authenticate(s.svc, ctx)
 	if err != nil {
 		return nil, toGRPCError(err)
 	}
 
-	revoked, err := s.deps.uc.RevokeSession(ctx, principal, req.GetSessionId())
+	revoked, err := s.svc.RevokeSession(ctx, principal, req.GetSessionId())
 	if err != nil {
 		return nil, toGRPCError(err)
 	}

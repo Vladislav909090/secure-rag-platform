@@ -8,7 +8,7 @@ import (
 )
 
 func (s *AuthServiceServerImpl) LogoutAll(ctx context.Context, req *pb.LogoutAllRequest) (*pb.LogoutAllResponse, error) {
-	if err := s.deps.requireUC(); err != nil {
+	if err := requireUC(s.svc); err != nil {
 		return nil, err
 	}
 
@@ -17,12 +17,12 @@ func (s *AuthServiceServerImpl) LogoutAll(ctx context.Context, req *pb.LogoutAll
 		return nil, toGRPCError(err)
 	}
 
-	principal, _, err := s.deps.uc.AuthenticateAccessToken(ctx, accessToken)
+	principal, _, err := s.svc.AuthenticateAccessToken(ctx, accessToken)
 	if err != nil {
 		return nil, toGRPCError(err)
 	}
 
-	result, err := s.deps.uc.LogoutAll(ctx, principal, req.GetUserId())
+	result, err := s.svc.LogoutAll(ctx, principal, req.GetUserId())
 	if err != nil {
 		return nil, toGRPCError(err)
 	}

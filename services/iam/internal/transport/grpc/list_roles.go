@@ -10,11 +10,11 @@ import (
 func (s *RoleServiceServerImpl) ListRoles(ctx context.Context, req *pb.ListRolesRequest) (*pb.ListRolesResponse, error) {
 	_ = req
 
-	if _, _, err := s.deps.authenticate(ctx); err != nil {
+	if _, _, err := authenticate(s.svc, ctx); err != nil {
 		return nil, toGRPCError(err)
 	}
 
-	roles, err := s.deps.uc.ListRoles(ctx)
+	roles, err := s.svc.ListRoles(ctx)
 	if err != nil {
 		return nil, toGRPCError(err)
 	}

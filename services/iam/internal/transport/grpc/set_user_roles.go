@@ -9,7 +9,7 @@ import (
 )
 
 func (s *RoleServiceServerImpl) SetUserRoles(ctx context.Context, req *pb.SetUserRolesRequest) (*pb.SetUserRolesResponse, error) {
-	principal, _, err := s.deps.authenticate(ctx)
+	principal, _, err := authenticate(s.svc, ctx)
 	if err != nil {
 		return nil, toGRPCError(err)
 	}
@@ -18,7 +18,7 @@ func (s *RoleServiceServerImpl) SetUserRoles(ctx context.Context, req *pb.SetUse
 	}
 
 	assignedBy := principal.UserID
-	roles, ctxVer, err := s.deps.uc.SetUserRoles(ctx, req.GetUserId(), req.GetRoleCodes(), &assignedBy)
+	roles, ctxVer, err := s.svc.SetUserRoles(ctx, req.GetUserId(), req.GetRoleCodes(), &assignedBy)
 	if err != nil {
 		return nil, toGRPCError(err)
 	}

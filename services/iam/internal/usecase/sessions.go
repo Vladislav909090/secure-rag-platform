@@ -8,7 +8,11 @@ import (
 )
 
 // ListUserSessions возвращает активные сессии текущего или целевого пользователя.
-func (uc *IAMUsecase) ListUserSessions(ctx context.Context, principal *Principal, userID string) ([]*model.UserSession, string, error) {
+func (uc *IAMUsecase) ListUserSessions(
+	ctx context.Context,
+	principal *Principal,
+	userID string,
+) ([]*model.UserSession, string, error) {
 	if principal == nil {
 		return nil, "", ErrUnauthorized
 	}
@@ -40,6 +44,10 @@ func (uc *IAMUsecase) RevokeSession(ctx context.Context, principal *Principal, s
 }
 
 // RevokeAllUserSessions отзывает все активные сессии.
-func (uc *IAMUsecase) RevokeAllUserSessions(ctx context.Context, principal *Principal, userID string) (*LogoutAllResult, error) {
+func (uc *IAMUsecase) RevokeAllUserSessions(
+	ctx context.Context,
+	principal *Principal,
+	userID string,
+) (*LogoutAllResult, error) {
 	return uc.LogoutAll(ctx, principal, userID)
 }

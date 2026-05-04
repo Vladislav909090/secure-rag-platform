@@ -10,7 +10,10 @@ import (
 	"google.golang.org/genproto/googleapis/api/httpbody"
 )
 
-func (s *KnowledgeServiceServerImpl) DownloadFile(ctx context.Context, req *pb.DownloadFileRequest) (*httpbody.HttpBody, error) {
+func (s *KnowledgeServiceServerImpl) DownloadFile(
+	ctx context.Context,
+	req *pb.DownloadFileRequest,
+) (*httpbody.HttpBody, error) {
 	if err := s.requireUC(); err != nil {
 		return nil, err
 	}

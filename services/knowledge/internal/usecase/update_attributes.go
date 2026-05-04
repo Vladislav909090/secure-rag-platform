@@ -9,7 +9,11 @@ import (
 )
 
 // UpdateAttributes полностью заменяет attributes.
-func (uc *DocumentUsecase) UpdateAttributes(ctx context.Context, docUUID string, attributes map[string]any) (*model.Document, error) {
+func (uc *DocumentUsecase) UpdateAttributes(
+	ctx context.Context,
+	docUUID string,
+	attributes map[string]any,
+) (*model.Document, error) {
 	if _, err := uc.getActiveDocument(ctx, docUUID); err != nil {
 		return nil, err
 	}

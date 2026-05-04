@@ -15,7 +15,12 @@ func (uc *IAMUsecase) GetUserAttributes(ctx context.Context, userID string) (map
 }
 
 // ReplaceUserAttributes полностью заменяет атрибуты и увеличивает версию контекста.
-func (uc *IAMUsecase) ReplaceUserAttributes(ctx context.Context, userID string, attrs map[string]any, updatedBy *string) (map[string]any, int64, error) {
+func (uc *IAMUsecase) ReplaceUserAttributes(
+	ctx context.Context,
+	userID string,
+	attrs map[string]any,
+	updatedBy *string,
+) (map[string]any, int64, error) {
 	userID = strings.TrimSpace(userID)
 	if userID == "" {
 		return nil, 0, ErrInvalidArgument
@@ -38,7 +43,12 @@ func (uc *IAMUsecase) ReplaceUserAttributes(ctx context.Context, userID string, 
 }
 
 // PatchUserAttributes применяет обновления верхнего уровня ключ/значение и увеличивает версию контекста.
-func (uc *IAMUsecase) PatchUserAttributes(ctx context.Context, userID string, patch map[string]any, updatedBy *string) (map[string]any, int64, error) {
+func (uc *IAMUsecase) PatchUserAttributes(
+	ctx context.Context,
+	userID string,
+	patch map[string]any,
+	updatedBy *string,
+) (map[string]any, int64, error) {
 	userID = strings.TrimSpace(userID)
 	if userID == "" {
 		return nil, 0, ErrInvalidArgument
@@ -67,7 +77,12 @@ func (uc *IAMUsecase) PatchUserAttributes(ctx context.Context, userID string, pa
 }
 
 // DeleteUserAttributeKey удаляет один ключ и увеличивает версию контекста.
-func (uc *IAMUsecase) DeleteUserAttributeKey(ctx context.Context, userID string, key string, updatedBy *string) (map[string]any, int64, error) {
+func (uc *IAMUsecase) DeleteUserAttributeKey(
+	ctx context.Context,
+	userID string,
+	key string,
+	updatedBy *string,
+) (map[string]any, int64, error) {
 	userID = strings.TrimSpace(userID)
 	key = strings.TrimSpace(key)
 	if userID == "" || key == "" {

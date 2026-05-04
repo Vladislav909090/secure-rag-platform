@@ -9,11 +9,11 @@ import (
 )
 
 func (s *AuthServiceServerImpl) Login(ctx context.Context, req *pb.LoginRequest) (*pb.TokenPairResponse, error) {
-	if err := s.deps.requireUC(); err != nil {
+	if err := requireUC(s.svc); err != nil {
 		return nil, err
 	}
 
-	tokens, err := s.deps.uc.Login(ctx, usecase.LoginInput{
+	tokens, err := s.svc.Login(ctx, usecase.LoginInput{
 		Login:    req.GetLogin(),
 		Password: req.GetPassword(),
 	})

@@ -17,11 +17,8 @@ service KnowledgeService {
     };
   }
 
-  // CreateDocumentStream создаёт документ с первой версией через client-streaming.
+  // CreateDocumentStream создаёт документ с файлом через client-streaming.
   rpc CreateDocumentStream(stream CreateDocumentStreamRequest) returns (CreateDocumentResponse);
-
-  // UploadVersionStream загружает новую версию документа через client-streaming.
-  rpc UploadVersionStream(stream UploadVersionStreamRequest) returns (UploadVersionResponse);
 
   // DeleteDocument выполняет soft delete документа.
   rpc DeleteDocument(DeleteDocumentRequest) returns (DeleteDocumentResponse) {
@@ -37,38 +34,24 @@ service KnowledgeService {
     };
   }
 
-  // ListDocuments возвращает список активных документов с версиями.
+  // ListDocuments возвращает список активных документов.
   rpc ListDocuments(ListDocumentsRequest) returns (ListDocumentsResponse) {
     option (google.api.http) = {
       get: "/knowledge/api/v1/documents"
     };
   }
 
-  // GetDocument возвращает документ с его версиями.
+  // GetDocument возвращает документ.
   rpc GetDocument(GetDocumentRequest) returns (GetDocumentResponse) {
     option (google.api.http) = {
       get: "/knowledge/api/v1/documents/{document_uuid}"
     };
   }
 
-  // GetDocumentVersion возвращает конкретную версию документа.
-  rpc GetDocumentVersion(GetDocumentVersionRequest) returns (GetDocumentVersionResponse) {
-    option (google.api.http) = {
-      get: "/knowledge/api/v1/documents/{document_uuid}/versions/{version_number}"
-    };
-  }
-
-  // DownloadFile скачивает файл актуальной версии.
+  // DownloadFile скачивает файл документа.
   rpc DownloadFile(DownloadFileRequest) returns (google.api.HttpBody) {
     option (google.api.http) = {
       get: "/knowledge/api/v1/documents/{document_uuid}/file"
-    };
-  }
-
-  // DownloadVersionFile скачивает файл конкретной версии.
-  rpc DownloadVersionFile(DownloadVersionFileRequest) returns (google.api.HttpBody) {
-    option (google.api.http) = {
-      get: "/knowledge/api/v1/documents/{document_uuid}/versions/{version_number}/file"
     };
   }
 
@@ -88,10 +71,10 @@ service KnowledgeService {
     };
   }
 
-  // ReindexVersion отправляет версию на повторную индексацию.
-  rpc ReindexVersion(ReindexVersionRequest) returns (ReindexVersionResponse) {
+  // ReindexDocument помечает документ для повторной индексации.
+  rpc ReindexDocument(ReindexDocumentRequest) returns (ReindexDocumentResponse) {
     option (google.api.http) = {
-      post: "/knowledge/api/v1/documents/{document_uuid}/versions/{version_number}/reindex"
+      post: "/knowledge/api/v1/documents/{document_uuid}/reindex"
     };
   }
 }
@@ -112,26 +95,16 @@ message Document {
   string title = 3;
   string description = 4;
   google.protobuf.Struct attributes = 5;
-  int32 current_version_number = 6;
-  string created_at = 7;
-  string updated_at = 8;
-  string deleted_at = 9;
-}
-
-message DocumentVersion {
-  int64 id = 1;
-  string uuid = 2;
-  int64 document_id = 3;
-  int32 version_number = 4;
-  string file_name = 5;
-  string file_extension = 6;
-  string mime_type = 7;
-  int64 size_bytes = 8;
-  string checksum_sha256 = 9;
-  string storage_key = 10;
-  string index_status = 11;
-  string created_at = 12;
-  reserved 13;
+  string file_name = 6;
+  string file_extension = 7;
+  string mime_type = 8;
+  int64 size_bytes = 9;
+  string checksum_sha256 = 10;
+  string storage_key = 11;
+  string index_status = 12;
+  string created_at = 13;
+  string updated_at = 14;
+  string deleted_at = 15;
 }
 
 // --- Delete ---
@@ -160,13 +133,12 @@ message RestoreDocumentResponse {
 
 message ListDocumentsRequest {}
 
-message DocumentWithVersions {
+message DocumentItem {
   Document document = 1;
-  repeated DocumentVersion versions = 2;
 }
 
 message ListDocumentsResponse {
-  repeated DocumentWithVersions items = 1;
+  repeated DocumentItem items = 1;
 }
 
 // --- Get ---
@@ -177,19 +149,6 @@ message GetDocumentRequest {
 
 message GetDocumentResponse {
   Document document = 1;
-  repeated DocumentVersion versions = 2;
-}
-
-// --- Get Version ---
-
-message GetDocumentVersionRequest {
-  string document_uuid = 1;
-  int32 version_number = 2;
-}
-
-message GetDocumentVersionResponse {
-  Document document = 1;
-  DocumentVersion version = 2;
 }
 
 // --- Update ---
@@ -217,15 +176,13 @@ message UpdateDocumentAttributesResponse {
 
 // --- Reindex ---
 
-message ReindexVersionRequest {
+message ReindexDocumentRequest {
   string document_uuid = 1;
-  int32 version_number = 2;
 }
 
-message ReindexVersionResponse {
+message ReindexDocumentResponse {
   string document_uuid = 1;
-  int32 version_number = 2;
-  string index_status = 3;
+  string index_status = 2;
 }
 
 // --- Create Document Stream ---
@@ -251,40 +208,10 @@ message CreateDocumentStreamRequest {
 
 message CreateDocumentResponse {
   Document document = 1;
-  DocumentVersion version = 2;
-}
-
-// --- Upload Version Stream ---
-
-message UploadVersionMeta {
-  string document_uuid = 1;
-  string file_name = 2;
-  string mime_type = 3;
-}
-
-message UploadVersionStreamRequest {
-  oneof payload {
-    UploadVersionMeta meta = 1;
-    FileChunk chunk = 2;
-  }
-}
-
-message UploadVersionResponse {
-  int64 document_id = 1;
-  string document_uuid = 2;
-  int32 current_version_number = 3;
-  DocumentVersion version = 4;
 }
 
 // --- Download File ---
 
 message DownloadFileRequest {
   string document_uuid = 1;
-}
-
-// --- Download Version File ---
-
-message DownloadVersionFileRequest {
-  string document_uuid = 1;
-  int32 version_number = 2;
 }

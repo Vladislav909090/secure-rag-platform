@@ -2,7 +2,7 @@ package repository
 
 import "github.com/jackc/pgx/v5/pgxpool"
 
-// Repo — репозиторий для работы с документами и версиями.
+// Repo — репозиторий для работы с документами.
 type Repo struct {
 	pool *pgxpool.Pool
 }

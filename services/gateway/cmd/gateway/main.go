@@ -3,9 +3,10 @@ package main
 import (
 	"context"
 	"errors"
-	"log"
+	"log/slog"
 	"net"
 	"net/http"
+	"os"
 	"strconv"
 	"strings"
 
@@ -27,6 +28,8 @@ import (
 )
 
 func main() {
+	logger := slog.Default()
+
 	port := config.GetValue(config.Port)
 	if port == "" {
 		port = "8080"
@@ -46,7 +49,7 @@ func main() {
 	disableAuth := parseBool(config.GetValue(config.DisableAuth))
 	disableFilter := parseBool(config.GetValue(config.DisableDocFilter))
 
-	uc := buildUsecase(defaults, disableAuth, disableFilter)
+	uc := buildUsecase(defaults, disableAuth, disableFilter, logger)
 
 	serverImpl := transportgrpc.NewServer(uc)
 	grpcServer := grpc.NewServer()
@@ -57,7 +60,7 @@ func main() {
 
 	grpcLis, err := net.Listen("tcp", ":"+grpcPort)
 	if err != nil {
-		log.Fatalf("[gateway.grpc] не удалось открыть порт gRPC: %v", err)
+		fatal(logger, "не удалось открыть порт gRPC", err)
 	}
 
 	mux := http.NewServeMux()
@@ -74,16 +77,16 @@ func main() {
 		}),
 	)
 	if err := gatewayv1.RegisterGatewayServiceHandlerServer(context.Background(), gwMux, serverImpl); err != nil {
-		log.Fatalf("[gateway.http] не удалось зарегистрировать служебные обработчики: %v", err)
+		fatal(logger, "не удалось зарегистрировать служебные обработчики", err)
 	}
 	if err := gatewayv1.RegisterGatewayAuthServiceHandlerServer(context.Background(), gwMux, serverImpl); err != nil {
-		log.Fatalf("[gateway.http] не удалось зарегистрировать auth-обработчики: %v", err)
+		fatal(logger, "не удалось зарегистрировать auth-обработчики", err)
 	}
 	if err := gatewayv1.RegisterGatewayKnowledgeServiceHandlerServer(context.Background(), gwMux, serverImpl); err != nil {
-		log.Fatalf("[gateway.http] не удалось зарегистрировать knowledge-обработчики: %v", err)
+		fatal(logger, "не удалось зарегистрировать knowledge-обработчики", err)
 	}
 	if err := gatewayv1.RegisterGatewayRAGServiceHandlerServer(context.Background(), gwMux, serverImpl); err != nil {
-		log.Fatalf("[gateway.http] не удалось зарегистрировать rag-обработчики: %v", err)
+		fatal(logger, "не удалось зарегистрировать rag-обработчики", err)
 	}
 	mux.Handle("/gateway/", gwMux)
 
@@ -93,9 +96,9 @@ func main() {
 
 	httpServer := &http.Server{Addr: ":" + port, Handler: mux}
 
-	log.Printf("[gateway.grpc] слушает порт :%s", grpcPort)
-	log.Printf("[gateway.http] слушает порт :%s", port)
-	log.Printf("[gateway.docs] Swagger UI: http://localhost/gateway/docs")
+	logger.Info("gRPC слушает порт", "component", "gateway.grpc", "port", grpcPort)
+	logger.Info("HTTP слушает порт", "component", "gateway.http", "port", port)
+	logger.Info("Swagger UI доступен", "component", "gateway.docs", "url", "http://localhost/gateway/docs")
 
 	app.Add(func() error {
 		return grpcServer.Serve(grpcLis)
@@ -112,22 +115,27 @@ func main() {
 	closer.Add(grpcLis.Close)
 
 	if err := app.Run(); err != nil {
-		log.Fatalf("[gateway.app] приложение остановлено с ошибкой: %v", err)
+		fatal(logger, "приложение остановлено с ошибкой", err)
 	}
 }
 
-func buildUsecase(defaults usecase.Defaults, disableAuth bool, disableFilter bool) *usecase.Service {
+func buildUsecase(
+	defaults usecase.Defaults,
+	disableAuth bool,
+	disableFilter bool,
+	logger *slog.Logger,
+) *usecase.Service {
 	ragAddr := valueOrDefault(config.GetValue(config.RAGGRPC), "127.0.0.1:9093")
 	ragConn, err := grpc.NewClient(ragAddr, grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
-		log.Fatalf("[gateway.upstream.rag] не удалось создать gRPC-клиент: %v", err)
+		fatal(logger, "не удалось создать gRPC-клиент RAG", err)
 	}
 	closer.Add(func() { _ = ragConn.Close() })
 
 	knowledgeAddr := valueOrDefault(config.GetValue(config.KnowledgeGRPC), "127.0.0.1:9092")
 	knowledgeConn, err := grpc.NewClient(knowledgeAddr, grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
-		log.Fatalf("[gateway.upstream.knowledge] не удалось создать gRPC-клиент: %v", err)
+		fatal(logger, "не удалось создать gRPC-клиент knowledge", err)
 	}
 	closer.Add(func() { _ = knowledgeConn.Close() })
 
@@ -137,7 +145,7 @@ func buildUsecase(defaults usecase.Defaults, disableAuth bool, disableFilter boo
 		iamAddr := valueOrDefault(config.GetValue(config.IAMGRPC), "127.0.0.1:9091")
 		iamConn, connErr := grpc.NewClient(iamAddr, grpc.WithTransportCredentials(insecure.NewCredentials()))
 		if connErr != nil {
-			log.Fatalf("[gateway.upstream.iam] не удалось создать gRPC-клиент: %v", connErr)
+			fatal(logger, "не удалось создать gRPC-клиент IAM", connErr)
 		}
 		closer.Add(func() { _ = iamConn.Close() })
 		iamClient = iamv1.NewInternalIAMServiceClient(iamConn)
@@ -153,8 +161,13 @@ func buildUsecase(defaults usecase.Defaults, disableAuth bool, disableFilter boo
 		defaults,
 		disableAuth,
 		disableFilter,
-		log.Default(),
+		logger,
 	)
+}
+
+func fatal(logger *slog.Logger, message string, err error) {
+	logger.Error(message, "error", err)
+	os.Exit(1)
 }
 
 func valueOrDefault(value string, fallback string) string {

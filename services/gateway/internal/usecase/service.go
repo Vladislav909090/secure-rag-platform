@@ -1,7 +1,7 @@
 package usecase
 
 import (
-	"log"
+	"log/slog"
 
 	iamv1 "secure-rag-platform/services/iam/gen/v1"
 	knowledgev1 "secure-rag-platform/services/knowledge/gen/v1"
@@ -24,7 +24,7 @@ type Service struct {
 	defaults      Defaults
 	disableAuth   bool
 	disableFilter bool
-	logger        *log.Logger
+	logger        *slog.Logger
 }
 
 // NewService создаёт gateway usecase.
@@ -37,10 +37,10 @@ func NewService(
 	defaults Defaults,
 	disableAuth bool,
 	disableFilter bool,
-	logger *log.Logger,
+	logger *slog.Logger,
 ) *Service {
 	if logger == nil {
-		logger = log.Default()
+		logger = slog.Default()
 	}
 	return &Service{
 		rag:           rag,

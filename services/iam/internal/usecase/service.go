@@ -9,7 +9,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"log"
+	"log/slog"
 	"slices"
 	"strings"
 	"time"
@@ -52,13 +52,18 @@ type accessTokenClaims struct {
 
 // IAMUsecase содержит бизнес-логику IAM.
 type IAMUsecase struct {
-	repo  *repository.Repo
-	redis *redis.Client
-	cfg   Config
+	repo   *repository.Repo
+	redis  *redis.Client
+	cfg    Config
+	logger *slog.Logger
 }
 
 // NewIAMUsecase создает слой бизнес-логики IAM с переданными зависимостями.
-func NewIAMUsecase(repo *repository.Repo, redisClient *redis.Client, cfg Config) *IAMUsecase {
+func NewIAMUsecase(repo *repository.Repo, redisClient *redis.Client, cfg Config, logger *slog.Logger) *IAMUsecase {
+	if logger == nil {
+		logger = slog.Default()
+	}
+
 	defaults := DefaultConfig()
 	if cfg.JWTIssuer == "" {
 		cfg.JWTIssuer = defaults.JWTIssuer
@@ -89,13 +94,16 @@ func NewIAMUsecase(repo *repository.Repo, redisClient *redis.Client, cfg Config)
 	}
 	if cfg.JWTSecret == "" {
 		cfg.JWTSecret = uuid.NewString()
-		log.Printf("[iam.auth] JWT_SECRET пустой, создан временный секрет для текущего запуска")
+		logger.Warn("JWT_SECRET пустой, создан временный секрет для текущего запуска",
+			"component", "iam.auth",
+		)
 	}
 
 	return &IAMUsecase{
-		repo:  repo,
-		redis: redisClient,
-		cfg:   cfg,
+		repo:   repo,
+		redis:  redisClient,
+		cfg:    cfg,
+		logger: logger,
 	}
 }
 
@@ -233,13 +241,19 @@ func (uc *IAMUsecase) getSubjectContextFromCache(ctx context.Context, userID str
 		if errors.Is(err, redis.Nil) {
 			return nil, false
 		}
-		log.Printf("[iam.cache] не удалось прочитать контекст субъекта из Redis: %v", err)
+		uc.logger.WarnContext(ctx, "не удалось прочитать контекст субъекта из Redis",
+			"component", "iam.cache",
+			"error", err,
+		)
 		return nil, false
 	}
 
 	var cached model.SubjectContext
 	if err := json.Unmarshal([]byte(raw), &cached); err != nil {
-		log.Printf("[iam.cache] не удалось разобрать контекст субъекта из Redis: %v", err)
+		uc.logger.WarnContext(ctx, "не удалось разобрать контекст субъекта из Redis",
+			"component", "iam.cache",
+			"error", err,
+		)
 		return nil, false
 	}
 
@@ -253,12 +267,18 @@ func (uc *IAMUsecase) storeSubjectContextInCache(ctx context.Context, subject *m
 
 	raw, err := json.Marshal(subject)
 	if err != nil {
-		log.Printf("[iam.cache] не удалось сериализовать контекст субъекта для Redis: %v", err)
+		uc.logger.WarnContext(ctx, "не удалось сериализовать контекст субъекта для Redis",
+			"component", "iam.cache",
+			"error", err,
+		)
 		return
 	}
 
 	if err := uc.redis.Set(ctx, subjectCacheKey(subject.UserID), raw, uc.cfg.SubjectCacheTTL).Err(); err != nil {
-		log.Printf("[iam.cache] не удалось сохранить контекст субъекта в Redis: %v", err)
+		uc.logger.WarnContext(ctx, "не удалось сохранить контекст субъекта в Redis",
+			"component", "iam.cache",
+			"error", err,
+		)
 	}
 }
 
@@ -268,7 +288,11 @@ func (uc *IAMUsecase) InvalidateSubjectContextCache(ctx context.Context, userID 
 		return
 	}
 	if err := uc.redis.Del(ctx, subjectCacheKey(userID)).Err(); err != nil {
-		log.Printf("[iam.cache] не удалось сбросить контекст субъекта в Redis: %v", err)
+		uc.logger.WarnContext(ctx, "не удалось сбросить контекст субъекта в Redis",
+			"component", "iam.cache",
+			"user_id", userID,
+			"error", err,
+		)
 	}
 }
 
@@ -279,13 +303,19 @@ func (uc *IAMUsecase) checkRateLimit(ctx context.Context, key string, limit int,
 
 	count, err := uc.redis.Incr(ctx, key).Result()
 	if err != nil {
-		log.Printf("[iam.rate-limit] не удалось увеличить счетчик Redis: %v", err)
+		uc.logger.WarnContext(ctx, "не удалось увеличить счетчик Redis",
+			"component", "iam.rate-limit",
+			"error", err,
+		)
 		return nil
 	}
 
 	if count == 1 {
 		if err := uc.redis.Expire(ctx, key, window).Err(); err != nil {
-			log.Printf("[iam.rate-limit] не удалось выставить TTL счетчика Redis: %v", err)
+			uc.logger.WarnContext(ctx, "не удалось выставить TTL счетчика Redis",
+				"component", "iam.rate-limit",
+				"error", err,
+			)
 		}
 	}
 

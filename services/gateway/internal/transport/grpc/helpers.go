@@ -2,7 +2,7 @@ package grpc
 
 import (
 	"errors"
-	"log"
+	"log/slog"
 
 	"secure-rag-platform/services/gateway/internal/usecase"
 
@@ -42,7 +42,10 @@ func toGRPCError(err error) error {
 	case errors.Is(err, usecase.ErrNotFound):
 		return status.Error(codes.NotFound, err.Error())
 	default:
-		log.Printf("[gateway.grpc] внутренняя ошибка: %v", err)
+		slog.Error("внутренняя ошибка gRPC",
+			"component", "gateway.grpc",
+			"error", err,
+		)
 		return status.Error(codes.Internal, "internal error")
 	}
 }

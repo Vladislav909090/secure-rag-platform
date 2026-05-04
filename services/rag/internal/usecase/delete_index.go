@@ -21,6 +21,9 @@ func (s *Service) DeleteDocumentIndex(ctx context.Context, documentUUID string) 
 		return fmt.Errorf("delete chunks: %w", err)
 	}
 
-	s.logger.Printf("[rag.index] индекс документа удалён document=%s", documentUUID)
+	s.logger.InfoContext(ctx, "индекс документа удалён",
+		"component", "rag.index",
+		"document_uuid", documentUUID,
+	)
 	return nil
 }

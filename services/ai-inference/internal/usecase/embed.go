@@ -26,13 +26,13 @@ func (s *Service) Embed(ctx context.Context, req BatchEmbedRequest) (*BatchEmbed
 		return nil, err
 	}
 
-	s.logger.Printf(
-		"[ai-inference.embedding] запрос request_id=%s alias=%s provider=%s model=%s texts=%d",
-		req.RequestID,
-		req.ModelAlias,
-		alias.Provider,
-		alias.Model,
-		len(req.Texts),
+	s.logger.InfoContext(ctx, "запрос embedding",
+		"component", "ai-inference.embedding",
+		"request_id", req.RequestID,
+		"alias", req.ModelAlias,
+		"provider", alias.Provider,
+		"model", alias.Model,
+		"texts", len(req.Texts),
 	)
 
 	result, err := provider.Embed(ctx, alias, req)

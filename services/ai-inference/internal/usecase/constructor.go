@@ -1,7 +1,7 @@
 package usecase
 
 import (
-	"log"
+	"log/slog"
 
 	"secure-rag-platform/services/ai-inference/internal/config"
 )
@@ -9,10 +9,10 @@ import (
 type Service struct {
 	aliases   map[string]config.ModelAlias
 	providers map[string]Provider
-	logger    *log.Logger
+	logger    *slog.Logger
 }
 
-func NewService(aliases map[string]config.ModelAlias, providers []Provider, logger *log.Logger) *Service {
+func NewService(aliases map[string]config.ModelAlias, providers []Provider, logger *slog.Logger) *Service {
 	aliasCopy := make(map[string]config.ModelAlias, len(aliases))
 	for name, alias := range aliases {
 		aliasCopy[name] = alias
@@ -27,7 +27,7 @@ func NewService(aliases map[string]config.ModelAlias, providers []Provider, logg
 	}
 
 	if logger == nil {
-		logger = log.Default()
+		logger = slog.Default()
 	}
 
 	return &Service{

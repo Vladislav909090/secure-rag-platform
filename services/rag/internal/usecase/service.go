@@ -1,7 +1,7 @@
 package usecase
 
 import (
-	"log"
+	"log/slog"
 
 	aiinferencev1 "secure-rag-platform/services/ai-inference/gen/v1"
 	knowledgev1 "secure-rag-platform/services/knowledge/gen/v1"
@@ -25,7 +25,7 @@ type Service struct {
 	embedding  aiinferencev1.EmbeddingServiceClient
 	generation aiinferencev1.GenerationServiceClient
 	defaults   Defaults
-	logger     *log.Logger
+	logger     *slog.Logger
 }
 
 // NewService создаёт RAG usecase.
@@ -36,10 +36,10 @@ func NewService(
 	embedding aiinferencev1.EmbeddingServiceClient,
 	generation aiinferencev1.GenerationServiceClient,
 	defaults Defaults,
-	logger *log.Logger,
+	logger *slog.Logger,
 ) *Service {
 	if logger == nil {
-		logger = log.Default()
+		logger = slog.Default()
 	}
 	return &Service{
 		repo:       repo,

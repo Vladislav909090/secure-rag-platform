@@ -2,7 +2,7 @@ package grpc
 
 import (
 	"errors"
-	"log"
+	"log/slog"
 	"strings"
 	"time"
 
@@ -64,7 +64,10 @@ func toGRPCError(err error) error {
 	case strings.Contains(err.Error(), "upload to storage"):
 		return status.Error(codes.Internal, err.Error())
 	default:
-		log.Printf("[knowledge.grpc] внутренняя ошибка: %v", err)
+		slog.Error("внутренняя ошибка gRPC",
+			"component", "knowledge.grpc",
+			"error", err,
+		)
 		return status.Error(codes.Internal, "internal error")
 	}
 }

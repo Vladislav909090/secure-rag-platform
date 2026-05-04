@@ -125,10 +125,10 @@ func (s *Service) IndexDocument(
 		return nil, fmt.Errorf("insert chunks: %w", err)
 	}
 
-	s.logger.Printf(
-		"[rag.index] документ проиндексирован document=%s chunks=%d",
-		docUUID,
-		len(chunks),
+	s.logger.InfoContext(ctx, "документ проиндексирован",
+		"component", "rag.index",
+		"document_uuid", docUUID,
+		"chunks", len(chunks),
 	)
 
 	return &IndexDocumentResult{

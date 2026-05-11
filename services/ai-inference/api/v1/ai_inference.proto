@@ -4,30 +4,55 @@ package aiinference.v1;
 
 option go_package = "secure-rag-platform/services/ai-inference/gen/v1;aiinferencev1";
 
+import "google/api/annotations.proto";
 import "google/protobuf/wrappers.proto";
 
 // AIInferenceService — служебные методы ai-inference.
 service AIInferenceService {
   // Health проверяет работоспособность ai-inference.
-  rpc Health(HealthRequest) returns (HealthResponse);
+  rpc Health(HealthRequest) returns (HealthResponse) {
+    option (google.api.http) = {
+      get: "/ai-inference/health"
+    };
+  }
 }
 
 // GenerationService — генерация текста через модельные алиасы.
 service GenerationService {
   // Generate генерирует текст по сообщениям и параметрам генерации.
-  rpc Generate(GenerateRequest) returns (GenerateResponse);
+  rpc Generate(GenerateRequest) returns (GenerateResponse) {
+    option (google.api.http) = {
+      post: "/ai-inference/api/v1/generate"
+      body: "*"
+    };
+  }
 
   // ListModels возвращает список доступных alias-моделей генерации/эмбеддингов.
-  rpc ListModels(ListModelsRequest) returns (ListModelsResponse);
+  rpc ListModels(ListModelsRequest) returns (ListModelsResponse) {
+    option (google.api.http) = {
+      post: "/ai-inference/api/v1/models/list"
+      body: "*"
+    };
+  }
 }
 
 // EmbeddingService — построение эмбеддингов через модельные алиасы.
 service EmbeddingService {
   // Embed строит эмбеддинг для одного текста.
-  rpc Embed(EmbedRequest) returns (EmbedResponse);
+  rpc Embed(EmbedRequest) returns (EmbedResponse) {
+    option (google.api.http) = {
+      post: "/ai-inference/api/v1/embed"
+      body: "*"
+    };
+  }
 
   // BatchEmbed строит эмбеддинги для набора текстов.
-  rpc BatchEmbed(BatchEmbedRequest) returns (BatchEmbedResponse);
+  rpc BatchEmbed(BatchEmbedRequest) returns (BatchEmbedResponse) {
+    option (google.api.http) = {
+      post: "/ai-inference/api/v1/embed/batch"
+      body: "*"
+    };
+  }
 }
 
 message HealthRequest {}

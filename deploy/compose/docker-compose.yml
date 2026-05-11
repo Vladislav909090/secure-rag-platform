@@ -252,6 +252,7 @@ services:
       context: ../../services/ai-inference
       dockerfile: Dockerfile
     environment:
+      - HTTP_PORT=8084
       - GRPC_PORT=9094
       - AI_INFERENCE_PROVIDER_TIMEOUT=180s
     volumes:
@@ -259,6 +260,7 @@ services:
     extra_hosts:
       - "host.docker.internal:host-gateway"
     expose:
+      - "8084"
       - "9094"
     networks:
       - app-net

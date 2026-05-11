@@ -81,8 +81,14 @@ services:
       - "9001:9001"
 
   ai-inference:
+    labels:
+      - "traefik.enable=true"
+      - "traefik.docker.network=secure-rag-platform_traefik-net"
+      - "traefik.http.routers.aiinference.rule=PathPrefix(`/ai-inference`)"
+      - "traefik.http.routers.aiinference.entrypoints=web"
+      - "traefik.http.routers.aiinference.priority=100"
+      - "traefik.http.services.aiinference.loadbalancer.server.port=8084"
     networks:
+      - traefik-net
       - app-net
-      - dev-expose-net
-    ports:
-      - "9094:9094"
+      - egress-net

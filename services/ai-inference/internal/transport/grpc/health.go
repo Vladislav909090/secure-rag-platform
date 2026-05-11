@@ -23,5 +23,5 @@ func (s *AIInferenceServiceServerImpl) Health(ctx context.Context, req *pb.Healt
 		return nil, status.Error(codes.Unavailable, err.Error())
 	}
 
-	return &pb.HealthResponse{Status: "serving"}, nil
+	return &pb.HealthResponse{Status: "ok"}, nil
 }

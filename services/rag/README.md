@@ -1,73 +1,68 @@
 # rag
 
-Retrieval-Augmented Generation сервис.
+Сервис RAG: индексирует документы, хранит chunks и embeddings в PostgreSQL с `pgvector`, ищет релевантный контекст и вызывает `ai-inference` для генерации ответа.
 
-## Порты
+## Порты и доступ
 
-| Протокол | Порт по умолчанию |
-|----------|--------------------|
-| HTTP     | 8083               |
-| gRPC     | 9093               |
+| Протокол | Порт |
+|---|---:|
+| HTTP | `8083` |
+| gRPC | `9093` |
 
-## Контракт API
+В обычном compose RAG вызывается gateway по внутренней сети. Прямой HTTP через Traefik включается в dev-режиме:
 
-- Proto-файл: `services/rag/api/v1/rag.proto`
-- Генерация: `make proto:gen:rag`
-- Transport-стабы: `make grpc:stubs:rag`
+```bash
+make compose:up DEV=1
+```
 
-## Базовые маршруты
+После этого:
 
-- `GET /health`
-- `GET /docs` (Swagger UI, OpenAPI встроен в HTML)
+- `http://localhost/rag/docs`
+- `http://localhost/rag/health`
+
+## Основные маршруты
+
 - `POST /rag/api/v1/documents/{document_uuid}/index`
-- `DELETE /rag/api/v1/documents/{document_uuid}/index`
 - `POST /rag/api/v1/query`
 
-Через Traefik с хоста:
+Удаление индекса документа есть в gRPC-контракте, но HTTP-аннотация для него сейчас не задана.
 
-- `GET http://localhost/rag/health`
-- `GET http://localhost/rag/docs`
+## Конфигурация
 
-Примечание: в `docker-compose` сервис использует только `expose`, прямой URL `http://localhost:8083` не публикуется.
+Основные переменные:
 
-## Основные переменные окружения
-
-- `DATABASE_DSN` (или `DB_DSN`)
+- `PORT`, `GRPC_PORT`
+- `DATABASE_DSN`
 - `S3_ENDPOINT`, `S3_BUCKET`, `S3_ACCESS_KEY`, `S3_SECRET_KEY`, `S3_USE_SSL`
 - `KNOWLEDGE_GRPC_ADDR`, `AI_INFERENCE_GRPC_ADDR`
 - `RAG_CHUNK_SIZE`, `RAG_CHUNK_OVERLAP`, `RAG_DEFAULT_TOP_K`
 - `RAG_DEFAULT_EMBEDDING_MODEL_ALIAS`, `RAG_DEFAULT_GENERATION_MODEL_ALIAS`
 
-## Запуск локально
+По умолчанию используются `embed.default`, `chat.default`, chunk size `800`, overlap `100`, top-k `3`.
 
-Из корня репозитория:
+## Миграции
+
+Миграции находятся в `services/rag/migrations`. Makefile по умолчанию ждет pgvector-БД на `localhost:5435`:
 
 ```bash
-go run ./services/rag/cmd/rag
+make compose:up DEV=1
+make migrate:up:rag
+make migrate:status:rag
 ```
 
-Или из каталога сервиса:
+## Разработка
+
+```bash
+make proto:gen:rag
+make grpc:stubs:rag
+make lint:rag
+make test:rag
+make build:rag
+```
+
+Локальный запуск:
 
 ```bash
 cd services/rag
 go run ./cmd/rag
-```
-
-## Проверки
-
-```bash
-make test:rag
-make lint:rag
-make build:rag
-```
-
-## Миграции
-
-- Каталог миграций: `services/rag/migrations`
-- DSN по умолчанию для make: `postgres://rag:rag@localhost:5435/rag?sslmode=disable`
-
-```bash
-make migrate:status:rag
-make migrate:up:rag
-make migrate:down:rag
 ```

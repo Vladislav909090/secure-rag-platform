@@ -19,7 +19,8 @@ WORKDIR /app
 
 COPY --from=builder /bin/ai-inference /bin/ai-inference
 COPY --from=builder /app/config /app/config
+COPY --from=builder /app/gen/openapiv2/v1/ai_inference.swagger.json /etc/swagger.json
 
-EXPOSE 9094
+EXPOSE 8084 9094
 
 ENTRYPOINT ["/bin/ai-inference"]

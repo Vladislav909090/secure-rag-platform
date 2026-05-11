@@ -12,6 +12,7 @@ import (
 type Key string
 
 const (
+	HTTPPort        Key = "HTTP_PORT"
 	GRPCPort        Key = "GRPC_PORT"
 	ProviderTimeout Key = "AI_INFERENCE_PROVIDER_TIMEOUT"
 )
@@ -46,6 +47,7 @@ type ModelAlias struct {
 }
 
 type Runtime struct {
+	HTTPPort        string
 	GRPCPort        string
 	ProviderTimeout string
 	ModelAliases    map[string]ModelAlias
@@ -87,6 +89,7 @@ func LoadFromFile(modelsConfigPath string) (*Runtime, error) {
 	}
 
 	return &Runtime{
+		HTTPPort:        strings.TrimSpace(GetValue(HTTPPort)),
 		GRPCPort:        strings.TrimSpace(GetValue(GRPCPort)),
 		ProviderTimeout: strings.TrimSpace(GetValue(ProviderTimeout)),
 		ModelAliases:    aliases,

@@ -8,7 +8,7 @@
 	migrate\:up migrate\:up\:iam migrate\:up\:knowledge migrate\:up\:rag \
 	migrate\:down migrate\:down\:iam migrate\:down\:knowledge migrate\:down\:rag \
 	migrate\:create\:iam migrate\:create\:knowledge migrate\:create\:rag \
-	compose\:up compose\:down
+	compose\:up compose\:recreate compose\:down
 
 COMPOSE_DEV ?= 0
 COMPOSE_FILES = -f deploy/compose/docker-compose.yml
@@ -182,9 +182,12 @@ proto\:gen\:rag: proto\:deps
 
 proto\:gen\:ai-inference: proto\:deps
 	@$(call MKDIRP,services/ai-inference/gen/v1)
+	@$(call MKDIRP,services/ai-inference/gen/openapiv2)
 	"$(PROTOC)" $(PROTO_INC) -I services/ai-inference/api \
 		--go_out=services/ai-inference/gen --go_opt=paths=source_relative \
 		--go-grpc_out=services/ai-inference/gen --go-grpc_opt=paths=source_relative \
+		--grpc-gateway_out=services/ai-inference/gen --grpc-gateway_opt=paths=source_relative,generate_unbound_methods=true \
+		--openapiv2_out=services/ai-inference/gen/openapiv2 \
 		services/ai-inference/api/v1/ai_inference.proto
 
 proto\:gen: proto\:gen\:gateway proto\:gen\:iam proto\:gen\:knowledge proto\:gen\:rag proto\:gen\:ai-inference
@@ -247,7 +250,10 @@ migrate\:down: migrate\:down\:iam migrate\:down\:knowledge migrate\:down\:rag
 # ── Docker Compose ───────────────────────────────────
 
 compose\:up:
-	docker compose $(COMPOSE_FILES) up -d --build
+	docker compose $(COMPOSE_FILES) up -d --no-recreate
+
+compose\:recreate:
+	docker compose $(COMPOSE_FILES) up -d --build --force-recreate --remove-orphans
 
 compose\:down:
 	docker compose -f deploy/compose/docker-compose.yml -f deploy/compose/compose.dev.yml down

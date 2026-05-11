@@ -1,62 +1,69 @@
 # iam
 
-Identity and Access Management сервис.
+Сервис идентификации и доступа: пользователи, роли, атрибуты subject context, JWT и пользовательские сессии в Redis.
 
-## Порты
+## Порты и доступ
 
-| Протокол | Порт по умолчанию |
-|----------|--------------------|
-| HTTP     | 8081               |
-| gRPC     | 9091               |
+| Протокол | Порт |
+|---|---:|
+| HTTP | `8081` |
+| gRPC | `9091` |
 
-## Контракт API
-
-- Proto-файл: `services/iam/api/v1/iam.proto`
-- Генерация: `make proto:gen:iam`
-- Transport-стабы: `make grpc:stubs:iam`
-
-## Базовые маршруты
-
-- `GET /health`
-- `GET /docs` (Swagger UI, OpenAPI встроен в HTML)
-
-Через Traefik с хоста:
-
-- `GET http://localhost/iam/health`
-- `GET http://localhost/iam/docs`
-
-Примечание: в `docker-compose` сервис использует только `expose`, прямой URL `http://localhost:8081` не публикуется.
-
-## Запуск локально
-
-Из корня репозитория:
+В обычном compose IAM доступен другим сервисам по внутренней сети. Прямой HTTP через Traefik включается в dev-режиме:
 
 ```bash
-go run ./services/iam/cmd/iam
+make compose:up DEV=1
 ```
 
-Или из каталога сервиса:
+После этого:
+
+- `http://localhost/iam/docs`
+- `http://localhost/iam/health`
+
+## Что реализовано
+
+- auth: login, refresh, logout, logout-all, me;
+- пользователи: список, получение, создание, обновление;
+- роли: список, чтение и изменение ролей пользователя;
+- attributes: чтение, замена, patch, удаление ключа;
+- sessions: список и отзыв сессий;
+- internal API для gateway: subject context и проверка access token.
+
+## Конфигурация
+
+Основные переменные:
+
+- `PORT`, `GRPC_PORT`
+- `DATABASE_DSN`
+- `REDIS_ADDR`, `REDIS_PASSWORD`
+- `JWT_SECRET`, `JWT_ISSUER`, `JWT_AUDIENCE`
+- `BOOTSTRAP_ADMIN_LOGIN`, `BOOTSTRAP_ADMIN_PASSWORD`
+
+В compose создается bootstrap-админ `superadmin / superadmin`.
+
+## Миграции
+
+Миграции находятся в `services/iam/migrations`. Makefile по умолчанию ждет БД на `localhost:5433`, поэтому для локального применения нужен dev-compose:
+
+```bash
+make compose:up DEV=1
+make migrate:up:iam
+make migrate:status:iam
+```
+
+## Разработка
+
+```bash
+make proto:gen:iam
+make grpc:stubs:iam
+make lint:iam
+make test:iam
+make build:iam
+```
+
+Локальный запуск:
 
 ```bash
 cd services/iam
 go run ./cmd/iam
-```
-
-## Проверки
-
-```bash
-make test:iam
-make lint:iam
-make build:iam
-```
-
-## Миграции
-
-- Каталог миграций: `services/iam/migrations`
-- DSN по умолчанию для make: `postgres://iam:iam@localhost:5433/iam?sslmode=disable`
-
-```bash
-make migrate:status:iam
-make migrate:up:iam
-make migrate:down:iam
 ```

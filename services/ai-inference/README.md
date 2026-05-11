@@ -1,90 +1,87 @@
 # ai-inference
 
-Внутренний gRPC-сервис для доступа к LLM и embedding-моделям через модельные алиасы.
+Внутренний gRPC-сервис для доступа к generation и embedding моделям через короткие алиасы вроде `chat.default` и `embed.default`.
 
-## Порты
+Сейчас поддерживается OpenAI-compatible API: сервис вызывает `/chat/completions` для генерации и `/embeddings` для эмбеддингов.
 
-| Протокол | Порт по умолчанию |
-|----------|--------------------|
-| gRPC     | 9094               |
+## Порт и доступ
 
-## Контракт API
+| Протокол | Порт |
+|---|---:|
+| HTTP (grpc-gateway) | `8084` |
+| gRPC | `9094` |
 
-- Proto-файл: `services/ai-inference/api/v1/ai_inference.proto`
-- Генерация: `make proto:gen:ai-inference`
-- Transport-стабы: `make grpc:stubs:ai-inference`
+В обычном compose сервис доступен только внутри сети приложения. Прямой HTTP через Traefik включается в dev-режиме:
 
-## Доступные gRPC сервисы
+```bash
+make compose:up DEV=1
+```
 
-- `GenerationService`
-  - `Generate`
-  - `ListModels`
-- `EmbeddingService`
-  - `Embed`
-  - `BatchEmbed`
+После этого:
+
+- `http://localhost/ai-inference/health`
+- `http://localhost/ai-inference/docs`
+
+## HTTP API
+
+- `GET /ai-inference/health`
+- `POST /ai-inference/api/v1/generate`
+- `POST /ai-inference/api/v1/models/list`
+- `POST /ai-inference/api/v1/embed`
+- `POST /ai-inference/api/v1/embed/batch`
 
 ## Конфиг моделей
 
-Конфиг задаётся JSON-файлом (по умолчанию `services/ai-inference/config/models.json`).
+По умолчанию сервис читает `config/models.json`. Для локальной разработки:
 
-В репозитории есть один шаблон и один локальный файл конфигурации:
+```bash
+cd services/ai-inference
+cp ./config/models.example.json ./config/models.json
+```
 
-- `services/ai-inference/config/models.example.json` — шаблон без токена
-- `services/ai-inference/config/models.json` — локальный файл с токеном и адресами моделей, он не должен попадать в git
-
-Формат файла:
+Минимальный формат:
 
 ```json
 {
   "chat.default": {
     "task": "generation",
     "provider": "openai_compat",
-    "model": "Qwen/Qwen2.5-3B-Instruct",
-    "base_url": "https://glade-untrue-stooge.ngrok-free.dev/v1",
-    "api_key": "<PUT_YOUR_BEARER_TOKEN_HERE>",
-    "generation_defaults": {
-      "temperature": 0.3,
-      "top_p": 1,
-      "max_tokens": 1024
-    }
+    "model": "model-name",
+    "base_url": "https://example.com/v1",
+    "api_key": "token-if-needed"
   },
   "embed.default": {
     "task": "embedding",
     "provider": "openai_compat",
-    "model": "nomic-embed-text:latest",
+    "model": "embedding-model-name",
     "base_url": "http://localhost:11434/v1"
   }
 }
 ```
 
-`provider` можно не указывать — по умолчанию используется `openai_compat`.
-Требование: сейчас поддерживается только `openai_compat`.
+`provider` можно не указывать: будет использован `openai_compat`. Для generation можно добавить `generation_defaults`: `temperature`, `top_p`, `max_tokens`, `presence_penalty`, `frequency_penalty`.
 
-## Запуск локально
+При старте сервис валидирует алиасы и делает короткий health-check по каждому провайдеру.
 
-Из корня репозитория:
+## Конфигурация
+
+- `HTTP_PORT`
+- `GRPC_PORT`
+- `AI_INFERENCE_PROVIDER_TIMEOUT`
+
+## Разработка
 
 ```bash
-cp ./services/ai-inference/config/models.example.json ./services/ai-inference/config/models.json
-go run ./services/ai-inference/cmd/ai-inference --config ./services/ai-inference/config/models.json
+make proto:gen:ai-inference
+make grpc:stubs:ai-inference
+make lint:ai-inference
+make test:ai-inference
+make build:ai-inference
 ```
 
-Или из каталога сервиса:
+Локальный запуск:
 
 ```bash
 cd services/ai-inference
-cp ./config/models.example.json ./config/models.json
-go run ./cmd/ai-inference --config ./config/models.json
-```
-
-Для Docker используется тот же `models.json`: compose монтирует его в контейнер как `/app/config/models.json`.
-
-При старте сервис выполняет простой health-check по всем алиасам (короткий `chat/completions` для generation и `embeddings` для embedding).
-
-## Проверки
-
-```bash
-make test:ai-inference
-make lint:ai-inference
-make build:ai-inference
+go run ./cmd/ai-inference
 ```

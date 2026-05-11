@@ -58,7 +58,7 @@ func TestHealthRPC(t *testing.T) {
 		t.Fatalf("expected nil error, got %v", err)
 	}
 
-	if resp.GetStatus() != "serving" {
-		t.Fatalf("expected status serving, got %q", resp.GetStatus())
+	if resp.GetStatus() != "ok" {
+		t.Fatalf("expected status ok, got %q", resp.GetStatus())
 	}
 }

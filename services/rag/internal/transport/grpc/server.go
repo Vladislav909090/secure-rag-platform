@@ -1,7 +1,7 @@
 package grpc
 
 import (
-	pb "secure-rag-platform/services/rag/gen/v1"
+	pb "secure-rag-platform/api/gen/go/rag/v1"
 	"secure-rag-platform/services/rag/internal/usecase"
 )
 

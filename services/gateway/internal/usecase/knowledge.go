@@ -5,9 +5,9 @@ import (
 	"fmt"
 	"strings"
 
-	iamv1 "secure-rag-platform/services/iam/gen/v1"
-	knowledgev1 "secure-rag-platform/services/knowledge/gen/v1"
-	ragv1 "secure-rag-platform/services/rag/gen/v1"
+	iamv1 "secure-rag-platform/api/gen/go/iam/v1"
+	knowledgev1 "secure-rag-platform/api/gen/go/knowledge/v1"
+	ragv1 "secure-rag-platform/api/gen/go/rag/v1"
 
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"

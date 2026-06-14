@@ -6,7 +6,7 @@ import (
 	"context"
 	"strings"
 
-	pb "secure-rag-platform/services/iam/gen/v1"
+	pb "secure-rag-platform/api/gen/go/iam/v1"
 )
 
 func (s *InternalIAMServiceServerImpl) GetSubjectContext(ctx context.Context, req *pb.GetSubjectContextRequest) (*pb.GetSubjectContextResponse, error) {

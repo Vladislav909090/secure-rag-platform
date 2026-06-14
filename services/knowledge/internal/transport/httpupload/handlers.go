@@ -13,7 +13,7 @@ import (
 	"strconv"
 	"strings"
 
-	knowledgev1 "secure-rag-platform/services/knowledge/gen/v1"
+	knowledgev1 "secure-rag-platform/api/gen/go/knowledge/v1"
 	"secure-rag-platform/services/knowledge/internal/usecase"
 
 	"google.golang.org/grpc/codes"

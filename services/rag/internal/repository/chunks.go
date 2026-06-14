@@ -101,6 +101,8 @@ func (r *Repo) SearchSimilar(
 	ctx context.Context,
 	vector pgvector.Vector,
 	embeddingModel string,
+	embeddingDimension int32,
+	indexedDimension int32,
 	topK int32,
 	documentUUIDs []string,
 ) ([]ChunkMatch, error) {
@@ -115,23 +117,41 @@ func (r *Repo) SearchSimilar(
 	if embeddingModel == "" {
 		return nil, fmt.Errorf("embedding model is required")
 	}
+	if embeddingDimension <= 0 {
+		return nil, fmt.Errorf("embedding dimension is required")
+	}
 
-	args := []any{vector, embeddingModel, topK}
+	distanceExpr := "e.embedding <=> $1"
+	dimensionFilter := "e.embedding_dimension = $3"
+	topKPlaceholder := "$4"
+	documentUUIDsPlaceholder := "$5"
+	args := []any{vector, embeddingModel, embeddingDimension, topK}
+
+	if indexedDimension > 0 && embeddingDimension == indexedDimension {
+		dim := int(indexedDimension)
+		distanceExpr = fmt.Sprintf("(e.embedding::vector(%d) <=> $1::vector(%d))", dim, dim)
+		dimensionFilter = fmt.Sprintf("e.embedding_dimension = %d", dim)
+		topKPlaceholder = "$3"
+		documentUUIDsPlaceholder = "$4"
+		args = []any{vector, embeddingModel, topK}
+	}
+
 	where := ""
 	if len(documentUUIDs) > 0 {
-		where = " AND c.document_uuid = ANY($4)"
+		where = " AND c.document_uuid = ANY(" + documentUUIDsPlaceholder + ")"
 		args = append(args, documentUUIDs)
 	}
 
 	query := strings.Join([]string{
 		"SELECT c.document_uuid, c.chunk_index, c.chunk_text,",
-		"  (e.embedding <=> $1) AS distance",
+		"  " + distanceExpr + " AS distance",
 		"FROM rag_chunks c",
 		"JOIN rag_embeddings e ON e.chunk_id = c.id",
 		"WHERE e.embedding_model = $2",
+		"  AND " + dimensionFilter,
 		where,
-		"ORDER BY e.embedding <=> $1",
-		"LIMIT $3",
+		"ORDER BY " + distanceExpr,
+		"LIMIT " + topKPlaceholder,
 	}, " ")
 
 	rows, err := r.pool.Query(ctx, query, args...)

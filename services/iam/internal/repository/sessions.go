@@ -45,12 +45,6 @@ func (r *Repo) CreateSession(ctx context.Context, input CreateSessionInput) (*mo
 			updated_at
 		)
 		VALUES ($1, $2, $3, NULL, NOW())
-		ON CONFLICT (user_id) DO UPDATE
-		SET
-			refresh_token_hash = EXCLUDED.refresh_token_hash,
-			expires_at = EXCLUDED.expires_at,
-			revoked_at = NULL,
-			updated_at = NOW()
 		RETURNING
 			id,
 			user_id,

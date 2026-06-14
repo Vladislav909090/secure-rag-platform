@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"strings"
 
-	aiinferencev1 "secure-rag-platform/services/ai-inference/gen/v1"
+	aiinferencev1 "secure-rag-platform/api/gen/go/aiinference/v1"
 
 	"github.com/pgvector/pgvector-go"
 )
@@ -81,6 +81,13 @@ func (s *Service) Query(ctx context.Context, req QueryRequest) (*QueryResult, er
 	if resolvedModel == "" {
 		resolvedModel = embedAlias
 	}
+	embeddingDimension := embedResp.GetDimension()
+	if embeddingDimension <= 0 {
+		embeddingDimension = int32(len(embedResp.GetVector()))
+	}
+	if embeddingDimension <= 0 || len(embedResp.GetVector()) != int(embeddingDimension) {
+		return nil, fmt.Errorf("embedding dimension mismatch")
+	}
 
 	candidateLimit := min(max(int(topK)*4, int(topK)), contextMaxCandidates)
 
@@ -88,6 +95,8 @@ func (s *Service) Query(ctx context.Context, req QueryRequest) (*QueryResult, er
 		ctx,
 		pgvector.NewVector(embedResp.GetVector()),
 		resolvedModel,
+		embeddingDimension,
+		s.defaults.IndexedEmbeddingDim,
 		int32(candidateLimit),
 		req.DocumentUUIDs,
 	)

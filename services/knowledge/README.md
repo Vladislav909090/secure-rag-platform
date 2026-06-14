@@ -56,7 +56,7 @@ make migrate:status:knowledge
 ## Разработка
 
 ```bash
-make proto:gen:knowledge
+make api:gen
 make grpc:stubs:knowledge
 make lint:knowledge
 make test:knowledge

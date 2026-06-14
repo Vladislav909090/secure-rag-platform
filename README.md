@@ -5,12 +5,13 @@
 ## Что внутри
 
 ```text
+api/            # зеркало proto-контрактов и сгенерированный Go/OpenAPI-код
 services/
-  gateway/       # публичный API и оркестрация IAM/Knowledge/RAG
-  iam/           # пользователи, роли, сессии, JWT
-  knowledge/     # метаданные документов + файлы в S3/MinIO
-  rag/           # чанкинг, embeddings, pgvector, генерация ответа
-  ai-inference/  # gRPC + HTTP (grpc-gateway) для OpenAI-compatible моделей
+  gateway/       # публичный API и оркестрация IAM/Knowledge/RAG; контракт в api/v1
+  iam/           # пользователи, роли, сессии, JWT; контракт в api/v1
+  knowledge/     # метаданные документов + файлы в S3/MinIO; контракт в api/v1
+  rag/           # чанкинг, embeddings, pgvector, генерация ответа; контракт в api/v1
+  ai-inference/  # gRPC + HTTP (grpc-gateway) для OpenAI-compatible моделей; контракт в api/v1
 deploy/
   compose/       # локальный docker compose
   traefik/       # маршрутизация HTTP API
@@ -27,6 +28,11 @@ third_party/     # внешние proto-зависимости google/api
 ```bash
 make compose:up
 ```
+
+При старте compose одноразовые сервисы `iam-migrate`, `knowledge-migrate` и `rag-migrate`
+применяют SQL-миграции через `goose`, а основные сервисы ждут успешного завершения
+своей миграции. Это позволяет поднимать платформу на пустых Docker volumes без
+ручного предварительного `make migrate:up`.
 
 После старта основной вход в систему:
 
@@ -74,13 +80,20 @@ make compose:up DEV=1
 ## Частые команды
 
 ```bash
-# генерация proto-кода и grpc-gateway
-make proto:gen
+# генерация общих proto-контрактов, grpc-gateway и OpenAPI
+make api:gen
+
+# копирование service-local proto-контрактов в api/proto без генерации
+make api:sync
+
+# очистка сгенерированных API-файлов
+make api:clean
 
 # генерация transport/grpc стабов
 make grpc:stubs
 
 # миграции всех сервисных БД
+make migrate:validate
 make migrate:up
 make migrate:status
 
@@ -111,11 +124,17 @@ make proto:deps
 cp services/ai-inference/config/models.example.json services/ai-inference/config/models.json
 ```
 
-Файл `models.json` локальный: там могут быть URL моделей и токены. Compose монтирует его в контейнер как `/app/config/models.json`.
+Файл `models.json` локальный: там могут быть URL моделей и токены. Он игнорируется Git
+и не копируется в Docker image. Compose монтирует его в контейнер как
+`/app/config/models.json`, а внутри образа остается только безопасный
+`models.example.json`.
 
 ## Миграции
 
-Миграции есть у `iam`, `knowledge` и `rag`. Команды `make migrate:*` рассчитаны на опубликованные dev-порты БД, поэтому перед ними обычно запускают:
+Миграции есть у `iam`, `knowledge` и `rag`. В compose-запуске они применяются
+автоматически одноразовыми migration-сервисами. Команды `make migrate:*` остаются
+для ручной проверки и разработки; они рассчитаны на опубликованные dev-порты БД,
+поэтому перед ними обычно запускают:
 
 ```bash
 make compose:up DEV=1
@@ -133,4 +152,11 @@ make migrate:up
 - `iam`, `knowledge` и `rag` можно открыть напрямую через Traefik только в `DEV=1`; обычный сценарий идет через `gateway`.
 - `knowledge` хранит файлы в MinIO/S3, а метаданные в PostgreSQL.
 - `rag` использует PostgreSQL с `pgvector`, читает файлы через Knowledge/MinIO и ходит в `ai-inference` за embeddings и генерацией.
+- Источник публичного контракта лежит рядом с сервисом: `services/<service>/api/v1/*.proto`.
+- `api/proto` является зеркалом service-local контрактов для общей генерации.
+- `api/gen/go` и `api/gen/openapiv2` хранят сгенерированные Go/OpenAPI файлы.
+- `make api:sync` копирует service-local proto-файлы в `api/proto`.
+- `make api:gen` сначала выполняет `api:sync`, затем вызывает `protoc` напрямую из `Makefile`.
+- `make api:clean` удаляет только `api/gen/go` и `api/gen/openapiv2`.
 - `third_party/google/api` восстанавливается командой `make proto:deps`, если нужных proto-файлов нет.
+- `proto:deps` качает googleapis с закрепленного `GOOGLEAPIS_REF`; при обновлении googleapis меняйте этот ref явно.

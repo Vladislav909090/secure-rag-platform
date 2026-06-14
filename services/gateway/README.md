@@ -42,10 +42,14 @@ Swagger UI живет на `/gateway/docs`.
 - `GATEWAY_DEFAULT_TOP_K`
 - `GATEWAY_DEFAULT_EMBEDDING_MODEL_ALIAS`, `GATEWAY_DEFAULT_GENERATION_MODEL_ALIAS`
 
+Если фильтрация документов включена (`DISABLE_DOC_FILTER=false`), `OPA_URL` обязателен.
+При недоступной или не настроенной OPA gateway возвращает ошибку вместо локального
+fallback-решения.
+
 ## Разработка
 
 ```bash
-make proto:gen:gateway
+make api:gen
 make grpc:stubs:gateway
 make lint:gateway
 make test:gateway

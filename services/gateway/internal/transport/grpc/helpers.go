@@ -31,7 +31,9 @@ func mapToStruct(value map[string]any) *structpb.Struct {
 
 func toGRPCError(err error) error {
 	switch {
-	case errors.Is(err, usecase.ErrNotConfigured):
+	case errors.Is(err, usecase.ErrNotConfigured),
+		errors.Is(err, usecase.ErrPolicyRequired),
+		errors.Is(err, usecase.ErrPolicyUnavailable):
 		return status.Error(codes.Unavailable, err.Error())
 	case errors.Is(err, usecase.ErrInvalidRequest):
 		return status.Error(codes.InvalidArgument, err.Error())

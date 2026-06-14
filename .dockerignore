@@ -1,0 +1,31 @@
+.git
+.github
+
+# Локальные файлы и настройки редакторов
+.env
+.idea/
+.vscode/
+.golangci/
+.golangci-cache/
+.golangci-cache-*/
+.gocache/
+
+# Артефакты сборки и тестов
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+*.test
+*.out
+coverage.*
+*.coverprofile
+profile.cov
+services/*/gen/
+
+# Локальные файлы Go workspace
+go.work
+go.work.sum
+
+# Локальный конфиг моделей может содержать API-ключи. Его нужно монтировать при запуске.
+services/ai-inference/config/models.json

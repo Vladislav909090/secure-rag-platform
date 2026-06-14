@@ -10,7 +10,10 @@ import (
 	"strconv"
 	"strings"
 
-	gatewayv1 "secure-rag-platform/services/gateway/gen/v1"
+	gatewayv1 "secure-rag-platform/api/gen/go/gateway/v1"
+	iamv1 "secure-rag-platform/api/gen/go/iam/v1"
+	knowledgev1 "secure-rag-platform/api/gen/go/knowledge/v1"
+	ragv1 "secure-rag-platform/api/gen/go/rag/v1"
 	application "secure-rag-platform/services/gateway/internal/app"
 	"secure-rag-platform/services/gateway/internal/closer"
 	"secure-rag-platform/services/gateway/internal/config"
@@ -19,9 +22,6 @@ import (
 	transporthttpadmin "secure-rag-platform/services/gateway/internal/transport/httpadmin"
 	transporthttpupload "secure-rag-platform/services/gateway/internal/transport/httpupload"
 	"secure-rag-platform/services/gateway/internal/usecase"
-	iamv1 "secure-rag-platform/services/iam/gen/v1"
-	knowledgev1 "secure-rag-platform/services/knowledge/gen/v1"
-	ragv1 "secure-rag-platform/services/rag/gen/v1"
 
 	"github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
 	"google.golang.org/grpc"

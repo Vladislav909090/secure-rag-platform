@@ -10,8 +10,8 @@ import (
 	"net/http"
 	"strings"
 
+	knowledgev1 "secure-rag-platform/api/gen/go/knowledge/v1"
 	"secure-rag-platform/services/gateway/internal/usecase"
-	knowledgev1 "secure-rag-platform/services/knowledge/gen/v1"
 
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -263,7 +263,9 @@ func writeUsecaseError(w http.ResponseWriter, err error) {
 		writeJSONError(w, http.StatusForbidden, status.Convert(err).Message())
 	case status.Code(err) == codes.NotFound:
 		writeJSONError(w, http.StatusNotFound, status.Convert(err).Message())
-	case errors.Is(err, usecase.ErrNotConfigured):
+	case errors.Is(err, usecase.ErrNotConfigured),
+		errors.Is(err, usecase.ErrPolicyRequired),
+		errors.Is(err, usecase.ErrPolicyUnavailable):
 		writeJSONError(w, http.StatusServiceUnavailable, err.Error())
 	case errors.Is(err, usecase.ErrInvalidRequest):
 		writeJSONError(w, http.StatusBadRequest, err.Error())

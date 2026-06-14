@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"strings"
 
-	iamv1 "secure-rag-platform/services/iam/gen/v1"
+	iamv1 "secure-rag-platform/api/gen/go/iam/v1"
 
 	"google.golang.org/protobuf/types/known/structpb"
 )

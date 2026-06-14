@@ -9,7 +9,7 @@ import (
 	"os"
 	"time"
 
-	aiinferencev1 "secure-rag-platform/services/ai-inference/gen/v1"
+	aiinferencev1 "secure-rag-platform/api/gen/go/aiinference/v1"
 	application "secure-rag-platform/services/ai-inference/internal/app"
 	"secure-rag-platform/services/ai-inference/internal/closer"
 	"secure-rag-platform/services/ai-inference/internal/config"

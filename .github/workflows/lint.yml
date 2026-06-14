@@ -1,5 +1,4 @@
-# ...existing code...
-name: lint
+name: ci
 
 on:
   push:
@@ -13,6 +12,41 @@ permissions:
   contents: read
 
 jobs:
+  verify:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.25.x'
+
+      - name: Setup protoc
+        uses: arduino/setup-protoc@v3
+
+      - name: Install proto tools
+        run: make proto:tools
+
+      - name: Generate API stubs
+        run: make api:gen
+
+      - name: Validate migrations
+        run: make migrate:validate
+
+      - name: Run tests
+        run: make test
+
+      - name: Build services
+        run: make build
+
+      - name: Validate compose config
+        run: |
+          docker compose -f deploy/compose/docker-compose.yml config --quiet
+          docker compose -f deploy/compose/docker-compose.yml -f deploy/compose/compose.dev.yml config --quiet
+
   golangci-lint:
     runs-on: ubuntu-latest
     strategy:
@@ -32,14 +66,11 @@ jobs:
       - name: Setup protoc
         uses: arduino/setup-protoc@v3
 
-      - name: Setup Go workspace
-        run: go work init ./services/ai-inference ./services/gateway ./services/iam ./services/knowledge ./services/rag ./tools/grpcstubgen
-
       - name: Install proto tools
         run: make proto:tools
 
-      - name: Generate proto stubs
-        run: make proto:gen
+      - name: Generate API stubs
+        run: make api:gen
 
       - name: Run golangci-lint (${{ matrix.service }})
         uses: golangci/golangci-lint-action@v6

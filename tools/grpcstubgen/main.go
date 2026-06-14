@@ -19,9 +19,13 @@ import (
 
 func main() {
 	var serviceDir string
+	var genDir string
 	var outRel string
+	var pbImport string
 	flag.StringVar(&serviceDir, "service", ".", "service module directory (contains go.mod)")
+	flag.StringVar(&genDir, "gen", "", "generated protobuf Go directory to scan")
 	flag.StringVar(&outRel, "out", "internal/transport/grpc", "output directory relative to service dir")
+	flag.StringVar(&pbImport, "pb-import", "", "protobuf Go package import path")
 	flag.Parse()
 
 	serviceDir, err := filepath.Abs(serviceDir)
@@ -34,12 +38,22 @@ func main() {
 		die(err)
 	}
 
-	grpcFiles, err := findGRPCPBFiles(filepath.Join(serviceDir, "gen"))
+	if genDir == "" {
+		genDir = filepath.Join(serviceDir, "gen")
+	} else if !filepath.IsAbs(genDir) {
+		absGenDir, absErr := filepath.Abs(genDir)
+		if absErr != nil {
+			die(absErr)
+		}
+		genDir = absGenDir
+	}
+
+	grpcFiles, err := findGRPCPBFiles(genDir)
 	if err != nil {
 		die(err)
 	}
 	if len(grpcFiles) == 0 {
-		die(errors.New("no *_grpc.pb.go files found under gen/; run proto generation first"))
+		die(errors.New("no *_grpc.pb.go files found under gen directory; run api generation first"))
 	}
 
 	services, err := parseServerInterfaces(grpcFiles)
@@ -55,7 +69,9 @@ func main() {
 		die(err)
 	}
 
-	pbImport := modulePath + "/gen/v1"
+	if pbImport == "" {
+		pbImport = modulePath + "/gen/v1"
+	}
 	for _, svc := range services {
 		// Legacy (single-file) output name from previous generator version.
 		legacyName := snakeCase(svc.InterfaceName) + ".gen.go"

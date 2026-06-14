@@ -3,14 +3,17 @@ module secure-rag-platform/services/rag
 go 1.25.0
 
 require (
-	github.com/grpc-ecosystem/grpc-gateway/v2 v2.27.2
+	github.com/grpc-ecosystem/grpc-gateway/v2 v2.29.0
 	github.com/jackc/pgx/v5 v5.9.2
 	github.com/minio/minio-go/v7 v7.1.0
 	github.com/pgvector/pgvector-go v0.3.0
-	google.golang.org/genproto/googleapis/api v0.0.0-20250825161204-c5933d9347a5
-	google.golang.org/grpc v1.75.1
+	google.golang.org/genproto/googleapis/api v0.0.0-20260610212136-7ab31c22f7ad
+	google.golang.org/grpc v1.81.1
 	google.golang.org/protobuf v1.36.11
+	secure-rag-platform/api v0.0.0
 )
+
+replace secure-rag-platform/api => ../../api
 
 require (
 	github.com/cespare/xxhash/v2 v2.3.0 // indirect
@@ -32,10 +35,10 @@ require (
 	github.com/x448/float16 v0.8.4 // indirect
 	github.com/zeebo/xxh3 v1.1.0 // indirect
 	go.yaml.in/yaml/v3 v3.0.4 // indirect
-	golang.org/x/crypto v0.46.0 // indirect
-	golang.org/x/net v0.48.0 // indirect
-	golang.org/x/sync v0.19.0 // indirect
-	golang.org/x/sys v0.39.0 // indirect
-	golang.org/x/text v0.32.0 // indirect
-	google.golang.org/genproto/googleapis/rpc v0.0.0-20250825161204-c5933d9347a5 // indirect
+	golang.org/x/crypto v0.53.0 // indirect
+	golang.org/x/net v0.56.0 // indirect
+	golang.org/x/sync v0.21.0 // indirect
+	golang.org/x/sys v0.46.0 // indirect
+	golang.org/x/text v0.38.0 // indirect
+	google.golang.org/genproto/googleapis/rpc v0.0.0-20260610212136-7ab31c22f7ad // indirect
 )

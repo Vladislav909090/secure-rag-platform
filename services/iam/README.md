@@ -29,6 +29,10 @@ make compose:up DEV=1
 - sessions: список и отзыв сессий;
 - internal API для gateway: subject context и проверка access token.
 
+IAM хранит несколько активных refresh-сессий на пользователя. Новый login создает
+новую строку `user_sessions`; logout/revoke отзывает конкретную сессию, а
+logout-all/revoke-all отзывает все активные сессии пользователя.
+
 ## Конфигурация
 
 Основные переменные:
@@ -54,7 +58,7 @@ make migrate:status:iam
 ## Разработка
 
 ```bash
-make proto:gen:iam
+make api:gen
 make grpc:stubs:iam
 make lint:iam
 make test:iam

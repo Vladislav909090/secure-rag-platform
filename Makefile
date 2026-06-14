@@ -1,9 +1,11 @@
 .PHONY: lint lint\:gateway lint\:iam lint\:knowledge lint\:rag lint\:ai-inference \
 	test test\:gateway test\:iam test\:knowledge test\:rag test\:ai-inference \
 	build build\:gateway build\:iam build\:knowledge build\:rag build\:ai-inference \
+	api\:sync api\:gen api\:clean \
 	proto\:tools proto\:deps proto\:gen \
 	proto\:gen\:gateway proto\:gen\:iam proto\:gen\:knowledge proto\:gen\:rag proto\:gen\:ai-inference \
 	grpc\:stubs grpc\:stubs\:gateway grpc\:stubs\:iam grpc\:stubs\:knowledge grpc\:stubs\:rag grpc\:stubs\:ai-inference \
+	migrate\:validate migrate\:validate\:iam migrate\:validate\:knowledge migrate\:validate\:rag \
 	migrate\:status migrate\:status\:iam migrate\:status\:knowledge migrate\:status\:rag \
 	migrate\:up migrate\:up\:iam migrate\:up\:knowledge migrate\:up\:rag \
 	migrate\:down migrate\:down\:iam migrate\:down\:knowledge migrate\:down\:rag \
@@ -21,11 +23,19 @@ ifeq ($(COMPOSE_DEV),1)
 COMPOSE_FILES += -f deploy/compose/compose.dev.yml
 endif
 
-GOOGLEAPIS_RAW = https://raw.githubusercontent.com/googleapis/googleapis/master
+GOOGLEAPIS_REF ?= 1526e545e9d26f23b9c5d0f04af17297def8d045
+GOOGLEAPIS_RAW = https://raw.githubusercontent.com/googleapis/googleapis/$(GOOGLEAPIS_REF)
 PROTO_INC      = -I third_party
 PROTOC         = protoc
 GOOSE          = go run github.com/pressly/goose/v3/cmd/goose@v3.24.3
 MIGRATION_NAME ?= new_migration
+
+API_PROTO_FILES = \
+	gateway/v1/gateway.proto \
+	iam/v1/iam.proto \
+	knowledge/v1/knowledge.proto \
+	rag/v1/rag.proto \
+	aiinference/v1/ai_inference.proto
 
 IAM_MIGRATIONS_DIR       = services/iam/migrations
 KNOWLEDGE_MIGRATIONS_DIR = services/knowledge/migrations
@@ -45,7 +55,7 @@ MKDIRP = powershell -NoProfile -Command "New-Item -ItemType Directory -Force -Pa
 # 1) в PATH
 # 2) winget-путь
 # 3) локальная распаковка в %LOCALAPPDATA%\protoc\bin
-PROTOC = $(shell powershell -NoProfile -Command "$$cmd=Get-Command protoc -ErrorAction SilentlyContinue; if($$cmd){$$cmd.Source}else{$$p1=Join-Path $$env:LOCALAPPDATA 'Microsoft\\WinGet\\Packages\\Google.Protobuf_Microsoft.Winget.Source_8wekyb3d8bbwe\\bin\\protoc.exe'; $$p2=Join-Path $$env:LOCALAPPDATA 'protoc\\bin\\protoc.exe'; if(Test-Path $$p1){$$p1}elseif(Test-Path $$p2){$$p2}else{'protoc'}}")
+PROTOC = $(shell powershell -NoProfile -Command "$$cmd=Get-Command protoc -ErrorAction SilentlyContinue; if($$cmd){$$cmd.Source}else{$$p1=Join-Path $$env:LOCALAPPDATA 'Microsoft\\WinGet\\Packages\\Google.Protobuf_Microsoft.Winget.Source_8wekyb3d8bbwe\\bin\\protoc.exe'; $$p2=Join-Path $$env:LOCALAPPDATA 'protoc\\bin\\protoc.exe'; if(Test-Path -LiteralPath $$p1 -ErrorAction SilentlyContinue){$$p1}elseif(Test-Path -LiteralPath $$p2 -ErrorAction SilentlyContinue){$$p2}else{'protoc'}}")
 
 PROTO_DEPS_CMD = powershell -NoProfile -Command "New-Item -ItemType Directory -Force third_party/google/api | Out-Null; $$updated=$$false; if(-not(Test-Path third_party/google/api/annotations.proto)){Invoke-WebRequest '$(GOOGLEAPIS_RAW)/google/api/annotations.proto' -OutFile third_party/google/api/annotations.proto -UseBasicParsing; $$updated=$$true}; if(-not(Test-Path third_party/google/api/http.proto)){Invoke-WebRequest '$(GOOGLEAPIS_RAW)/google/api/http.proto' -OutFile third_party/google/api/http.proto -UseBasicParsing; $$updated=$$true}; if(-not(Test-Path third_party/google/api/httpbody.proto)){Invoke-WebRequest '$(GOOGLEAPIS_RAW)/google/api/httpbody.proto' -OutFile third_party/google/api/httpbody.proto -UseBasicParsing; $$updated=$$true}; if($$updated){Write-Host '==> Downloaded missing google/api protos'}else{Write-Host '==> google/api protos already present'}"
 
@@ -138,81 +148,97 @@ proto\:tools:
 proto\:deps:
 	@$(PROTO_DEPS_CMD)
 
-# ── Proto: генерация по сервисам ──────────────────────
+# ── API: генерация общих контрактов ───────────────────
 
-proto\:gen\:gateway: proto\:deps
-	@$(call MKDIRP,services/gateway/gen/v1)
-	@$(call MKDIRP,services/gateway/gen/openapiv2)
-	"$(PROTOC)" $(PROTO_INC) -I services/gateway/api \
-		--go_out=services/gateway/gen --go_opt=paths=source_relative \
-		--go-grpc_out=services/gateway/gen --go-grpc_opt=paths=source_relative \
-		--grpc-gateway_out=services/gateway/gen --grpc-gateway_opt=paths=source_relative,generate_unbound_methods=true \
-		--openapiv2_out=services/gateway/gen/openapiv2 \
-		services/gateway/api/v1/gateway.proto
+api\:sync:
+ifeq ($(OS),Windows_NT)
+	powershell -NoProfile -Command "New-Item -ItemType Directory -Force api/proto/gateway/v1,api/proto/iam/v1,api/proto/knowledge/v1,api/proto/rag/v1,api/proto/aiinference/v1 | Out-Null; Copy-Item -Force services/gateway/api/v1/gateway.proto api/proto/gateway/v1/gateway.proto; Copy-Item -Force services/iam/api/v1/iam.proto api/proto/iam/v1/iam.proto; Copy-Item -Force services/knowledge/api/v1/knowledge.proto api/proto/knowledge/v1/knowledge.proto; Copy-Item -Force services/rag/api/v1/rag.proto api/proto/rag/v1/rag.proto; Copy-Item -Force services/ai-inference/api/v1/ai_inference.proto api/proto/aiinference/v1/ai_inference.proto"
+else
+	mkdir -p api/proto/gateway/v1 api/proto/iam/v1 api/proto/knowledge/v1 api/proto/rag/v1 api/proto/aiinference/v1
+	cp services/gateway/api/v1/gateway.proto api/proto/gateway/v1/gateway.proto
+	cp services/iam/api/v1/iam.proto api/proto/iam/v1/iam.proto
+	cp services/knowledge/api/v1/knowledge.proto api/proto/knowledge/v1/knowledge.proto
+	cp services/rag/api/v1/rag.proto api/proto/rag/v1/rag.proto
+	cp services/ai-inference/api/v1/ai_inference.proto api/proto/aiinference/v1/ai_inference.proto
+endif
 
-proto\:gen\:iam: proto\:deps
-	@$(call MKDIRP,services/iam/gen/v1)
-	@$(call MKDIRP,services/iam/gen/openapiv2)
-	"$(PROTOC)" $(PROTO_INC) -I services/iam/api \
-		--go_out=services/iam/gen --go_opt=paths=source_relative \
-		--go-grpc_out=services/iam/gen --go-grpc_opt=paths=source_relative \
-		--grpc-gateway_out=services/iam/gen --grpc-gateway_opt=paths=source_relative,generate_unbound_methods=true \
-		--openapiv2_out=services/iam/gen/openapiv2 \
-		services/iam/api/v1/iam.proto
+api\:gen: api\:sync proto\:deps
+ifeq ($(OS),Windows_NT)
+	powershell -NoProfile -Command "New-Item -ItemType Directory -Force api/gen/go,api/gen/openapiv2 | Out-Null; & '$(PROTOC)' -I third_party -I api/proto --go_out=api/gen/go --go_opt=paths=source_relative --go-grpc_out=api/gen/go --go-grpc_opt=paths=source_relative --grpc-gateway_out=api/gen/go --grpc-gateway_opt=paths=source_relative --openapiv2_out=api/gen/openapiv2 $(API_PROTO_FILES)"
+else
+	mkdir -p api/gen/go api/gen/openapiv2
+	$(PROTOC) -I third_party -I api/proto \
+		--go_out=api/gen/go --go_opt=paths=source_relative \
+		--go-grpc_out=api/gen/go --go-grpc_opt=paths=source_relative \
+		--grpc-gateway_out=api/gen/go --grpc-gateway_opt=paths=source_relative \
+		--openapiv2_out=api/gen/openapiv2 \
+		$(API_PROTO_FILES)
+endif
 
-proto\:gen\:knowledge: proto\:deps
-	@$(call MKDIRP,services/knowledge/gen/v1)
-	@$(call MKDIRP,services/knowledge/gen/openapiv2)
-	"$(PROTOC)" $(PROTO_INC) -I services/knowledge/api \
-		--go_out=services/knowledge/gen --go_opt=paths=source_relative \
-		--go-grpc_out=services/knowledge/gen --go-grpc_opt=paths=source_relative \
-		--grpc-gateway_out=services/knowledge/gen --grpc-gateway_opt=paths=source_relative,generate_unbound_methods=true \
-		--openapiv2_out=services/knowledge/gen/openapiv2 \
-		services/knowledge/api/v1/knowledge.proto
+api\:clean:
+ifeq ($(OS),Windows_NT)
+	powershell -NoProfile -Command "Remove-Item -Recurse -Force api/gen/go,api/gen/openapiv2 -ErrorAction SilentlyContinue"
+else
+	rm -rf api/gen/go api/gen/openapiv2
+endif
 
-proto\:gen\:rag: proto\:deps
-	@$(call MKDIRP,services/rag/gen/v1)
-	@$(call MKDIRP,services/rag/gen/openapiv2)
-	"$(PROTOC)" $(PROTO_INC) -I services/rag/api \
-		--go_out=services/rag/gen --go_opt=paths=source_relative \
-		--go-grpc_out=services/rag/gen --go-grpc_opt=paths=source_relative \
-		--grpc-gateway_out=services/rag/gen --grpc-gateway_opt=paths=source_relative,generate_unbound_methods=true \
-		--openapiv2_out=services/rag/gen/openapiv2 \
-		services/rag/api/v1/rag.proto
+proto\:gen: api\:gen
 
-proto\:gen\:ai-inference: proto\:deps
-	@$(call MKDIRP,services/ai-inference/gen/v1)
-	@$(call MKDIRP,services/ai-inference/gen/openapiv2)
-	"$(PROTOC)" $(PROTO_INC) -I services/ai-inference/api \
-		--go_out=services/ai-inference/gen --go_opt=paths=source_relative \
-		--go-grpc_out=services/ai-inference/gen --go-grpc_opt=paths=source_relative \
-		--grpc-gateway_out=services/ai-inference/gen --grpc-gateway_opt=paths=source_relative,generate_unbound_methods=true \
-		--openapiv2_out=services/ai-inference/gen/openapiv2 \
-		services/ai-inference/api/v1/ai_inference.proto
-
-proto\:gen: proto\:gen\:gateway proto\:gen\:iam proto\:gen\:knowledge proto\:gen\:rag proto\:gen\:ai-inference
+# Совместимые алиасы: контракты теперь генерируются единым api-модулем.
+proto\:gen\:gateway proto\:gen\:iam proto\:gen\:knowledge proto\:gen\:rag proto\:gen\:ai-inference: api\:gen
 
 # ── gRPC: генерация server stubs (transport/grpc) ─────
 
 grpc\:stubs\:gateway:
-	go run ./tools/grpcstubgen --service services/gateway --out internal/transport/grpc
+ifeq ($(OS),Windows_NT)
+	powershell -NoProfile -Command "$$env:GOWORK='off'; $$env:GOCACHE=Join-Path $$env:TEMP 'secure-rag-platform-go-build-cache'; go -C tools/grpcstubgen run . --service ../../services/gateway --gen ../../api/gen/go/gateway --pb-import secure-rag-platform/api/gen/go/gateway/v1 --out internal/transport/grpc"
+else
+	GOWORK=off go -C tools/grpcstubgen run . --service ../../services/gateway --gen ../../api/gen/go/gateway --pb-import secure-rag-platform/api/gen/go/gateway/v1 --out internal/transport/grpc
+endif
 
 grpc\:stubs\:iam:
-	go run ./tools/grpcstubgen --service services/iam --out internal/transport/grpc
+ifeq ($(OS),Windows_NT)
+	powershell -NoProfile -Command "$$env:GOWORK='off'; $$env:GOCACHE=Join-Path $$env:TEMP 'secure-rag-platform-go-build-cache'; go -C tools/grpcstubgen run . --service ../../services/iam --gen ../../api/gen/go/iam --pb-import secure-rag-platform/api/gen/go/iam/v1 --out internal/transport/grpc"
+else
+	GOWORK=off go -C tools/grpcstubgen run . --service ../../services/iam --gen ../../api/gen/go/iam --pb-import secure-rag-platform/api/gen/go/iam/v1 --out internal/transport/grpc
+endif
 
 grpc\:stubs\:knowledge:
-	go run ./tools/grpcstubgen --service services/knowledge --out internal/transport/grpc
+ifeq ($(OS),Windows_NT)
+	powershell -NoProfile -Command "$$env:GOWORK='off'; $$env:GOCACHE=Join-Path $$env:TEMP 'secure-rag-platform-go-build-cache'; go -C tools/grpcstubgen run . --service ../../services/knowledge --gen ../../api/gen/go/knowledge --pb-import secure-rag-platform/api/gen/go/knowledge/v1 --out internal/transport/grpc"
+else
+	GOWORK=off go -C tools/grpcstubgen run . --service ../../services/knowledge --gen ../../api/gen/go/knowledge --pb-import secure-rag-platform/api/gen/go/knowledge/v1 --out internal/transport/grpc
+endif
 
 grpc\:stubs\:rag:
-	go run ./tools/grpcstubgen --service services/rag --out internal/transport/grpc
+ifeq ($(OS),Windows_NT)
+	powershell -NoProfile -Command "$$env:GOWORK='off'; $$env:GOCACHE=Join-Path $$env:TEMP 'secure-rag-platform-go-build-cache'; go -C tools/grpcstubgen run . --service ../../services/rag --gen ../../api/gen/go/rag --pb-import secure-rag-platform/api/gen/go/rag/v1 --out internal/transport/grpc"
+else
+	GOWORK=off go -C tools/grpcstubgen run . --service ../../services/rag --gen ../../api/gen/go/rag --pb-import secure-rag-platform/api/gen/go/rag/v1 --out internal/transport/grpc
+endif
 
 grpc\:stubs\:ai-inference:
-	go -C tools/grpcstubgen run . --service ../../services/ai-inference --out internal/transport/grpc
+ifeq ($(OS),Windows_NT)
+	powershell -NoProfile -Command "$$env:GOWORK='off'; $$env:GOCACHE=Join-Path $$env:TEMP 'secure-rag-platform-go-build-cache'; go -C tools/grpcstubgen run . --service ../../services/ai-inference --gen ../../api/gen/go/aiinference --pb-import secure-rag-platform/api/gen/go/aiinference/v1 --out internal/transport/grpc"
+else
+	GOWORK=off go -C tools/grpcstubgen run . --service ../../services/ai-inference --gen ../../api/gen/go/aiinference --pb-import secure-rag-platform/api/gen/go/aiinference/v1 --out internal/transport/grpc
+endif
 
 grpc\:stubs: grpc\:stubs\:gateway grpc\:stubs\:iam grpc\:stubs\:knowledge grpc\:stubs\:rag grpc\:stubs\:ai-inference
 
 
 # ── Миграции баз данных (goose) ───────────────────────
+
+migrate\:validate\:iam:
+	@$(GOOSE) -dir $(IAM_MIGRATIONS_DIR) validate
+
+migrate\:validate\:knowledge:
+	@$(GOOSE) -dir $(KNOWLEDGE_MIGRATIONS_DIR) validate
+
+migrate\:validate\:rag:
+	@$(GOOSE) -dir $(RAG_MIGRATIONS_DIR) validate
+
+migrate\:validate: migrate\:validate\:iam migrate\:validate\:knowledge migrate\:validate\:rag
 
 migrate\:status\:iam:
 	@$(GOOSE) -dir $(IAM_MIGRATIONS_DIR) postgres "$(IAM_DB_DSN)" status

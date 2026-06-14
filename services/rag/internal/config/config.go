@@ -21,6 +21,7 @@ const (
 	DefaultTopK     Key = "RAG_DEFAULT_TOP_K"
 	DefaultEmbed    Key = "RAG_DEFAULT_EMBEDDING_MODEL_ALIAS"
 	DefaultGenerate Key = "RAG_DEFAULT_GENERATION_MODEL_ALIAS"
+	IndexedEmbedDim Key = "RAG_INDEXED_EMBEDDING_DIMENSION"
 )
 
 func GetValue(key Key) string {

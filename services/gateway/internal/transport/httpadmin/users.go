@@ -259,7 +259,9 @@ func extractAccessToken(r *http.Request) string {
 
 func writeUsecaseError(w http.ResponseWriter, err error) {
 	switch {
-	case errors.Is(err, usecase.ErrNotConfigured):
+	case errors.Is(err, usecase.ErrNotConfigured),
+		errors.Is(err, usecase.ErrPolicyRequired),
+		errors.Is(err, usecase.ErrPolicyUnavailable):
 		writeJSONError(w, http.StatusServiceUnavailable, err.Error())
 	case errors.Is(err, usecase.ErrInvalidRequest):
 		writeJSONError(w, http.StatusBadRequest, err.Error())

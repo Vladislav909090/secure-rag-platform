@@ -9,9 +9,9 @@ import (
 	"os"
 	"strconv"
 
-	aiinferencev1 "secure-rag-platform/services/ai-inference/gen/v1"
-	knowledgev1 "secure-rag-platform/services/knowledge/gen/v1"
-	ragv1 "secure-rag-platform/services/rag/gen/v1"
+	aiinferencev1 "secure-rag-platform/api/gen/go/aiinference/v1"
+	knowledgev1 "secure-rag-platform/api/gen/go/knowledge/v1"
+	ragv1 "secure-rag-platform/api/gen/go/rag/v1"
 	application "secure-rag-platform/services/rag/internal/app"
 	"secure-rag-platform/services/rag/internal/closer"
 	"secure-rag-platform/services/rag/internal/config"
@@ -46,6 +46,7 @@ func main() {
 	chunkSize := parseInt(config.GetValue(config.ChunkSize), 800)
 	chunkOverlap := parseInt(config.GetValue(config.ChunkOverlap), 100)
 	defaultTopK := int32(parseInt(config.GetValue(config.DefaultTopK), 3))
+	indexedEmbeddingDim := int32(parseInt(config.GetValue(config.IndexedEmbedDim), 768))
 	defaultEmbed := config.GetValue(config.DefaultEmbed)
 	if defaultEmbed == "" {
 		defaultEmbed = "embed.default"
@@ -55,7 +56,7 @@ func main() {
 		defaultGenerate = "chat.default"
 	}
 
-	uc := buildUsecase(chunkSize, chunkOverlap, defaultTopK, defaultEmbed, defaultGenerate, logger)
+	uc := buildUsecase(chunkSize, chunkOverlap, defaultTopK, defaultEmbed, defaultGenerate, indexedEmbeddingDim, logger)
 
 	serverImpl := transportgrpc.NewServer(uc)
 	grpcServer := grpc.NewServer()
@@ -119,6 +120,7 @@ func buildUsecase(
 	topK int32,
 	embedAlias string,
 	genAlias string,
+	indexedEmbeddingDim int32,
 	logger *slog.Logger,
 ) *usecase.Service {
 	dbDSN := config.GetValue(config.DatabaseDSN)
@@ -180,12 +182,17 @@ func buildUsecase(
 	closer.Add(func() { _ = aiConn.Close() })
 
 	repo := repository.NewRepo(pool)
+	if err := repo.EnsureEmbeddingIndex(context.Background(), indexedEmbeddingDim); err != nil {
+		fatal(logger, "не удалось подготовить индекс embeddings", err)
+	}
+
 	defaults := usecase.Defaults{
 		EmbeddingModelAlias:  embedAlias,
 		GenerationModelAlias: genAlias,
 		ChunkSize:            chunkSize,
 		ChunkOverlap:         chunkOverlap,
 		TopK:                 topK,
+		IndexedEmbeddingDim:  indexedEmbeddingDim,
 	}
 
 	uc := usecase.NewService(

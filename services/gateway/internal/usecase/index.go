@@ -5,8 +5,8 @@ import (
 	"fmt"
 	"strings"
 
-	knowledgev1 "secure-rag-platform/services/knowledge/gen/v1"
-	ragv1 "secure-rag-platform/services/rag/gen/v1"
+	knowledgev1 "secure-rag-platform/api/gen/go/knowledge/v1"
+	ragv1 "secure-rag-platform/api/gen/go/rag/v1"
 )
 
 // ReindexDocument переиндексирует один документ через RAG. Доступно редактору документов.

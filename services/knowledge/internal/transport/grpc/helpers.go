@@ -6,7 +6,7 @@ import (
 	"strings"
 	"time"
 
-	pb "secure-rag-platform/services/knowledge/gen/v1"
+	pb "secure-rag-platform/api/gen/go/knowledge/v1"
 	"secure-rag-platform/services/knowledge/internal/model"
 	"secure-rag-platform/services/knowledge/internal/usecase"
 

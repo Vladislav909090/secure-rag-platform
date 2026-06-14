@@ -6,6 +6,8 @@ volumes:
   knowledge-postgres-data:
   knowledge-minio-data:
   rag-postgres-data:
+  goose-go-mod-cache:
+  goose-go-build-cache:
 
 networks:
   traefik-net:
@@ -92,8 +94,8 @@ services:
 
   iam:
     build:
-      context: ../../services/iam
-      dockerfile: Dockerfile
+      context: ../..
+      dockerfile: services/iam/Dockerfile
     environment:
       - PORT=8081
       - DATABASE_DSN=postgres://iam:iam@iam-db:5432/iam?sslmode=disable
@@ -106,14 +108,32 @@ services:
     expose:
       - "8081"
     depends_on:
-      iam-db:
-        condition: service_healthy
+      iam-migrate:
+        condition: service_completed_successfully
       iam-redis:
         condition: service_healthy
     networks:
       - app-net
       - iam-db-net
       - iam-redis-net
+
+  iam-migrate:
+    image: golang:1.25-alpine
+    working_dir: /workspace
+    command:
+      - sh
+      - -c
+      - go run github.com/pressly/goose/v3/cmd/goose@v3.24.3 -dir /migrations postgres 'postgres://iam:iam@iam-db:5432/iam?sslmode=disable' up
+    volumes:
+      - ../../services/iam/migrations:/migrations:ro
+      - goose-go-mod-cache:/go/pkg/mod
+      - goose-go-build-cache:/root/.cache/go-build
+    depends_on:
+      iam-db:
+        condition: service_healthy
+    networks:
+      - iam-db-net
+      - egress-net
 
   iam-db:
     image: postgres:16-alpine
@@ -148,8 +168,8 @@ services:
 
   knowledge:
     build:
-      context: ../../services/knowledge
-      dockerfile: Dockerfile
+      context: ../..
+      dockerfile: services/knowledge/Dockerfile
     environment:
       - PORT=8082
       - DATABASE_DSN=postgres://knowledge:knowledge@knowledge-db:5432/knowledge?sslmode=disable
@@ -161,14 +181,32 @@ services:
     expose:
       - "8082"
     depends_on:
-      knowledge-db:
-        condition: service_healthy
+      knowledge-migrate:
+        condition: service_completed_successfully
       knowledge-minio:
         condition: service_healthy
     networks:
       - app-net
       - knowledge-db-net
       - knowledge-minio-net
+
+  knowledge-migrate:
+    image: golang:1.25-alpine
+    working_dir: /workspace
+    command:
+      - sh
+      - -c
+      - go run github.com/pressly/goose/v3/cmd/goose@v3.24.3 -dir /migrations postgres 'postgres://knowledge:knowledge@knowledge-db:5432/knowledge?sslmode=disable' up
+    volumes:
+      - ../../services/knowledge/migrations:/migrations:ro
+      - goose-go-mod-cache:/go/pkg/mod
+      - goose-go-build-cache:/root/.cache/go-build
+    depends_on:
+      knowledge-db:
+        condition: service_healthy
+    networks:
+      - knowledge-db-net
+      - egress-net
 
   knowledge-db:
     image: postgres:16-alpine
@@ -218,17 +256,36 @@ services:
       - S3_USE_SSL=false
       - KNOWLEDGE_GRPC_ADDR=knowledge:9092
       - AI_INFERENCE_GRPC_ADDR=ai-inference:9094
+      - RAG_INDEXED_EMBEDDING_DIMENSION=768
     expose:
       - "8083"
     depends_on:
-      rag-db:
-        condition: service_healthy
+      rag-migrate:
+        condition: service_completed_successfully
       knowledge-minio:
         condition: service_healthy
     networks:
       - app-net
       - rag-db-net
       - knowledge-minio-net
+
+  rag-migrate:
+    image: golang:1.25-alpine
+    working_dir: /workspace
+    command:
+      - sh
+      - -c
+      - go run github.com/pressly/goose/v3/cmd/goose@v3.24.3 -dir /migrations postgres 'postgres://rag:rag@rag-db:5432/rag?sslmode=disable' up
+    volumes:
+      - ../../services/rag/migrations:/migrations:ro
+      - goose-go-mod-cache:/go/pkg/mod
+      - goose-go-build-cache:/root/.cache/go-build
+    depends_on:
+      rag-db:
+        condition: service_healthy
+    networks:
+      - rag-db-net
+      - egress-net
 
   rag-db:
     image: pgvector/pgvector:pg16
@@ -249,8 +306,8 @@ services:
 
   ai-inference:
     build:
-      context: ../../services/ai-inference
-      dockerfile: Dockerfile
+      context: ../..
+      dockerfile: services/ai-inference/Dockerfile
     environment:
       - HTTP_PORT=8084
       - GRPC_PORT=9094

@@ -8,7 +8,7 @@ import (
 	"net/http"
 	"os"
 
-	iamv1 "secure-rag-platform/services/iam/gen/v1"
+	iamv1 "secure-rag-platform/api/gen/go/iam/v1"
 	application "secure-rag-platform/services/iam/internal/app"
 	"secure-rag-platform/services/iam/internal/closer"
 	"secure-rag-platform/services/iam/internal/config"

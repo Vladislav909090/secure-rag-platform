@@ -9,7 +9,7 @@ import (
 	"strings"
 	"time"
 
-	iamv1 "secure-rag-platform/services/iam/gen/v1"
+	iamv1 "secure-rag-platform/api/gen/go/iam/v1"
 )
 
 type PolicyAuthorizer interface {
@@ -38,7 +38,7 @@ func (a *OPAAuthorizer) AllowDocument(
 	documentAttributes map[string]any,
 ) (bool, error) {
 	if a == nil {
-		return allowedByAttributes(documentAttributes, subject), nil
+		return false, ErrPolicyRequired
 	}
 
 	subjectInput := map[string]any{

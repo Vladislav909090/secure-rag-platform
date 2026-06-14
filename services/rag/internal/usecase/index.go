@@ -7,8 +7,8 @@ import (
 	"mime"
 	"strings"
 
-	aiinferencev1 "secure-rag-platform/services/ai-inference/gen/v1"
-	knowledgev1 "secure-rag-platform/services/knowledge/gen/v1"
+	aiinferencev1 "secure-rag-platform/api/gen/go/aiinference/v1"
+	knowledgev1 "secure-rag-platform/api/gen/go/knowledge/v1"
 	"secure-rag-platform/services/rag/internal/repository"
 
 	"github.com/pgvector/pgvector-go"
@@ -96,6 +96,13 @@ func (s *Service) IndexDocument(
 	if len(embedResp.GetVectors()) != len(chunks) {
 		return nil, fmt.Errorf("embedding size mismatch")
 	}
+	embeddingDimension := embedResp.GetDimension()
+	if embeddingDimension <= 0 && len(embedResp.GetVectors()) > 0 {
+		embeddingDimension = int32(len(embedResp.GetVectors()[0].GetValues()))
+	}
+	if embeddingDimension <= 0 {
+		return nil, fmt.Errorf("embedding dimension mismatch")
+	}
 
 	err = s.repo.DeleteChunks(ctx, docUUID)
 	if err != nil {
@@ -110,13 +117,16 @@ func (s *Service) IndexDocument(
 	entries := make([]repository.Chunk, 0, len(chunks))
 	for i, chunk := range chunks {
 		vec := embedResp.GetVectors()[i].GetValues()
+		if len(vec) != int(embeddingDimension) {
+			return nil, fmt.Errorf("embedding dimension mismatch")
+		}
 		entries = append(entries, repository.Chunk{
 			DocumentUUID:       docUUID,
 			ChunkIndex:         int32(i),
 			ChunkText:          chunk,
 			Embedding:          pgvector.NewVector(vec),
 			EmbeddingModel:     resolvedModel,
-			EmbeddingDimension: embedResp.GetDimension(),
+			EmbeddingDimension: embeddingDimension,
 		})
 	}
 
@@ -134,7 +144,7 @@ func (s *Service) IndexDocument(
 	return &IndexDocumentResult{
 		DocumentUUID:           docUUID,
 		ChunkCount:             len(chunks),
-		EmbeddingDimension:     embedResp.GetDimension(),
+		EmbeddingDimension:     embeddingDimension,
 		ResolvedEmbeddingModel: resolvedModel,
 	}, nil
 }

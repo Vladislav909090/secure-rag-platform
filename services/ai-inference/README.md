@@ -72,7 +72,7 @@ cp ./config/models.example.json ./config/models.json
 ## Разработка
 
 ```bash
-make proto:gen:ai-inference
+make api:gen
 make grpc:stubs:ai-inference
 make lint:ai-inference
 make test:ai-inference

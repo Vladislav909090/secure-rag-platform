@@ -23,9 +23,8 @@ make compose:up DEV=1
 ## Основные маршруты
 
 - `POST /rag/api/v1/documents/{document_uuid}/index`
+- `DELETE /rag/api/v1/documents/{document_uuid}/index`
 - `POST /rag/api/v1/query`
-
-Удаление индекса документа есть в gRPC-контракте, но HTTP-аннотация для него сейчас не задана.
 
 ## Конфигурация
 
@@ -37,8 +36,16 @@ make compose:up DEV=1
 - `KNOWLEDGE_GRPC_ADDR`, `AI_INFERENCE_GRPC_ADDR`
 - `RAG_CHUNK_SIZE`, `RAG_CHUNK_OVERLAP`, `RAG_DEFAULT_TOP_K`
 - `RAG_DEFAULT_EMBEDDING_MODEL_ALIAS`, `RAG_DEFAULT_GENERATION_MODEL_ALIAS`
+- `RAG_INDEXED_EMBEDDING_DIMENSION`
 
 По умолчанию используются `embed.default`, `chat.default`, chunk size `800`, overlap `100`, top-k `3`.
+
+Embeddings хранятся в `pgvector` без фиксированной размерности колонки. Поиск
+фильтруется по `embedding_model` и `embedding_dimension`, поэтому в одной таблице
+можно держать разные embedding-модели. При старте RAG создает partial HNSW index
+для размерности `RAG_INDEXED_EMBEDDING_DIMENSION` (по умолчанию `768`) и использует
+его для запросов с такой же размерностью. Для других размерностей поиск остается
+корректным, но без этого HNSW index.
 
 ## Миграции
 
@@ -53,7 +60,7 @@ make migrate:status:rag
 ## Разработка
 
 ```bash
-make proto:gen:rag
+make api:gen
 make grpc:stubs:rag
 make lint:rag
 make test:rag

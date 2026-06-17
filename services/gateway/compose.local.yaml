@@ -1,0 +1,25 @@
+networks:
+  gateway-egress-net:
+    driver: bridge
+
+services:
+  gateway:
+    environment:
+      IAM_GRPC_ADDR: host.docker.internal:9091
+      KNOWLEDGE_GRPC_ADDR: host.docker.internal:9092
+      RAG_GRPC_ADDR: host.docker.internal:9093
+      DISABLE_AUTH: "true"
+      DISABLE_DOC_FILTER: "true"
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    ports:
+      - "8080:8080"
+      - "9090:9090"
+    networks:
+      - gateway-net
+      - gateway-egress-net
+
+  opa:
+    ports:
+      - "8181:8181"
+

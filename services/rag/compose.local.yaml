@@ -1,0 +1,47 @@
+volumes:
+  rag-minio-data:
+
+services:
+  rag:
+    environment:
+      KNOWLEDGE_GRPC_ADDR: host.docker.internal:9092
+      AI_INFERENCE_GRPC_ADDR: host.docker.internal:9094
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    ports:
+      - "8083:8083"
+      - "9093:9093"
+    networks:
+      - rag-net
+      - rag-db-net
+      - rag-s3-net
+      - rag-local-egress-net
+
+  rag-db:
+    ports:
+      - "5435:5432"
+
+  knowledge-minio:
+    image: minio/minio:latest
+    environment:
+      MINIO_ROOT_USER: minioadmin
+      MINIO_ROOT_PASSWORD: minioadmin
+    command: server /data --console-address ":9001"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    volumes:
+      - rag-minio-data:/data
+    ports:
+      - "9010:9000"
+      - "9011:9001"
+    networks:
+      - rag-s3-net
+
+networks:
+  rag-local-egress-net:
+    driver: bridge
+

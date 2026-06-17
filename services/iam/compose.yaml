@@ -1,10 +1,8 @@
-name: secure-rag-iam
-
 volumes:
   iam-postgres-data:
   iam-redis-data:
-  goose-go-mod-cache:
-  goose-go-build-cache:
+  iam-goose-go-mod-cache:
+  iam-goose-go-build-cache:
 
 networks:
   iam-net:
@@ -15,7 +13,7 @@ networks:
   iam-redis-net:
     driver: bridge
     internal: true
-  egress-net:
+  iam-migrate-egress-net:
     driver: bridge
 
 services:
@@ -24,23 +22,23 @@ services:
       context: ../..
       dockerfile: services/iam/Dockerfile
     environment:
-      - PORT=8081
-      - GRPC_PORT=9091
-      - DATABASE_DSN=postgres://iam:iam@iam-db:5432/iam?sslmode=disable
-      - REDIS_ADDR=iam-redis:6379
-      - JWT_SECRET=dev-iam-jwt-secret
-      - JWT_ISSUER=secure-rag-iam
-      - JWT_AUDIENCE=secure-rag-gateway
-      - BOOTSTRAP_ADMIN_LOGIN=superadmin
-      - BOOTSTRAP_ADMIN_PASSWORD=superadmin
+      PORT: "8081"
+      GRPC_PORT: "9091"
+      DATABASE_DSN: postgres://iam:iam@iam-db:5432/iam?sslmode=disable
+      REDIS_ADDR: iam-redis:6379
+      JWT_SECRET: dev-iam-jwt-secret
+      JWT_ISSUER: secure-rag-iam
+      JWT_AUDIENCE: secure-rag-gateway
+      BOOTSTRAP_ADMIN_LOGIN: superadmin
+      BOOTSTRAP_ADMIN_PASSWORD: superadmin
     depends_on:
       iam-migrate:
         condition: service_completed_successfully
       iam-redis:
         condition: service_healthy
-    ports:
-      - "8081:8081"
-      - "9091:9091"
+    expose:
+      - "8081"
+      - "9091"
     networks:
       - iam-net
       - iam-db-net
@@ -55,14 +53,14 @@ services:
       - go run github.com/pressly/goose/v3/cmd/goose@v3.24.3 -dir /migrations postgres 'postgres://iam:iam@iam-db:5432/iam?sslmode=disable' up
     volumes:
       - ./migrations:/migrations:ro
-      - goose-go-mod-cache:/go/pkg/mod
-      - goose-go-build-cache:/root/.cache/go-build
+      - iam-goose-go-mod-cache:/go/pkg/mod
+      - iam-goose-go-build-cache:/root/.cache/go-build
     depends_on:
       iam-db:
         condition: service_healthy
     networks:
       - iam-db-net
-      - egress-net
+      - iam-migrate-egress-net
 
   iam-db:
     image: postgres:16-alpine
@@ -78,8 +76,6 @@ services:
       start_period: 5s
     volumes:
       - iam-postgres-data:/var/lib/postgresql/data
-    ports:
-      - "5433:5432"
     networks:
       - iam-db-net
 
@@ -94,7 +90,6 @@ services:
       start_period: 5s
     volumes:
       - iam-redis-data:/data
-    ports:
-      - "6380:6379"
     networks:
       - iam-redis-net
+

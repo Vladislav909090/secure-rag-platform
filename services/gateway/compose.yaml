@@ -1,0 +1,38 @@
+networks:
+  gateway-net:
+    driver: bridge
+
+services:
+  gateway:
+    build:
+      context: ../..
+      dockerfile: services/gateway/Dockerfile
+    environment:
+      PORT: "8080"
+      GRPC_PORT: "9090"
+      IAM_GRPC_ADDR: iam:9091
+      KNOWLEDGE_GRPC_ADDR: knowledge:9092
+      RAG_GRPC_ADDR: rag:9093
+      GATEWAY_DEFAULT_TOP_K: "8"
+      DISABLE_AUTH: "false"
+      DISABLE_DOC_FILTER: "false"
+      OPA_URL: http://opa:8181
+    expose:
+      - "8080"
+      - "9090"
+    depends_on:
+      opa:
+        condition: service_started
+    networks:
+      - gateway-net
+
+  opa:
+    image: openpolicyagent/opa:latest
+    command: ["run", "--server", "--addr=0.0.0.0:8181", "/policies"]
+    volumes:
+      - ../../deploy/opa:/policies:ro
+    expose:
+      - "8181"
+    networks:
+      - gateway-net
+

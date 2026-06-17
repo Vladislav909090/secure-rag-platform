@@ -1,0 +1,14 @@
+services:
+  iam:
+    ports:
+      - "8081:8081"
+      - "9091:9091"
+
+  iam-db:
+    ports:
+      - "5433:5432"
+
+  iam-redis:
+    ports:
+      - "6380:6379"
+

@@ -6,7 +6,8 @@
 SERVICE        = ai-inference
 BINARY         = ai-inference
 IMAGE         ?= secure-rag-platform/$(SERVICE):local
-COMPOSE_FILE  ?= compose.yml
+COMPOSE_FILE  ?= compose.yaml -f compose.local.yaml
+COMPOSE_PROJECT ?= secure-rag-$(SERVICE)
 
 GOOGLEAPIS_REF ?= 1526e545e9d26f23b9c5d0f04af17297def8d045
 GOOGLEAPIS_RAW = https://raw.githubusercontent.com/googleapis/googleapis/$(GOOGLEAPIS_REF)
@@ -114,13 +115,13 @@ else
 endif
 
 compose\:up:
-	docker compose -f $(COMPOSE_FILE) up -d --no-recreate
+	docker compose -p $(COMPOSE_PROJECT) -f $(COMPOSE_FILE) up -d --no-recreate
 
 compose\:recreate:
-	docker compose -f $(COMPOSE_FILE) up -d --build --force-recreate --remove-orphans
+	docker compose -p $(COMPOSE_PROJECT) -f $(COMPOSE_FILE) up -d --build --force-recreate --remove-orphans
 
 compose\:down:
-	docker compose -f $(COMPOSE_FILE) down
+	docker compose -p $(COMPOSE_PROJECT) -f $(COMPOSE_FILE) down
 
 compose\:config:
-	docker compose -f $(COMPOSE_FILE) config --quiet
+	docker compose -p $(COMPOSE_PROJECT) -f $(COMPOSE_FILE) config --quiet

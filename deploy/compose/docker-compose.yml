@@ -1,0 +1,8 @@
+name: secure-rag-platform
+
+include:
+  - ../../services/gateway/compose.yaml
+  - ../../services/iam/compose.yaml
+  - ../../services/knowledge/compose.yaml
+  - ../../services/rag/compose.yaml
+  - ../../services/ai-inference/compose.yaml

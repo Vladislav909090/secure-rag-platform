@@ -2,7 +2,7 @@
 # Дополнительные маршруты и middleware.
 #
 # Основная маршрутизация на gateway выполняется через Docker labels
-# в deploy/compose/docker-compose.*.yml (traefik.http.routers.gateway.*).
+# в deploy/compose/docker-compose.prod.yml (traefik.http.routers.gateway.*).
 #
 # Этот файл для будущих кастомных правил.
 

@@ -14,29 +14,30 @@ services/
   ai-inference/  # OpenAI-compatible generation/embedding adapter
 deploy/
   compose/
-    docker-compose.dev.yml   # полный dev-compose платформы
-    docker-compose.prod.yml  # закрытый prod-like compose платформы
+    docker-compose.yml          # подключает базовые compose-файлы сервисов
+    docker-compose.prod.yml     # prod-like сети, Traefik и связи сервисов
+    docker-compose.dev.yml      # dev-only routes к внутренним сервисам
   traefik/       # маршрутизация HTTP API
   opa/           # политики доступа для gateway
 ```
 
-Каждый сервис дополнительно содержит свой `Makefile`, `README.md`, `compose.yml`, `Dockerfile`, `third_party/` и `tools/`. Это позволяет запускать типовые команды из каталога сервиса, не держа всю механику только в корне.
+Каждый сервис дополнительно содержит свой `Makefile`, `README.md`, `compose.yaml`, `compose.local.yaml`, `Dockerfile`, `third_party/` и `tools/`. Это позволяет запускать типовые команды из каталога сервиса, не держа всю механику только в корне.
 
 ## Глобальный запуск
 
-По умолчанию корневые compose-команды используют dev-вариант:
+По умолчанию корневые compose-команды используют dev-режим: `deploy/compose/docker-compose.yml`, `deploy/compose/docker-compose.prod.yml` и `deploy/compose/docker-compose.dev.yml`.
 
 ```bash
 make compose:up
 ```
 
-То же самое явно:
+Для пересборки и пересоздания контейнеров:
 
 ```bash
-make compose:up:dev
+make compose:recreate
 ```
 
-Prod-like вариант:
+Prod-like режим использует только `deploy/compose/docker-compose.yml` и `deploy/compose/docker-compose.prod.yml`:
 
 ```bash
 make compose:up:prod
@@ -50,17 +51,7 @@ make compose:up:prod
 - `http://localhost/gateway/health`
 - Traefik dashboard: `http://localhost:8090`
 
-В dev-compose дополнительно опубликованы:
-
-| Компонент | Host | Для чего |
-|---|---:|---|
-| `iam-db` | `5433` | PostgreSQL IAM |
-| `knowledge-db` | `5434` | PostgreSQL Knowledge |
-| `rag-db` | `5435` | PostgreSQL + pgvector для RAG |
-| `iam-redis` | `6380` | Redis для сессий IAM |
-| `knowledge-minio` | `9001` | MinIO Console |
-
-В dev-compose через Traefik также доступны прямые сервисные docs/health:
+В dev-режиме через Traefik также доступны прямые сервисные docs/health:
 
 - `http://localhost/iam/docs`, `http://localhost/iam/health`
 - `http://localhost/knowledge/docs`, `http://localhost/knowledge/api/health`
@@ -77,7 +68,9 @@ make compose:up:prod
 | `rag` | `8083` | `9093` |
 | `ai-inference` | `8084` | `9094` |
 
-В глобальном compose сервисы обычно публикуются через Traefik или общаются по внутренним docker-сетям. Прямые host-порты сервисов удобнее использовать через service-local `compose.yml`.
+В глобальном compose сервисы публикуются через Traefik или общаются по внутренним docker-сетям. Прямые host-порты сервисов и инфраструктуры находятся только в service-local `compose.local.yaml`.
+
+`deploy/compose/docker-compose.yml` подключает сервисные `services/<service>/compose.yaml` через Docker Compose `include`. В базовых compose-файлах лежит общая логика сервиса: build, environment, миграции, базы, MinIO/Redis/OPA и приватные сети. `deploy/compose/docker-compose.prod.yml` добавляет platform wiring: Traefik, общую `app-net`, межсервисные DNS-адреса и production-like настройки. `deploy/compose/docker-compose.dev.yml` добавляет dev-only Traefik routes к внутренним сервисам.
 
 ## Частые корневые команды
 
@@ -105,7 +98,7 @@ make lint
 make build
 
 # compose
-make compose:config:dev
+make compose:config
 make compose:config:prod
 make compose:down
 make compose:recreate
@@ -169,7 +162,19 @@ cp services/ai-inference/config/models.example.json services/ai-inference/config
 
 ## Service-local compose
 
-У каждого сервиса есть `services/<service>/compose.yml`. Он поднимает минимальный набор зависимостей для разработки сервиса:
+У каждого сервиса есть два compose-файла:
+
+- `services/<service>/compose.yaml` — базовая конфигурация сервиса без host-портов;
+- `services/<service>/compose.local.yaml` — standalone-режим с `ports`, `host.docker.internal` и локальными overrides.
+
+Пример standalone-запуска:
+
+```bash
+cd services/gateway
+make compose:up
+```
+
+Локальный набор зависимостей:
 
 - `iam`: PostgreSQL, Redis, миграции;
 - `knowledge`: PostgreSQL, MinIO, миграции;

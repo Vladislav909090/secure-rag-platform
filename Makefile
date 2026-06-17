@@ -25,7 +25,9 @@ ifeq ($(PROD),1)
 COMPOSE_ENV = prod
 endif
 
-COMPOSE_FILE = deploy/compose/docker-compose.$(COMPOSE_ENV).yml
+COMPOSE_FILE_dev = deploy/compose/docker-compose.yml -f deploy/compose/docker-compose.prod.yml -f deploy/compose/docker-compose.dev.yml
+COMPOSE_FILE_prod = deploy/compose/docker-compose.yml -f deploy/compose/docker-compose.prod.yml
+COMPOSE_FILE = $(COMPOSE_FILE_$(COMPOSE_ENV))
 
 PROTOC         = protoc
 MIGRATION_NAME ?= new_migration

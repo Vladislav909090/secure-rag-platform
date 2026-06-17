@@ -1,0 +1,27 @@
+name: secure-rag-ai-inference
+
+networks:
+  ai-inference-net:
+    driver: bridge
+  egress-net:
+    driver: bridge
+
+services:
+  ai-inference:
+    build:
+      context: ../..
+      dockerfile: services/ai-inference/Dockerfile
+    environment:
+      - HTTP_PORT=8084
+      - GRPC_PORT=9094
+      - AI_INFERENCE_PROVIDER_TIMEOUT=180s
+    volumes:
+      - ./config/models.json:/app/config/models.json:ro
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    ports:
+      - "8084:8084"
+      - "9094:9094"
+    networks:
+      - ai-inference-net
+      - egress-net

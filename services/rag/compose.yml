@@ -1,0 +1,109 @@
+name: secure-rag-rag
+
+volumes:
+  rag-postgres-data:
+  rag-minio-data:
+  goose-go-mod-cache:
+  goose-go-build-cache:
+
+networks:
+  rag-net:
+    driver: bridge
+  rag-db-net:
+    driver: bridge
+    internal: true
+  rag-minio-net:
+    driver: bridge
+    internal: true
+  egress-net:
+    driver: bridge
+
+services:
+  rag:
+    build:
+      context: ../..
+      dockerfile: services/rag/Dockerfile
+    environment:
+      - PORT=8083
+      - GRPC_PORT=9093
+      - DATABASE_DSN=postgres://rag:rag@rag-db:5432/rag?sslmode=disable
+      - S3_ENDPOINT=rag-minio:9000
+      - S3_BUCKET=knowledge
+      - S3_ACCESS_KEY=minioadmin
+      - S3_SECRET_KEY=minioadmin
+      - S3_USE_SSL=false
+      - KNOWLEDGE_GRPC_ADDR=host.docker.internal:9092
+      - AI_INFERENCE_GRPC_ADDR=host.docker.internal:9094
+      - RAG_INDEXED_EMBEDDING_DIMENSION=768
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    depends_on:
+      rag-migrate:
+        condition: service_completed_successfully
+      rag-minio:
+        condition: service_healthy
+    ports:
+      - "8083:8083"
+      - "9093:9093"
+    networks:
+      - rag-net
+      - rag-db-net
+      - rag-minio-net
+      - egress-net
+
+  rag-migrate:
+    image: golang:1.25-alpine
+    working_dir: /workspace
+    command:
+      - sh
+      - -c
+      - go run github.com/pressly/goose/v3/cmd/goose@v3.24.3 -dir /migrations postgres 'postgres://rag:rag@rag-db:5432/rag?sslmode=disable' up
+    volumes:
+      - ./migrations:/migrations:ro
+      - goose-go-mod-cache:/go/pkg/mod
+      - goose-go-build-cache:/root/.cache/go-build
+    depends_on:
+      rag-db:
+        condition: service_healthy
+    networks:
+      - rag-db-net
+      - egress-net
+
+  rag-db:
+    image: pgvector/pgvector:pg16
+    environment:
+      POSTGRES_DB: rag
+      POSTGRES_USER: rag
+      POSTGRES_PASSWORD: rag
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U rag -d rag"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+      start_period: 5s
+    volumes:
+      - rag-postgres-data:/var/lib/postgresql/data
+    ports:
+      - "5435:5432"
+    networks:
+      - rag-db-net
+
+  rag-minio:
+    image: minio/minio:latest
+    environment:
+      MINIO_ROOT_USER: minioadmin
+      MINIO_ROOT_PASSWORD: minioadmin
+    command: server /data --console-address ":9001"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    volumes:
+      - rag-minio-data:/data
+    ports:
+      - "9010:9000"
+      - "9011:9001"
+    networks:
+      - rag-minio-net

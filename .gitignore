@@ -34,11 +34,8 @@ go.work.sum
 .idea/
 .vscode/
 
-# Старый service-local сгенерированный proto-код (восстанавливается через make api:gen)
+# Service-local сгенерированный proto-код (восстанавливается через make proto:gen в сервисе)
 services/*/gen/*
-
-# Загруженные сторонние proto-файлы
-third_party/google/
 
 # Локальный конфиг ai-inference
 services/ai-inference/config/models.json

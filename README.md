@@ -1,54 +1,56 @@
 # secure-rag-platform
 
-Монорепозиторий RAG-платформы на Go. Внутри 5 сервисов: публичный `gateway`, IAM, база знаний, RAG-индексация/поиск и внутренний ai-inference для работы с LLM и embedding-моделями.
+Монорепозиторий RAG-платформы на Go. Внутри 5 сервисов: публичный `gateway`, IAM, база знаний, RAG-индексация/поиск и внутренний `ai-inference` для работы с LLM и embedding-моделями.
 
 ## Что внутри
 
 ```text
 api/            # зеркало proto-контрактов и сгенерированный Go/OpenAPI-код
 services/
-  gateway/       # публичный API и оркестрация IAM/Knowledge/RAG; контракт в api/v1
-  iam/           # пользователи, роли, сессии, JWT; контракт в api/v1
-  knowledge/     # метаданные документов + файлы в S3/MinIO; контракт в api/v1
-  rag/           # чанкинг, embeddings, pgvector, генерация ответа; контракт в api/v1
-  ai-inference/  # gRPC + HTTP (grpc-gateway) для OpenAI-compatible моделей; контракт в api/v1
+  gateway/       # публичный API и оркестрация IAM/Knowledge/RAG
+  iam/           # пользователи, роли, сессии, JWT
+  knowledge/     # метаданные документов + файлы в S3/MinIO
+  rag/           # чанкинг, embeddings, pgvector, генерация ответа
+  ai-inference/  # OpenAI-compatible generation/embedding adapter
 deploy/
-  compose/       # локальный docker compose
+  compose/
+    docker-compose.dev.yml   # полный dev-compose платформы
+    docker-compose.prod.yml  # закрытый prod-like compose платформы
   traefik/       # маршрутизация HTTP API
   opa/           # политики доступа для gateway
-tools/
-  grpcstubgen/   # генератор transport/grpc стабов по proto
-third_party/     # внешние proto-зависимости google/api
 ```
 
-## Как это запускается
+Каждый сервис дополнительно содержит свой `Makefile`, `README.md`, `compose.yml`, `Dockerfile`, `third_party/` и `tools/`. Это позволяет запускать типовые команды из каталога сервиса, не держа всю механику только в корне.
 
-Обычный локальный запуск идет через Docker Compose:
+## Глобальный запуск
+
+По умолчанию корневые compose-команды используют dev-вариант:
 
 ```bash
 make compose:up
 ```
 
-При старте compose одноразовые сервисы `iam-migrate`, `knowledge-migrate` и `rag-migrate`
-применяют SQL-миграции через `goose`, а основные сервисы ждут успешного завершения
-своей миграции. Это позволяет поднимать платформу на пустых Docker volumes без
-ручного предварительного `make migrate:up`.
+То же самое явно:
 
-После старта основной вход в систему:
+```bash
+make compose:up:dev
+```
+
+Prod-like вариант:
+
+```bash
+make compose:up:prod
+```
+
+При старте compose одноразовые сервисы `iam-migrate`, `knowledge-migrate` и `rag-migrate` применяют SQL-миграции через `goose`, а основные сервисы ждут успешного завершения своей миграции. Это позволяет поднимать платформу на пустых Docker volumes без ручного предварительного `make migrate:up`.
+
+Основной вход:
 
 - `http://localhost/gateway/docs`
 - `http://localhost/gateway/health`
 - Traefik dashboard: `http://localhost:8090`
 
-По умолчанию с хоста опубликованы только Traefik `80` и dashboard `8090`. Базы, Redis, MinIO и внутренние HTTP-порты сервисов остаются внутри docker-сетей.
-
-Для разработки с доступом к инфраструктуре с хоста:
-
-```bash
-make compose:up DEV=1
-```
-
-В этом режиме дополнительно публикуются:
+В dev-compose дополнительно опубликованы:
 
 | Компонент | Host | Для чего |
 |---|---:|---|
@@ -58,7 +60,7 @@ make compose:up DEV=1
 | `iam-redis` | `6380` | Redis для сессий IAM |
 | `knowledge-minio` | `9001` | MinIO Console |
 
-В `DEV=1` через Traefik также доступны прямые сервисные docs/health:
+В dev-compose через Traefik также доступны прямые сервисные docs/health:
 
 - `http://localhost/iam/docs`, `http://localhost/iam/health`
 - `http://localhost/knowledge/docs`, `http://localhost/knowledge/api/health`
@@ -67,7 +69,7 @@ make compose:up DEV=1
 
 ## Порты сервисов
 
-| Сервис | HTTP внутри compose | gRPC внутри compose |
+| Сервис | HTTP | gRPC |
 |---|---:|---:|
 | `gateway` | `8080` | `9090` |
 | `iam` | `8081` | `9091` |
@@ -75,9 +77,9 @@ make compose:up DEV=1
 | `rag` | `8083` | `9093` |
 | `ai-inference` | `8084` | `9094` |
 
-Прямые адреса вроде `http://localhost:8081` в compose не используются: сервисы публикуются через Traefik или общаются друг с другом по внутренним сетям.
+В глобальном compose сервисы обычно публикуются через Traefik или общаются по внутренним docker-сетям. Прямые host-порты сервисов удобнее использовать через service-local `compose.yml`.
 
-## Частые команды
+## Частые корневые команды
 
 ```bash
 # генерация общих proto-контрактов, grpc-gateway и OpenAPI
@@ -89,7 +91,7 @@ make api:sync
 # очистка сгенерированных API-файлов
 make api:clean
 
-# генерация transport/grpc стабов
+# генерация transport/grpc стабов во всех сервисах
 make grpc:stubs
 
 # миграции всех сервисных БД
@@ -97,15 +99,15 @@ make migrate:validate
 make migrate:up
 make migrate:status
 
-# проверки
+# проверки всех сервисов
 make test
 make lint
 make build
 
-# остановка compose
+# compose
+make compose:config:dev
+make compose:config:prod
 make compose:down
-
-# пересборка и пересоздание compose-контейнеров с нуля
 make compose:recreate
 ```
 
@@ -116,6 +118,33 @@ make proto:tools
 make proto:deps
 ```
 
+## Команды из сервиса
+
+В каждом `services/<service>` есть локальный `Makefile`:
+
+```bash
+cd services/rag
+
+make test
+make lint
+make build
+make proto:gen
+make api:gen
+make grpc:stubs
+make compose:up
+```
+
+У `iam`, `knowledge` и `rag` там же есть локальные миграционные команды:
+
+```bash
+make migrate:validate
+make migrate:up
+make migrate:status
+make migrate:create MIGRATION_NAME=add_new_table
+```
+
+`proto:gen` генерирует service-local файлы в `services/<service>/gen`. Рабочий код сервисов продолжает импортировать публичные Go-контракты из `secure-rag-platform/api/gen/go/...`, поэтому для обновления публичного контракта используется `api:gen`.
+
 ## Модели для ai-inference
 
 `ai-inference` читает конфиг из `services/ai-inference/config/models.json`. В репозитории должен лежать только шаблон:
@@ -124,39 +153,28 @@ make proto:deps
 cp services/ai-inference/config/models.example.json services/ai-inference/config/models.json
 ```
 
-Файл `models.json` локальный: там могут быть URL моделей и токены. Он игнорируется Git
-и не копируется в Docker image. Compose монтирует его в контейнер как
-`/app/config/models.json`, а внутри образа остается только безопасный
-`models.example.json`.
+Файл `models.json` локальный: там могут быть URL моделей и токены. Он игнорируется Git и не копируется в Docker image. Compose монтирует его в контейнер как `/app/config/models.json`, а внутри образа остается только безопасный `models.example.json`.
 
-## Миграции
+## Контракты
 
-Миграции есть у `iam`, `knowledge` и `rag`. В compose-запуске они применяются
-автоматически одноразовыми migration-сервисами. Команды `make migrate:*` остаются
-для ручной проверки и разработки; они рассчитаны на опубликованные dev-порты БД,
-поэтому перед ними обычно запускают:
-
-```bash
-make compose:up DEV=1
-```
-
-Затем:
-
-```bash
-make migrate:up
-```
-
-## Полезные замечания
-
-- `gateway` является основным публичным API и проксирует бизнес-операции в IAM, Knowledge и RAG.
-- `iam`, `knowledge` и `rag` можно открыть напрямую через Traefik только в `DEV=1`; обычный сценарий идет через `gateway`.
-- `knowledge` хранит файлы в MinIO/S3, а метаданные в PostgreSQL.
-- `rag` использует PostgreSQL с `pgvector`, читает файлы через Knowledge/MinIO и ходит в `ai-inference` за embeddings и генерацией.
 - Источник публичного контракта лежит рядом с сервисом: `services/<service>/api/v1/*.proto`.
 - `api/proto` является зеркалом service-local контрактов для общей генерации.
 - `api/gen/go` и `api/gen/openapiv2` хранят сгенерированные Go/OpenAPI файлы.
-- `make api:sync` копирует service-local proto-файлы в `api/proto`.
-- `make api:gen` сначала выполняет `api:sync`, затем вызывает `protoc` напрямую из `Makefile`.
-- `make api:clean` удаляет только `api/gen/go` и `api/gen/openapiv2`.
-- `third_party/google/api` восстанавливается командой `make proto:deps`, если нужных proto-файлов нет.
+- Сервисы импортируют Go-контракты из `secure-rag-platform/api/gen/go/...`.
+- Корневой `make api:gen` синхронизирует все service-local proto-файлы и генерирует весь общий API.
+- Корневой `make api:gen` использует service-local include path из `PROTO_THIRD_PARTY` (по умолчанию `services/gateway/third_party`).
+- Service-local `make api:gen` синхронизирует proto текущего сервиса и тоже генерирует общий API, используя локальную копию `third_party`.
+- `services/<service>/third_party/google/api` восстанавливается командой `make proto:deps`.
 - `proto:deps` качает googleapis с закрепленного `GOOGLEAPIS_REF`; при обновлении googleapis меняйте этот ref явно.
+
+## Service-local compose
+
+У каждого сервиса есть `services/<service>/compose.yml`. Он поднимает минимальный набор зависимостей для разработки сервиса:
+
+- `iam`: PostgreSQL, Redis, миграции;
+- `knowledge`: PostgreSQL, MinIO, миграции;
+- `rag`: pgvector, MinIO, миграции; Knowledge и ai-inference ожидаются по `host.docker.internal`;
+- `gateway`: gateway и OPA; внешние сервисы ожидаются по `host.docker.internal`;
+- `ai-inference`: только сервис и монтирование `config/models.json`.
+
+Важно: Dockerfile сервисов пока используют общий `api` модуль, поэтому service-local compose собирает image с build context `../..`.

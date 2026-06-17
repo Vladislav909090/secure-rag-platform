@@ -44,8 +44,8 @@ jobs:
 
       - name: Validate compose config
         run: |
-          docker compose -f deploy/compose/docker-compose.yml config --quiet
-          docker compose -f deploy/compose/docker-compose.yml -f deploy/compose/compose.dev.yml config --quiet
+          make compose:config:prod
+          make compose:config:dev
 
   golangci-lint:
     runs-on: ubuntu-latest

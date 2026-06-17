@@ -9,10 +9,18 @@
 | HTTP | `8080` |
 | gRPC | `9090` |
 
-В compose сервис не публикует `8080` напрямую. С хоста используется Traefik:
+В глобальном dev/prod compose с хоста используется Traefik:
 
 - `http://localhost/gateway/docs`
 - `http://localhost/gateway/health`
+
+Для isolated-запуска из каталога сервиса:
+
+```bash
+make compose:up
+```
+
+После этого доступны прямые порты `8080` и `9090`.
 
 ## Основные маршруты
 
@@ -49,16 +57,17 @@ fallback-решения.
 ## Разработка
 
 ```bash
+cd services/gateway
 make api:gen
-make grpc:stubs:gateway
-make lint:gateway
-make test:gateway
-make build:gateway
+make grpc:stubs
+make lint
+make test
+make build
+make compose:config
 ```
 
 Локальный запуск из каталога сервиса:
 
 ```bash
-cd services/gateway
 go run ./cmd/gateway
 ```

@@ -9,16 +9,27 @@
 | HTTP | `8083` |
 | gRPC | `9093` |
 
-В обычном compose RAG вызывается gateway по внутренней сети. Прямой HTTP через Traefik включается в dev-режиме:
+В глобальном compose RAG вызывается gateway по внутренней сети. Прямой HTTP через Traefik включается в dev-режиме:
 
 ```bash
-make compose:up DEV=1
+make compose:up:dev
 ```
 
 После этого:
 
 - `http://localhost/rag/docs`
 - `http://localhost/rag/health`
+
+Для isolated-запуска RAG со своей pgvector-БД, MinIO и миграциями:
+
+```bash
+cd services/rag
+make compose:up
+```
+
+После этого доступны прямые порты `8083`, `9093`, `5435`, `9010` и `9011`.
+Knowledge и ai-inference в этом compose ожидаются на `host.docker.internal:9092`
+и `host.docker.internal:9094`.
 
 ## Основные маршруты
 
@@ -49,27 +60,29 @@ Embeddings хранятся в `pgvector` без фиксированной ра
 
 ## Миграции
 
-Миграции находятся в `services/rag/migrations`. Makefile по умолчанию ждет pgvector-БД на `localhost:5435`:
+Миграции находятся в `services/rag/migrations`. Локальный Makefile по умолчанию ждет pgvector-БД на `localhost:5435`:
 
 ```bash
-make compose:up DEV=1
-make migrate:up:rag
-make migrate:status:rag
+cd services/rag
+make compose:up
+make migrate:up
+make migrate:status
 ```
 
 ## Разработка
 
 ```bash
+cd services/rag
 make api:gen
-make grpc:stubs:rag
-make lint:rag
-make test:rag
-make build:rag
+make grpc:stubs
+make lint
+make test
+make build
+make compose:config
 ```
 
 Локальный запуск:
 
 ```bash
-cd services/rag
 go run ./cmd/rag
 ```

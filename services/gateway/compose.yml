@@ -1,0 +1,41 @@
+name: secure-rag-gateway
+
+networks:
+  gateway-net:
+    driver: bridge
+  egress-net:
+    driver: bridge
+
+services:
+  gateway:
+    build:
+      context: ../..
+      dockerfile: services/gateway/Dockerfile
+    environment:
+      - PORT=8080
+      - GRPC_PORT=9090
+      - IAM_GRPC_ADDR=host.docker.internal:9091
+      - KNOWLEDGE_GRPC_ADDR=host.docker.internal:9092
+      - RAG_GRPC_ADDR=host.docker.internal:9093
+      - GATEWAY_DEFAULT_TOP_K=8
+      - DISABLE_AUTH=true
+      - DISABLE_DOC_FILTER=true
+      - OPA_URL=http://opa:8181
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    ports:
+      - "8080:8080"
+      - "9090:9090"
+    networks:
+      - gateway-net
+      - egress-net
+
+  opa:
+    image: openpolicyagent/opa:latest
+    command: ["run", "--server", "--addr=0.0.0.0:8181", "/policies"]
+    volumes:
+      - ../../deploy/opa:/policies:ro
+    expose:
+      - "8181"
+    networks:
+      - gateway-net

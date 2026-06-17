@@ -25,3 +25,13 @@ make api:clean
 
 `make api:gen` сначала синхронизирует `api/proto`, затем вызывает `protoc`
 напрямую из корневого `Makefile`.
+
+Те же публичные контракты можно обновлять из каталога конкретного сервиса:
+
+```bash
+cd services/rag
+make api:gen
+```
+
+Service-local команда синхронизирует `.proto` текущего сервиса в `api/proto`
+и генерирует общий `api/gen`, используя локальную копию `third_party`.

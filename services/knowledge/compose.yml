@@ -1,0 +1,103 @@
+name: secure-rag-knowledge
+
+volumes:
+  knowledge-postgres-data:
+  knowledge-minio-data:
+  goose-go-mod-cache:
+  goose-go-build-cache:
+
+networks:
+  knowledge-net:
+    driver: bridge
+  knowledge-db-net:
+    driver: bridge
+    internal: true
+  knowledge-minio-net:
+    driver: bridge
+    internal: true
+  egress-net:
+    driver: bridge
+
+services:
+  knowledge:
+    build:
+      context: ../..
+      dockerfile: services/knowledge/Dockerfile
+    environment:
+      - PORT=8082
+      - GRPC_PORT=9092
+      - DATABASE_DSN=postgres://knowledge:knowledge@knowledge-db:5432/knowledge?sslmode=disable
+      - S3_ENDPOINT=knowledge-minio:9000
+      - S3_BUCKET=knowledge
+      - S3_ACCESS_KEY=minioadmin
+      - S3_SECRET_KEY=minioadmin
+      - S3_USE_SSL=false
+    depends_on:
+      knowledge-migrate:
+        condition: service_completed_successfully
+      knowledge-minio:
+        condition: service_healthy
+    ports:
+      - "8082:8082"
+      - "9092:9092"
+    networks:
+      - knowledge-net
+      - knowledge-db-net
+      - knowledge-minio-net
+
+  knowledge-migrate:
+    image: golang:1.25-alpine
+    working_dir: /workspace
+    command:
+      - sh
+      - -c
+      - go run github.com/pressly/goose/v3/cmd/goose@v3.24.3 -dir /migrations postgres 'postgres://knowledge:knowledge@knowledge-db:5432/knowledge?sslmode=disable' up
+    volumes:
+      - ./migrations:/migrations:ro
+      - goose-go-mod-cache:/go/pkg/mod
+      - goose-go-build-cache:/root/.cache/go-build
+    depends_on:
+      knowledge-db:
+        condition: service_healthy
+    networks:
+      - knowledge-db-net
+      - egress-net
+
+  knowledge-db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: knowledge
+      POSTGRES_USER: knowledge
+      POSTGRES_PASSWORD: knowledge
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U knowledge -d knowledge"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+      start_period: 5s
+    volumes:
+      - knowledge-postgres-data:/var/lib/postgresql/data
+    ports:
+      - "5434:5432"
+    networks:
+      - knowledge-db-net
+
+  knowledge-minio:
+    image: minio/minio:latest
+    environment:
+      MINIO_ROOT_USER: minioadmin
+      MINIO_ROOT_PASSWORD: minioadmin
+    command: server /data --console-address ":9001"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    volumes:
+      - knowledge-minio-data:/data
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    networks:
+      - knowledge-minio-net

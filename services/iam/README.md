@@ -9,16 +9,25 @@
 | HTTP | `8081` |
 | gRPC | `9091` |
 
-В обычном compose IAM доступен другим сервисам по внутренней сети. Прямой HTTP через Traefik включается в dev-режиме:
+В глобальном compose IAM доступен другим сервисам по внутренней сети. Прямой HTTP через Traefik включается в dev-режиме:
 
 ```bash
-make compose:up DEV=1
+make compose:up:dev
 ```
 
 После этого:
 
 - `http://localhost/iam/docs`
 - `http://localhost/iam/health`
+
+Для isolated-запуска IAM со своей PostgreSQL, Redis и миграциями:
+
+```bash
+cd services/iam
+make compose:up
+```
+
+После этого доступны прямые порты `8081`, `9091`, `5433` и `6380`.
 
 ## Что реализовано
 
@@ -47,27 +56,29 @@ logout-all/revoke-all отзывает все активные сессии по
 
 ## Миграции
 
-Миграции находятся в `services/iam/migrations`. Makefile по умолчанию ждет БД на `localhost:5433`, поэтому для локального применения нужен dev-compose:
+Миграции находятся в `services/iam/migrations`. Локальный Makefile по умолчанию ждет БД на `localhost:5433`:
 
 ```bash
-make compose:up DEV=1
-make migrate:up:iam
-make migrate:status:iam
+cd services/iam
+make compose:up
+make migrate:up
+make migrate:status
 ```
 
 ## Разработка
 
 ```bash
+cd services/iam
 make api:gen
-make grpc:stubs:iam
-make lint:iam
-make test:iam
-make build:iam
+make grpc:stubs
+make lint
+make test
+make build
+make compose:config
 ```
 
 Локальный запуск:
 
 ```bash
-cd services/iam
 go run ./cmd/iam
 ```

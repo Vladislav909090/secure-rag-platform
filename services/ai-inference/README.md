@@ -11,9 +11,10 @@
 | HTTP (grpc-gateway) | `8084` |
 | gRPC | `9094` |
 
-В глобальном compose сервис доступен только внутри сети приложения. Прямой HTTP через Traefik включается в dev-режиме:
+В глобальном compose сервис доступен только внутри сети приложения. Прямой HTTP через Traefik включается в dev-режиме из корня репозитория:
 
 ```bash
+# из корня репозитория
 make compose:up:dev
 ```
 
@@ -22,7 +23,7 @@ make compose:up:dev
 - `http://localhost/ai-inference/health`
 - `http://localhost/ai-inference/docs`
 
-Для isolated-запуска из каталога сервиса:
+Для локального запуска отдельного ai-inference из каталога сервиса:
 
 ```bash
 cd services/ai-inference

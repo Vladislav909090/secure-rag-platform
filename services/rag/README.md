@@ -9,9 +9,10 @@
 | HTTP | `8083` |
 | gRPC | `9093` |
 
-В глобальном compose RAG вызывается gateway по внутренней сети. Прямой HTTP через Traefik включается в dev-режиме:
+В глобальном compose RAG вызывается gateway по внутренней сети. Прямой HTTP через Traefik включается в dev-режиме из корня репозитория:
 
 ```bash
+# из корня репозитория
 make compose:up:dev
 ```
 
@@ -20,7 +21,7 @@ make compose:up:dev
 - `http://localhost/rag/docs`
 - `http://localhost/rag/health`
 
-Для isolated-запуска RAG со своей pgvector-БД, MinIO и миграциями:
+Для локального запуска отдельного RAG со своей pgvector-БД, MinIO и миграциями:
 
 ```bash
 cd services/rag
@@ -60,7 +61,7 @@ Embeddings хранятся в `pgvector` без фиксированной ра
 
 ## Миграции
 
-Миграции находятся в `services/rag/migrations`. Локальный Makefile по умолчанию ждет pgvector-БД на `localhost:5435`:
+Миграции находятся в `services/rag/migrations`. Локальный compose сам применяет их при старте. Если нужно выполнить миграции вручную, локальный Makefile по умолчанию ждет pgvector-БД на `localhost:5435`:
 
 ```bash
 cd services/rag

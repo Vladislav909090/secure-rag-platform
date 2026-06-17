@@ -104,6 +104,8 @@ make compose:down
 make compose:recreate
 ```
 
+`make build` складывает локальные бинарники в `services/<service>/bin/`; эти каталоги не хранятся в Git.
+
 Перед первой генерацией может понадобиться установить `protoc` и Go-плагины:
 
 ```bash

@@ -14,13 +14,15 @@
 - `http://localhost/gateway/docs`
 - `http://localhost/gateway/health`
 
-Для isolated-запуска из каталога сервиса:
+Для локального запуска отдельного gateway из каталога сервиса:
 
 ```bash
+cd services/gateway
 make compose:up
 ```
 
-После этого доступны прямые порты `8080` и `9090`.
+После этого доступны прямые порты `8080`, `9090` и локальный OPA на `8181`.
+IAM, Knowledge и RAG в этом режиме ожидаются на `host.docker.internal`.
 
 ## Основные маршруты
 

@@ -33,9 +33,3 @@ go.work.sum
 # Редакторы и IDE
 .idea/
 .vscode/
-
-# Service-local сгенерированный proto-код (восстанавливается через make proto:gen в сервисе)
-services/*/gen/*
-
-# Локальный конфиг ai-inference
-services/ai-inference/config/models.json

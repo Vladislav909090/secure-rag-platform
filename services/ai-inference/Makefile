@@ -8,6 +8,8 @@ BINARY         = ai-inference
 IMAGE         ?= secure-rag-platform/$(SERVICE):local
 COMPOSE_FILE  ?= compose.yaml -f compose.local.yaml
 COMPOSE_PROJECT ?= secure-rag-$(SERVICE)
+BIN_DIR       ?= bin
+BIN_EXT       =
 
 GOOGLEAPIS_REF ?= 1526e545e9d26f23b9c5d0f04af17297def8d045
 GOOGLEAPIS_RAW = https://raw.githubusercontent.com/googleapis/googleapis/$(GOOGLEAPIS_REF)
@@ -27,6 +29,7 @@ API_PROTO_FILES = \
 	aiinference/v1/ai_inference.proto
 
 ifeq ($(OS),Windows_NT)
+BIN_EXT = .exe
 PROTOC = $(shell powershell -NoProfile -Command "$$cmd=Get-Command protoc -ErrorAction SilentlyContinue; if($$cmd){$$cmd.Source}else{$$p1=Join-Path $$env:LOCALAPPDATA 'Microsoft\\WinGet\\Packages\\Google.Protobuf_Microsoft.Winget.Source_8wekyb3d8bbwe\\bin\\protoc.exe'; $$p2=Join-Path $$env:LOCALAPPDATA 'protoc\\bin\\protoc.exe'; if(Test-Path -LiteralPath $$p1 -ErrorAction SilentlyContinue){$$p1}elseif(Test-Path -LiteralPath $$p2 -ErrorAction SilentlyContinue){$$p2}else{'protoc'}}")
 PROTO_DEPS_CMD = powershell -NoProfile -Command "New-Item -ItemType Directory -Force third_party/google/api | Out-Null; $$updated=$$false; if(-not(Test-Path third_party/google/api/annotations.proto)){Invoke-WebRequest '$(GOOGLEAPIS_RAW)/google/api/annotations.proto' -OutFile third_party/google/api/annotations.proto -UseBasicParsing; $$updated=$$true}; if(-not(Test-Path third_party/google/api/http.proto)){Invoke-WebRequest '$(GOOGLEAPIS_RAW)/google/api/http.proto' -OutFile third_party/google/api/http.proto -UseBasicParsing; $$updated=$$true}; if(-not(Test-Path third_party/google/api/httpbody.proto)){Invoke-WebRequest '$(GOOGLEAPIS_RAW)/google/api/httpbody.proto' -OutFile third_party/google/api/httpbody.proto -UseBasicParsing; $$updated=$$true}; if($$updated){Write-Host '==> Downloaded missing google/api protos'}else{Write-Host '==> google/api protos already present'}"
 else
@@ -45,7 +48,13 @@ test:
 	go test ./...
 
 build:
-	go build ./cmd/$(BINARY)
+ifeq ($(OS),Windows_NT)
+	powershell -NoProfile -Command "New-Item -ItemType Directory -Force '$(BIN_DIR)' | Out-Null"
+	powershell -NoProfile -Command "$$env:GOCACHE=Join-Path $$env:TEMP 'secure-rag-platform-go-build-cache'; go build -o '$(BIN_DIR)/$(BINARY)$(BIN_EXT)' ./cmd/$(BINARY)"
+else
+	mkdir -p $(BIN_DIR)
+	go build -o $(BIN_DIR)/$(BINARY)$(BIN_EXT) ./cmd/$(BINARY)
+endif
 
 docker\:build:
 	docker build -f Dockerfile -t $(IMAGE) ../..

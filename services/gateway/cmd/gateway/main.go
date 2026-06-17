@@ -117,6 +117,7 @@ func main() {
 		if err := httpServer.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
 			return err
 		}
+
 		return nil
 	})
 
@@ -194,6 +195,7 @@ func valueOrDefault(value string, fallback string) string {
 	if value == "" {
 		return fallback
 	}
+
 	return value
 }
 
@@ -202,6 +204,7 @@ func parseBool(raw string) bool {
 	if err != nil {
 		return false
 	}
+
 	return flag
 }
 
@@ -214,5 +217,6 @@ func parseInt(raw string, fallback int) int {
 	if err != nil || val <= 0 {
 		return fallback
 	}
+
 	return val
 }

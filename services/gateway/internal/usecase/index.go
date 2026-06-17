@@ -9,7 +9,7 @@ import (
 	ragv1 "secure-rag-platform/api/gen/go/rag/v1"
 )
 
-// ReindexDocument переиндексирует один документ через RAG. Доступно редактору документов.
+// ReindexDocument переиндексирует документ с правами редактора
 func (s *Service) ReindexDocument(
 	ctx context.Context,
 	req ReindexRequest,
@@ -62,7 +62,7 @@ func (s *Service) ReindexDocument(
 	}, nil
 }
 
-// ReindexAllDocuments переиндексирует доступные активные документы. Доступно редактору документов.
+// ReindexAllDocuments переиндексирует активные документы с правами редактора
 func (s *Service) ReindexAllDocuments(
 	ctx context.Context,
 	req ReindexRequest,
@@ -111,6 +111,7 @@ func (s *Service) ReindexAllDocuments(
 			itemResult.Error = mapUpstreamError(err, "reindex document").Error()
 			result.FailedCount++
 			result.Items = append(result.Items, itemResult)
+
 			continue
 		}
 
@@ -125,6 +126,7 @@ func (s *Service) ReindexAllDocuments(
 			itemResult.Error = fmt.Errorf("rag index: %w", err).Error()
 			result.FailedCount++
 			result.Items = append(result.Items, itemResult)
+
 			continue
 		}
 

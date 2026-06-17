@@ -8,7 +8,7 @@ import (
 	"secure-rag-platform/services/knowledge/internal/model"
 )
 
-// ListActiveDocuments возвращает все активные (не удалённые) документы.
+// ListActiveDocuments возвращает все активные (не удалённые) документы
 func (r *Repo) ListActiveDocuments(ctx context.Context) ([]*model.Document, error) {
 	query := `
 		SELECT

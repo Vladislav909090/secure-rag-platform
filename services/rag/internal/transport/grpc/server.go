@@ -5,13 +5,13 @@ import (
 	"secure-rag-platform/services/rag/internal/usecase"
 )
 
-// Server реализует gRPC-сервис RAGService.
+// Server реализует gRPC-сервис RAGService
 type Server struct {
 	pb.UnimplementedRAGServiceServer
 	uc *usecase.Service
 }
 
-// NewServer создаёт новый gRPC сервер RAG.
+// NewServer создаёт новый gRPC сервер RAG
 func NewServer(uc *usecase.Service) *Server {
 	return &Server{uc: uc}
 }

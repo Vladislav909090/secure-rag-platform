@@ -102,6 +102,7 @@ func main() {
 		if err := httpServer.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
 			return err
 		}
+
 		return nil
 	})
 
@@ -206,6 +207,7 @@ func buildUsecase(
 	)
 
 	logger.Info("PostgreSQL, S3 и внешние сервисы настроены", "component", "rag.app")
+
 	return uc
 }
 
@@ -223,5 +225,6 @@ func parseInt(raw string, fallback int) int {
 	if err != nil || val <= 0 {
 		return fallback
 	}
+
 	return val
 }

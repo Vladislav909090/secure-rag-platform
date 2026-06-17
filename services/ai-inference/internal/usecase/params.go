@@ -35,6 +35,7 @@ func cloneFloat32(v *float32) *float32 {
 		return nil
 	}
 	out := *v
+
 	return &out
 }
 
@@ -43,5 +44,6 @@ func cloneInt32(v *int32) *int32 {
 		return nil
 	}
 	out := *v
+
 	return &out
 }

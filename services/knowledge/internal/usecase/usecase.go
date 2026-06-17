@@ -20,14 +20,14 @@ var (
 	ErrInvalidRequest     = errors.New("invalid request")
 )
 
-// DocumentUsecase содержит бизнес-логику работы с документами.
+// DocumentUsecase содержит бизнес-логику работы с документами
 type DocumentUsecase struct {
 	repo    *repository.Repo
 	storage *storage.S3Storage
 	maxSize int64
 }
 
-// NewDocumentUsecase создаёт usecase.
+// NewDocumentUsecase создаёт сценарий работы с документами
 func NewDocumentUsecase(repo *repository.Repo, s3 *storage.S3Storage, maxSize int64) *DocumentUsecase {
 	return &DocumentUsecase{repo: repo, storage: s3, maxSize: maxSize}
 }
@@ -68,6 +68,7 @@ func (uc *DocumentUsecase) uploadAndHash(
 		if errors.Is(err, ErrFileTooLarge) || limited.failed {
 			return 0, "", ErrFileTooLarge
 		}
+
 		return 0, "", err
 	}
 

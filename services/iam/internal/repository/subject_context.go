@@ -12,10 +12,11 @@ func rolesToCodes(roles []*model.Role) []string {
 	for _, role := range roles {
 		codes = append(codes, role.Code)
 	}
+
 	return codes
 }
 
-// GetSubjectContext возвращает нормализованный контекст безопасности пользователя.
+// GetSubjectContext возвращает нормализованный контекст безопасности пользователя
 func (r *Repo) GetSubjectContext(ctx context.Context, userID string) (*model.SubjectContext, error) {
 	user, err := r.GetUserByID(ctx, userID)
 	if err != nil {
@@ -45,7 +46,7 @@ func (r *Repo) GetSubjectContext(ctx context.Context, userID string) (*model.Sub
 	}, nil
 }
 
-// GetUserView возвращает пользователя вместе с ролями и атрибутами.
+// GetUserView возвращает пользователя вместе с ролями и атрибутами
 func (r *Repo) GetUserView(ctx context.Context, userID string) (*model.UserView, error) {
 	user, err := r.GetUserByID(ctx, userID)
 	if err != nil {
@@ -77,7 +78,7 @@ func (r *Repo) GetUserView(ctx context.Context, userID string) (*model.UserView,
 	}, nil
 }
 
-// ListUserViews возвращает всех пользователей с ролями и атрибутами.
+// ListUserViews возвращает всех пользователей с ролями и атрибутами
 func (r *Repo) ListUserViews(ctx context.Context) ([]*model.UserView, error) {
 	users, err := r.ListUsers(ctx)
 	if err != nil {

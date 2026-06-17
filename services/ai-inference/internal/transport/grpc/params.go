@@ -25,6 +25,7 @@ func float32FromWrapper(value interface{ GetValue() float32 }) *float32 {
 		return nil
 	}
 	v := value.GetValue()
+
 	return &v
 }
 
@@ -33,6 +34,7 @@ func int32FromWrapper(value interface{ GetValue() int32 }) *int32 {
 		return nil
 	}
 	v := value.GetValue()
+
 	return &v
 }
 

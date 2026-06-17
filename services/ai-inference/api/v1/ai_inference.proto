@@ -7,9 +7,9 @@ option go_package = "secure-rag-platform/api/gen/go/aiinference/v1;aiinferencev1
 import "google/api/annotations.proto";
 import "google/protobuf/wrappers.proto";
 
-// AIInferenceService — служебные методы ai-inference.
+// AIInferenceService — служебные методы ai-inference
 service AIInferenceService {
-  // Health проверяет работоспособность ai-inference.
+  // Health проверяет работоспособность ai-inference
   rpc Health(HealthRequest) returns (HealthResponse) {
     option (google.api.http) = {
       get: "/ai-inference/health"
@@ -17,9 +17,9 @@ service AIInferenceService {
   }
 }
 
-// GenerationService — генерация текста через модельные алиасы.
+// GenerationService — генерация текста через модельные алиасы
 service GenerationService {
-  // Generate генерирует текст по сообщениям и параметрам генерации.
+  // Generate генерирует текст по сообщениям и параметрам генерации
   rpc Generate(GenerateRequest) returns (GenerateResponse) {
     option (google.api.http) = {
       post: "/ai-inference/api/v1/generate"
@@ -27,7 +27,7 @@ service GenerationService {
     };
   }
 
-  // ListModels возвращает список доступных alias-моделей генерации/эмбеддингов.
+  // ListModels возвращает список доступных alias-моделей генерации/эмбеддингов
   rpc ListModels(ListModelsRequest) returns (ListModelsResponse) {
     option (google.api.http) = {
       post: "/ai-inference/api/v1/models/list"
@@ -36,9 +36,9 @@ service GenerationService {
   }
 }
 
-// EmbeddingService — построение эмбеддингов через модельные алиасы.
+// EmbeddingService — построение эмбеддингов через модельные алиасы
 service EmbeddingService {
-  // Embed строит эмбеддинг для одного текста.
+  // Embed строит эмбеддинг для одного текста
   rpc Embed(EmbedRequest) returns (EmbedResponse) {
     option (google.api.http) = {
       post: "/ai-inference/api/v1/embed"
@@ -46,7 +46,7 @@ service EmbeddingService {
     };
   }
 
-  // BatchEmbed строит эмбеддинги для набора текстов.
+  // BatchEmbed строит эмбеддинги для набора текстов
   rpc BatchEmbed(BatchEmbedRequest) returns (BatchEmbedResponse) {
     option (google.api.http) = {
       post: "/ai-inference/api/v1/embed/batch"

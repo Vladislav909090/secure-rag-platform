@@ -36,6 +36,7 @@ func normalizeRoleCodes(roleCodes []string) []string {
 	}
 
 	sort.Strings(out)
+
 	return out
 }
 
@@ -44,6 +45,7 @@ func scanRole(row pgx.Row) (*model.Role, error) {
 	if err := row.Scan(&role.ID, &role.Code, &role.Name, &role.Description, &role.CreatedAt); err != nil {
 		return nil, err
 	}
+
 	return &role, nil
 }
 
@@ -169,7 +171,7 @@ func setUserRolesTx(
 	return nil
 }
 
-// ListRoles возвращает все фиксированные роли.
+// ListRoles возвращает все фиксированные роли
 func (r *Repo) ListRoles(ctx context.Context) ([]*model.Role, error) {
 	query := `
 		SELECT
@@ -203,12 +205,12 @@ func (r *Repo) ListRoles(ctx context.Context) ([]*model.Role, error) {
 	return roles, nil
 }
 
-// GetUserRoles возвращает роли, назначенные пользователю.
+// GetUserRoles возвращает роли, назначенные пользователю
 func (r *Repo) GetUserRoles(ctx context.Context, userID string) ([]*model.Role, error) {
 	return getUserRolesTx(ctx, r.pool, userID)
 }
 
-// SetUserRoles полностью заменяет все роли пользователя.
+// SetUserRoles полностью заменяет все роли пользователя
 func (r *Repo) SetUserRoles(
 	ctx context.Context,
 	userID string,
@@ -227,18 +229,20 @@ func (r *Repo) SetUserRoles(
 			return err
 		}
 		roles = fetched
+
 		return nil
 	}); err != nil {
 		if errors.Is(err, ErrInvalidRoleCode) {
 			return nil, err
 		}
+
 		return nil, fmt.Errorf("set user roles: %w", err)
 	}
 
 	return roles, nil
 }
 
-// AddUserRole добавляет одну роль пользователю.
+// AddUserRole добавляет одну роль пользователю
 func (r *Repo) AddUserRole(
 	ctx context.Context,
 	userID string,
@@ -279,18 +283,20 @@ func (r *Repo) AddUserRole(
 			return err
 		}
 		roles = fetched
+
 		return nil
 	}); err != nil {
 		if errors.Is(err, ErrInvalidRoleCode) {
 			return nil, err
 		}
+
 		return nil, fmt.Errorf("add user role: %w", err)
 	}
 
 	return roles, nil
 }
 
-// RemoveUserRole удаляет одну роль у пользователя.
+// RemoveUserRole удаляет одну роль у пользователя
 func (r *Repo) RemoveUserRole(ctx context.Context, userID string, roleCode string) ([]*model.Role, error) {
 	roleCode = strings.TrimSpace(roleCode)
 	if roleCode == "" {
@@ -321,18 +327,20 @@ func (r *Repo) RemoveUserRole(ctx context.Context, userID string, roleCode strin
 			return err
 		}
 		roles = fetched
+
 		return nil
 	}); err != nil {
 		if errors.Is(err, ErrInvalidRoleCode) {
 			return nil, err
 		}
+
 		return nil, fmt.Errorf("remove user role: %w", err)
 	}
 
 	return roles, nil
 }
 
-// HasUserWithRole проверяет, есть ли хотя бы один пользователь с указанной ролью.
+// HasUserWithRole проверяет, есть ли хотя бы один пользователь с указанной ролью
 func (r *Repo) HasUserWithRole(ctx context.Context, roleCode string) (bool, error) {
 	query := `
 		SELECT EXISTS (
@@ -347,5 +355,6 @@ func (r *Repo) HasUserWithRole(ctx context.Context, roleCode string) (bool, erro
 	if err := r.pool.QueryRow(ctx, query, roleCode).Scan(&exists); err != nil {
 		return false, fmt.Errorf("check user role existence: %w", err)
 	}
+
 	return exists, nil
 }

@@ -7,7 +7,7 @@ import (
 	"secure-rag-platform/services/iam/internal/model"
 )
 
-// ListUserSessions возвращает активные сессии текущего или целевого пользователя.
+// ListUserSessions возвращает активные сессии текущего или целевого пользователя
 func (uc *IAMUsecase) ListUserSessions(
 	ctx context.Context,
 	principal *Principal,
@@ -38,12 +38,12 @@ func (uc *IAMUsecase) ListUserSessions(
 	return sessions, targetUserID, nil
 }
 
-// RevokeSession отзывает одну сессию с проверкой прав доступа.
+// RevokeSession отзывает одну сессию с проверкой прав доступа
 func (uc *IAMUsecase) RevokeSession(ctx context.Context, principal *Principal, sessionID string) (bool, error) {
 	return uc.Logout(ctx, principal, sessionID)
 }
 
-// RevokeAllUserSessions отзывает все активные сессии.
+// RevokeAllUserSessions отзывает все активные сессии
 func (uc *IAMUsecase) RevokeAllUserSessions(
 	ctx context.Context,
 	principal *Principal,

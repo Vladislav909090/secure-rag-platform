@@ -6,7 +6,7 @@ import (
 	"time"
 )
 
-// UpdateDocument обновляет title и/или description.
+// UpdateDocument обновляет заголовок и/или описание
 func (r *Repo) UpdateDocument(
 	ctx context.Context,
 	uuid string,

@@ -8,9 +8,9 @@ import "google/api/annotations.proto";
 import "google/api/httpbody.proto";
 import "google/protobuf/struct.proto";
 
-// GatewayService предоставляет базовые операции gateway.
+// GatewayService предоставляет базовые операции gateway
 service GatewayService {
-  // Health проверяет работоспособность gateway.
+  // Health проверяет работоспособность gateway
   rpc Health(HealthRequest) returns (HealthResponse) {
     option (google.api.http) = {
       get: "/gateway/health"
@@ -18,9 +18,9 @@ service GatewayService {
   }
 }
 
-// GatewayAuthService предоставляет операции аутентификации через gateway.
+// GatewayAuthService предоставляет операции аутентификации через gateway
 service GatewayAuthService {
-  // Login аутентифицирует пользователя через IAM.
+  // Login аутентифицирует пользователя через IAM
   rpc Login(LoginRequest) returns (TokenPairResponse) {
     option (google.api.http) = {
       post: "/gateway/api/v1/auth/login"
@@ -28,7 +28,7 @@ service GatewayAuthService {
     };
   }
 
-  // RefreshToken обновляет access token через IAM.
+  // RefreshToken обновляет токен доступа через IAM
   rpc RefreshToken(RefreshTokenRequest) returns (TokenPairResponse) {
     option (google.api.http) = {
       post: "/gateway/api/v1/auth/refresh"
@@ -36,7 +36,7 @@ service GatewayAuthService {
     };
   }
 
-  // Logout отзывает текущую сессию через IAM.
+  // Logout отзывает текущую сессию через IAM
   rpc Logout(LogoutRequest) returns (LogoutResponse) {
     option (google.api.http) = {
       post: "/gateway/api/v1/auth/logout"
@@ -44,7 +44,7 @@ service GatewayAuthService {
     };
   }
 
-  // GetMe возвращает текущего аутентифицированного субъекта.
+  // GetMe возвращает текущего аутентифицированного субъекта
   rpc GetMe(GetMeRequest) returns (GetMeResponse) {
     option (google.api.http) = {
       get: "/gateway/api/v1/auth/me"
@@ -52,30 +52,30 @@ service GatewayAuthService {
   }
 }
 
-// GatewayKnowledgeService предоставляет доступные пользователю операции knowledge через gateway.
+// GatewayKnowledgeService предоставляет доступные пользователю операции knowledge через gateway
 service GatewayKnowledgeService {
-  // ListDocuments возвращает документы, доступные текущему субъекту.
+  // ListDocuments возвращает документы, доступные текущему субъекту
   rpc ListDocuments(ListDocumentsRequest) returns (ListDocumentsResponse) {
     option (google.api.http) = {
       get: "/gateway/api/v1/documents"
     };
   }
 
-  // GetDocument возвращает доступный документ.
+  // GetDocument возвращает доступный документ
   rpc GetDocument(GetDocumentRequest) returns (GetDocumentResponse) {
     option (google.api.http) = {
       get: "/gateway/api/v1/documents/{document_uuid}"
     };
   }
 
-  // DownloadFile скачивает файл документа, если документ доступен текущему субъекту.
+  // DownloadFile скачивает файл документа, если документ доступен текущему субъекту
   rpc DownloadFile(DownloadFileRequest) returns (google.api.HttpBody) {
     option (google.api.http) = {
       get: "/gateway/api/v1/documents/{document_uuid}/file"
     };
   }
 
-  // DeleteDocument удаляет документ, если текущий субъект может редактировать документы и документ ему доступен.
+  // DeleteDocument удаляет доступный документ с правом редактирования
   rpc DeleteDocument(DeleteDocumentRequest) returns (DeleteDocumentResponse) {
     option (google.api.http) = {
       delete: "/gateway/api/v1/documents/{document_uuid}"
@@ -83,9 +83,9 @@ service GatewayKnowledgeService {
   }
 }
 
-// GatewayRAGService предоставляет RAG-операции через gateway.
+// GatewayRAGService предоставляет RAG-операции через gateway
 service GatewayRAGService {
-  // ReindexDocument переиндексирует один документ. Доступно редактору документов.
+  // ReindexDocument переиндексирует документ с правами редактора
   rpc ReindexDocument(ReindexDocumentRequest) returns (ReindexDocumentResponse) {
     option (google.api.http) = {
       post: "/gateway/api/v1/admin/rag/documents/{document_uuid}/reindex"
@@ -93,7 +93,7 @@ service GatewayRAGService {
     };
   }
 
-  // ReindexAllDocuments переиндексирует доступные активные документы. Доступно редактору документов.
+  // ReindexAllDocuments переиндексирует активные документы с правами редактора
   rpc ReindexAllDocuments(ReindexAllDocumentsRequest) returns (ReindexAllDocumentsResponse) {
     option (google.api.http) = {
       post: "/gateway/api/v1/admin/rag/reindex"
@@ -101,7 +101,7 @@ service GatewayRAGService {
     };
   }
 
-  // QueryRAG выполняет поиск и генерацию ответа через RAG.
+  // QueryRAG выполняет поиск и генерацию ответа через RAG
   rpc QueryRAG(QueryRAGRequest) returns (QueryRAGResponse) {
     option (google.api.http) = {
       post: "/gateway/api/v1/rag/query"

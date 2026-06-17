@@ -11,7 +11,7 @@ import (
 	"github.com/jackc/pgx/v5"
 )
 
-// CreateSessionInput содержит данные, необходимые для создания сессии токена обновления.
+// CreateSessionInput содержит данные, необходимые для создания сессии токена обновления
 type CreateSessionInput struct {
 	UserID           string
 	RefreshTokenHash string
@@ -31,10 +31,11 @@ func scanSession(row pgx.Row) (*model.UserSession, error) {
 	); err != nil {
 		return nil, err
 	}
+
 	return &s, nil
 }
 
-// CreateSession создает новую пользовательскую сессию.
+// CreateSession создает новую пользовательскую сессию
 func (r *Repo) CreateSession(ctx context.Context, input CreateSessionInput) (*model.UserSession, error) {
 	query := `
 		INSERT INTO user_sessions (
@@ -59,10 +60,11 @@ func (r *Repo) CreateSession(ctx context.Context, input CreateSessionInput) (*mo
 	if err != nil {
 		return nil, fmt.Errorf("create session: %w", err)
 	}
+
 	return session, nil
 }
 
-// GetSessionByID возвращает сессию по идентификатору.
+// GetSessionByID возвращает сессию по идентификатору
 func (r *Repo) GetSessionByID(ctx context.Context, sessionID string) (*model.UserSession, error) {
 	query := `
 		SELECT
@@ -82,12 +84,14 @@ func (r *Repo) GetSessionByID(ctx context.Context, sessionID string) (*model.Use
 		if errors.Is(err, pgx.ErrNoRows) {
 			return nil, nil
 		}
+
 		return nil, fmt.Errorf("query session by id: %w", err)
 	}
+
 	return session, nil
 }
 
-// GetSessionByRefreshHash возвращает сессию по хешу токена обновления.
+// GetSessionByRefreshHash возвращает сессию по хешу токена обновления
 func (r *Repo) GetSessionByRefreshHash(ctx context.Context, refreshHash string) (*model.UserSession, error) {
 	query := `
 		SELECT
@@ -107,12 +111,14 @@ func (r *Repo) GetSessionByRefreshHash(ctx context.Context, refreshHash string) 
 		if errors.Is(err, pgx.ErrNoRows) {
 			return nil, nil
 		}
+
 		return nil, fmt.Errorf("query session by refresh hash: %w", err)
 	}
+
 	return session, nil
 }
 
-// RotateSessionRefreshHash ротирует хеш токена обновления и обновляет срок действия активной сессии.
+// RotateSessionRefreshHash ротирует хеш токена обновления и обновляет срок действия активной сессии
 func (r *Repo) RotateSessionRefreshHash(
 	ctx context.Context,
 	sessionID string,
@@ -143,12 +149,14 @@ func (r *Repo) RotateSessionRefreshHash(
 		if errors.Is(err, pgx.ErrNoRows) {
 			return nil, ErrNotFound
 		}
+
 		return nil, fmt.Errorf("rotate session refresh hash: %w", err)
 	}
+
 	return session, nil
 }
 
-// RevokeSession отзывает одну сессию, если она еще не отозвана.
+// RevokeSession отзывает одну сессию, если она еще не отозвана
 func (r *Repo) RevokeSession(ctx context.Context, sessionID string) (bool, error) {
 	query := `
 		UPDATE user_sessions
@@ -163,10 +171,11 @@ func (r *Repo) RevokeSession(ctx context.Context, sessionID string) (bool, error
 	if err != nil {
 		return false, fmt.Errorf("revoke session: %w", err)
 	}
+
 	return result.RowsAffected() > 0, nil
 }
 
-// RevokeAllUserSessions отзывает все активные сессии пользователя.
+// RevokeAllUserSessions отзывает все активные сессии пользователя
 func (r *Repo) RevokeAllUserSessions(ctx context.Context, userID string) (int64, error) {
 	query := `
 		UPDATE user_sessions
@@ -182,10 +191,11 @@ func (r *Repo) RevokeAllUserSessions(ctx context.Context, userID string) (int64,
 	if err != nil {
 		return 0, fmt.Errorf("revoke all user sessions: %w", err)
 	}
+
 	return result.RowsAffected(), nil
 }
 
-// ListActiveUserSessions возвращает неотозванные и неистекшие сессии.
+// ListActiveUserSessions возвращает неотозванные и неистекшие сессии
 func (r *Repo) ListActiveUserSessions(ctx context.Context, userID string) ([]*model.UserSession, error) {
 	query := `
 		SELECT

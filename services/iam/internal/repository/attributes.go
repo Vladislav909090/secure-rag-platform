@@ -8,7 +8,7 @@ import (
 	"github.com/jackc/pgx/v5"
 )
 
-// GetUserAttributes возвращает объект атрибутов пользователя.
+// GetUserAttributes возвращает объект атрибутов пользователя
 func (r *Repo) GetUserAttributes(ctx context.Context, userID string) (map[string]any, error) {
 	query := `
 		SELECT attributes
@@ -21,6 +21,7 @@ func (r *Repo) GetUserAttributes(ctx context.Context, userID string) (map[string
 		if errors.Is(err, pgx.ErrNoRows) {
 			return map[string]any{}, nil
 		}
+
 		return nil, fmt.Errorf("query user attributes: %w", err)
 	}
 
@@ -32,7 +33,7 @@ func (r *Repo) GetUserAttributes(ctx context.Context, userID string) (map[string
 	return attrs, nil
 }
 
-// ReplaceUserAttributes полностью заменяет атрибуты пользователя.
+// ReplaceUserAttributes полностью заменяет атрибуты пользователя
 func (r *Repo) ReplaceUserAttributes(
 	ctx context.Context,
 	userID string,
@@ -74,7 +75,7 @@ func (r *Repo) ReplaceUserAttributes(
 	return updated, nil
 }
 
-// DeleteUserAttributeKey удаляет один ключ из атрибутов пользователя.
+// DeleteUserAttributeKey удаляет один ключ из атрибутов пользователя
 func (r *Repo) DeleteUserAttributeKey(
 	ctx context.Context,
 	userID string,

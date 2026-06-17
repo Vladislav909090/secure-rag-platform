@@ -13,7 +13,7 @@ import (
 	"github.com/google/uuid"
 )
 
-// CreateDocument создаёт документ с единственным файлом.
+// CreateDocument создаёт документ с единственным файлом
 func (uc *DocumentUsecase) CreateDocument(
 	ctx context.Context,
 	input CreateDocumentInput,

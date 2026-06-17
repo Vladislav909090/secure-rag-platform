@@ -65,7 +65,7 @@ func (h *UploadHandlers) CreateDocument(gateway http.Handler) http.HandlerFunc {
 
 func (h *UploadHandlers) DocumentFiles(gateway http.Handler) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		// Перехватываем скачивание файла: GET /knowledge/api/v1/documents/{uuid}/file.
+		// Перехватываем скачивание файла: GET /knowledge/api/v1/documents/{uuid}/file
 		if r.Method == http.MethodGet &&
 			strings.HasPrefix(r.URL.Path, knowledgeDocumentsPrefix+"/") &&
 			strings.HasSuffix(r.URL.Path, "/file") &&
@@ -133,6 +133,7 @@ func (h *UploadHandlers) processCreateDocumentPart(
 			return err
 		}
 		state.title = strings.TrimSpace(string(value))
+
 		return nil
 	case "description":
 		value, err := readLimitedPart(part, 1<<20)
@@ -141,6 +142,7 @@ func (h *UploadHandlers) processCreateDocumentPart(
 		}
 		state.hasDescription = true
 		state.description = string(value)
+
 		return nil
 	case "attributes":
 		value, err := readLimitedPart(part, 4<<20)
@@ -152,6 +154,7 @@ func (h *UploadHandlers) processCreateDocumentPart(
 			return err
 		}
 		state.attrs = attrs
+
 		return nil
 	case "file":
 		return h.sendCreateDocumentFilePart(part, stream, state)
@@ -207,6 +210,7 @@ func (h *UploadHandlers) sendCreateDocumentFilePart(
 	}
 
 	state.fileSent = true
+
 	return nil
 }
 
@@ -261,6 +265,7 @@ func writeProtoJSON(w http.ResponseWriter, status int, msg any) error {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(status)
 	_, _ = w.Write(b)
+
 	return nil
 }
 
@@ -275,6 +280,7 @@ func isMultipart(contentType string) bool {
 	if err != nil {
 		return false
 	}
+
 	return mediatype == "multipart/form-data"
 }
 
@@ -296,13 +302,14 @@ func (h *UploadHandlers) handleDownloadFile(w http.ResponseWriter, r *http.Reque
 		case errors.Is(err, usecase.ErrDocumentDeleted):
 			writeError(w, http.StatusGone, err.Error())
 		default:
-			// Разворачиваем gRPC status errors после возможных gateway-вызовов.
+			// Разворачиваем gRPC status errors после возможных gateway-вызовов
 			if st, ok := status.FromError(err); ok && st.Code() == codes.NotFound {
 				writeError(w, http.StatusNotFound, st.Message())
 				return
 			}
 			writeError(w, http.StatusInternalServerError, "internal error")
 		}
+
 		return
 	}
 	defer dl.Body.Close()
@@ -316,8 +323,8 @@ func (h *UploadHandlers) writeDownloadResponse(w http.ResponseWriter, dl *usecas
 		mimeType = "application/octet-stream"
 	}
 
-	// RFC 6266: указываем и ASCII fallback в кавычках, и имя по RFC 5987.
-	// Браузеры предпочитают filename*, если есть оба варианта; Swagger UI использует filename.
+	// RFC 6266: указываем ASCII-имя и имя по RFC 5987
+	// Браузеры берут filename*, Swagger UI использует filename
 	fallback := asciiFilenameFallback(dl.FileName)
 	escaped := strings.ReplaceAll(fallback, `"`, `\\"`)
 	encodedName := url.PathEscape(dl.FileName)
@@ -336,6 +343,7 @@ func extension(fileName string) string {
 	if idx < 0 || idx+1 >= len(fileName) {
 		return ""
 	}
+
 	return fileName[idx+1:]
 }
 

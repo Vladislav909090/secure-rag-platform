@@ -8,7 +8,7 @@ import (
 	"secure-rag-platform/services/knowledge/internal/model"
 )
 
-// UpdateAttributes полностью заменяет attributes.
+// UpdateAttributes полностью заменяет атрибуты
 func (uc *DocumentUsecase) UpdateAttributes(
 	ctx context.Context,
 	docUUID string,

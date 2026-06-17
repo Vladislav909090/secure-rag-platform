@@ -23,6 +23,7 @@ func NewOpenAICompatProvider(timeout time.Duration) *OpenAICompatProvider {
 	if timeout <= 0 {
 		timeout = 60 * time.Second
 	}
+
 	return &OpenAICompatProvider{
 		httpClient: &http.Client{Timeout: timeout},
 	}
@@ -65,6 +66,7 @@ func (p *OpenAICompatProvider) Generate(
 	}
 
 	choice := response.Choices[0]
+
 	return &usecase.GenerateResult{
 		Content:      choice.Message.Content,
 		FinishReason: choice.FinishReason,
@@ -161,6 +163,7 @@ func (p *OpenAICompatProvider) postJSON(
 		if len(body) > maxBody {
 			body = body[:maxBody]
 		}
+
 		return nil, fmt.Errorf("provider status %d: %s", resp.StatusCode, string(body))
 	}
 
@@ -170,6 +173,7 @@ func (p *OpenAICompatProvider) postJSON(
 func joinURL(baseURL string, path string) string {
 	base := strings.TrimRight(strings.TrimSpace(baseURL), "/")
 	tail := strings.TrimLeft(path, "/")
+
 	return base + "/" + tail
 }
 

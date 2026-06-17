@@ -1,4 +1,4 @@
-// Package docs предоставляет Swagger UI для отображения OpenAPI-спецификации.
+// Пакет docs предоставляет Swagger UI для отображения OpenAPI-спецификации
 package docs
 
 import (
@@ -121,7 +121,7 @@ func applyMultipartUploadOverlay(specJSON []byte) ([]byte, error) {
 	return out, nil
 }
 
-// RegisterAt регистрирует Swagger UI по заданному пути.
+// RegisterAt регистрирует Swagger UI по заданному пути
 func RegisterAt(mux *http.ServeMux, serviceName string, docsPath string) {
 	specJSON, err := loadSpecJSON()
 	if err != nil {
@@ -129,6 +129,7 @@ func RegisterAt(mux *http.ServeMux, serviceName string, docsPath string) {
 			"component", "knowledge.docs",
 			"error", err,
 		)
+
 		return
 	}
 

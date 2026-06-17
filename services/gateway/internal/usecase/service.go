@@ -14,7 +14,7 @@ type Defaults struct {
 	GenerationModelAlias string
 }
 
-// Service содержит бизнес-логику gateway.
+// Service содержит бизнес-логику gateway
 type Service struct {
 	rag           ragv1.RAGServiceClient
 	knowledge     knowledgev1.KnowledgeServiceClient
@@ -30,7 +30,7 @@ type Service struct {
 	logger        *slog.Logger
 }
 
-// NewService создаёт gateway usecase.
+// NewService создаёт сервисный слой gateway
 func NewService(
 	rag ragv1.RAGServiceClient,
 	knowledge knowledgev1.KnowledgeServiceClient,
@@ -48,6 +48,7 @@ func NewService(
 	if logger == nil {
 		logger = slog.Default()
 	}
+
 	return &Service{
 		rag:           rag,
 		knowledge:     knowledge,
@@ -64,7 +65,7 @@ func NewService(
 	}
 }
 
-// Ready проверяет минимальную конфигурацию.
+// Ready проверяет минимальную конфигурацию
 func (s *Service) Ready() bool {
 	if s == nil || s.rag == nil || s.knowledge == nil {
 		return false
@@ -72,6 +73,7 @@ func (s *Service) Ready() bool {
 	if s.disableAuth {
 		return true
 	}
+
 	return s.iam != nil &&
 		s.auth != nil &&
 		s.users != nil &&

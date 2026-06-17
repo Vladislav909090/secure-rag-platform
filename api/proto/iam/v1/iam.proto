@@ -7,9 +7,9 @@ option go_package = "secure-rag-platform/api/gen/go/iam/v1;iamv1";
 import "google/api/annotations.proto";
 import "google/protobuf/struct.proto";
 
-// IAMService — управление идентификацией и доступом.
+// IAMService — управление идентификацией и доступом
 service IAMService {
-  // Health проверяет работоспособность iam.
+  // Health проверяет работоспособность iam
   rpc Health(HealthRequest) returns (HealthResponse) {
     option (google.api.http) = {
       get: "/iam/health"
@@ -17,7 +17,7 @@ service IAMService {
   }
 }
 
-// AuthService — аутентификация и токены.
+// AuthService — аутентификация и токены
 service AuthService {
   rpc Login(LoginRequest) returns (TokenPairResponse) {
     option (google.api.http) = {
@@ -53,7 +53,7 @@ service AuthService {
   }
 }
 
-// UserService — управление пользователями.
+// UserService — управление пользователями
 service UserService {
   rpc ListUsers(ListUsersRequest) returns (ListUsersResponse) {
     option (google.api.http) = {
@@ -82,7 +82,7 @@ service UserService {
   }
 }
 
-// RoleService — RBAC роли пользователей.
+// RoleService — RBAC роли пользователей
 service RoleService {
   rpc ListRoles(ListRolesRequest) returns (ListRolesResponse) {
     option (google.api.http) = {
@@ -118,7 +118,7 @@ service RoleService {
   }
 }
 
-// AttributeService — subject attributes пользователей.
+// AttributeService — атрибуты субъектов доступа
 service AttributeService {
   rpc GetUserAttributes(GetUserAttributesRequest) returns (GetUserAttributesResponse) {
     option (google.api.http) = {
@@ -147,7 +147,7 @@ service AttributeService {
   }
 }
 
-// SessionService — операции с пользовательскими сессиями.
+// SessionService — операции с пользовательскими сессиями
 service SessionService {
   rpc ListUserSessions(ListUserSessionsRequest) returns (ListUserSessionsResponse) {
     option (google.api.http) = {
@@ -170,7 +170,7 @@ service SessionService {
   }
 }
 
-// InternalIAMService — внутренние методы для gateway и сервисов.
+// InternalIAMService — внутренние методы для gateway и сервисов
 service InternalIAMService {
   rpc GetSubjectContext(GetSubjectContextRequest) returns (GetSubjectContextResponse) {
     option (google.api.http) = {

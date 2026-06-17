@@ -25,5 +25,6 @@ func extractAccessToken(ctx context.Context) string {
 	if strings.HasPrefix(lower, "bearer ") {
 		return strings.TrimSpace(token[7:])
 	}
+
 	return token
 }

@@ -82,7 +82,7 @@ func main() {
 		fatal(logger, "не удалось открыть порт gRPC", err)
 	}
 
-	// gRPC-gateway (HTTP -> gRPC)
+	// HTTP-шлюз к gRPC
 	mux := http.NewServeMux()
 	docs.RegisterAt(mux, "AI Inference", "/ai-inference/docs")
 	gatewayMux := runtime.NewServeMux(
@@ -119,6 +119,7 @@ func main() {
 		if err = httpServer.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
 			return err
 		}
+
 		return nil
 	})
 
@@ -157,6 +158,7 @@ func loggingInterceptor(logger *slog.Logger) grpc.UnaryServerInterceptor {
 				"duration", time.Since(startedAt),
 				"error", err,
 			)
+
 			return nil, err
 		}
 
@@ -165,6 +167,7 @@ func loggingInterceptor(logger *slog.Logger) grpc.UnaryServerInterceptor {
 			"method", info.FullMethod,
 			"duration", time.Since(startedAt),
 		)
+
 		return resp, nil
 	}
 }

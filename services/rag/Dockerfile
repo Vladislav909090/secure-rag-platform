@@ -12,8 +12,6 @@ COPY services/rag ./services/rag
 WORKDIR /repo/services/rag
 RUN CGO_ENABLED=0 GOOS=linux go build -o /bin/rag ./cmd/rag
 
-# ---
-
 FROM alpine:3.21
 
 RUN apk add --no-cache ca-certificates

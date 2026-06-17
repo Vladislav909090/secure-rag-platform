@@ -17,5 +17,6 @@ func (s *KnowledgeServiceServerImpl) RestoreDocument(
 	if err != nil {
 		return nil, toGRPCError(err)
 	}
+
 	return &pb.RestoreDocumentResponse{Document: documentToProto(doc)}, nil
 }

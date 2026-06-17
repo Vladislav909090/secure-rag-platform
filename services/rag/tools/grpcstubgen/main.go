@@ -73,25 +73,26 @@ func main() {
 		pbImport = modulePath + "/gen/v1"
 	}
 	for _, svc := range services {
-		// Legacy (single-file) output name from previous generator version.
+		// Имя старого единого файла из прошлой версии генератора
 		legacyName := snakeCase(svc.InterfaceName) + ".gen.go"
 		legacyPath := filepath.Join(outDir, legacyName)
 		if _, err := os.Stat(legacyPath); err == nil {
 			rel, _ := filepath.Rel(serviceDir, legacyPath)
 			fmt.Printf("skip %s (legacy combined stub exists; delete to regenerate split stubs)\n", filepath.ToSlash(rel))
+
 			continue
 		} else if !errors.Is(err, os.ErrNotExist) {
 			die(err)
 		}
 
-		// Base impl file.
+		// Базовый файл реализации
 		baseName := snakeCase(svc.InterfaceName) + "_impl.go"
 		basePath := filepath.Join(outDir, baseName)
 		if _, err := os.Stat(basePath); err == nil {
 			rel, _ := filepath.Rel(serviceDir, basePath)
 			fmt.Printf("skip %s (already exists)\n", filepath.ToSlash(rel))
 		} else if errors.Is(err, os.ErrNotExist) {
-			// If legacy base file exists, do not generate a new one to avoid duplicate symbols.
+			// Старый базовый файл не даёт сгенерировать дублирующие символы
 			legacyBasePath := filepath.Join(outDir, snakeCase(svc.InterfaceName)+"_impl.gen.go")
 			if _, legacyErr := os.Stat(legacyBasePath); legacyErr == nil {
 				rel, _ := filepath.Rel(serviceDir, legacyBasePath)
@@ -119,16 +120,18 @@ func main() {
 			if _, err := os.Stat(methodPath); err == nil {
 				rel, _ := filepath.Rel(serviceDir, methodPath)
 				fmt.Printf("skip %s (already exists)\n", filepath.ToSlash(rel))
+
 				continue
 			} else if !errors.Is(err, os.ErrNotExist) {
 				die(err)
 			}
 
-			// If legacy per-method file exists, do not generate a new one to avoid duplicate symbols.
+			// Старый файл метода не даёт сгенерировать дублирующие символы
 			legacyMethodPath := filepath.Join(outDir, snakeCase(m.Name)+".gen.go")
 			if _, legacyErr := os.Stat(legacyMethodPath); legacyErr == nil {
 				rel, _ := filepath.Rel(serviceDir, legacyMethodPath)
 				fmt.Printf("skip %s (legacy stub exists; delete to regenerate without .gen)\n", filepath.ToSlash(rel))
+
 				continue
 			} else if !errors.Is(legacyErr, os.ErrNotExist) {
 				die(legacyErr)
@@ -185,6 +188,7 @@ func readModulePath(goModPath string) (string, error) {
 			}
 		}
 	}
+
 	return "", errors.New("unable to find module path in go.mod")
 }
 
@@ -200,12 +204,14 @@ func findGRPCPBFiles(root string) ([]string, error) {
 		if strings.HasSuffix(path, "_grpc.pb.go") {
 			files = append(files, path)
 		}
+
 		return nil
 	})
 	if err != nil {
 		return nil, err
 	}
 	sort.Strings(files)
+
 	return files, nil
 }
 
@@ -261,6 +267,7 @@ func parseServerInterfaces(files []string) ([]serviceIface, error) {
 		out = append(out, svc)
 	}
 	sort.Slice(out, func(i, j int) bool { return out[i].InterfaceName < out[j].InterfaceName })
+
 	return out, nil
 }
 
@@ -294,6 +301,7 @@ func extractIfaceMethods(iface *ast.InterfaceType) ([]ifaceMethod, error) {
 		}
 		methods = append(methods, ifaceMethod{Name: name, Params: params, Results: results})
 	}
+
 	return methods, nil
 }
 
@@ -308,6 +316,7 @@ func buildParams(fl *ast.FieldList) ([]param, error) {
 		if len(names) == 0 {
 			params = append(params, param{Name: defaultParamName(f.Type, idx), Type: f.Type})
 			idx++
+
 			continue
 		}
 		for _, n := range names {
@@ -315,6 +324,7 @@ func buildParams(fl *ast.FieldList) ([]param, error) {
 			idx++
 		}
 	}
+
 	return params, nil
 }
 
@@ -325,6 +335,7 @@ func defaultParamName(t ast.Expr, idx int) string {
 	if idx == 1 {
 		return "req"
 	}
+
 	return fmt.Sprintf("arg%d", idx+1)
 }
 
@@ -337,6 +348,7 @@ func isContextContext(t ast.Expr) bool {
 		return false
 	}
 	ident, ok := se.X.(*ast.Ident)
+
 	return ok && ident.Name == "context"
 }
 
@@ -430,6 +442,7 @@ func renderUnimplementedReturn(methodName string, results []ast.Expr) string {
 		parts = append(parts, zeroValue(results[i]))
 	}
 	parts = append(parts, errExpr)
+
 	return "return " + strings.Join(parts, ", ")
 }
 
@@ -439,6 +452,7 @@ func typeString(e ast.Expr) string {
 		if shouldQualifyIdent(t.Name) {
 			return "pb." + t.Name
 		}
+
 		return t.Name
 	case *ast.StarExpr:
 		return "*" + typeString(t.X)
@@ -448,6 +462,7 @@ func typeString(e ast.Expr) string {
 		if t.Len == nil {
 			return "[]" + typeString(t.Elt)
 		}
+
 		return "[" + typeString(t.Len) + "]" + typeString(t.Elt)
 	case *ast.MapType:
 		return "map[" + typeString(t.Key) + "]" + typeString(t.Value)
@@ -456,6 +471,7 @@ func typeString(e ast.Expr) string {
 	default:
 		var buf bytes.Buffer
 		_ = printer.Fprint(&buf, token.NewFileSet(), e)
+
 		return buf.String()
 	}
 }
@@ -476,6 +492,7 @@ func zeroValue(e ast.Expr) string {
 			if shouldQualifyIdent(t.Name) {
 				return "pb." + t.Name + "{}"
 			}
+
 			return t.Name + "{}"
 		}
 	case *ast.StarExpr, *ast.MapType, *ast.ArrayType, *ast.InterfaceType, *ast.FuncType, *ast.ChanType:
@@ -496,6 +513,7 @@ func shouldQualifyIdent(name string) bool {
 		return false
 	}
 	r := rune(name[0])
+
 	return r >= 'A' && r <= 'Z'
 }
 
@@ -511,5 +529,6 @@ func snakeCase(s string) string {
 		out = append(out, rune(strings.ToLower(string(r))[0]))
 		prevLower = isLower || (r >= '0' && r <= '9')
 	}
+
 	return string(out)
 }

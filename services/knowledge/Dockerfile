@@ -12,8 +12,6 @@ COPY services/knowledge ./services/knowledge
 WORKDIR /repo/services/knowledge
 RUN CGO_ENABLED=0 GOOS=linux go build -o /bin/knowledge ./cmd/knowledge
 
-# ---
-
 FROM alpine:3.21
 
 RUN apk add --no-cache ca-certificates

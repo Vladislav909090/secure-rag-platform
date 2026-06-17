@@ -6,7 +6,7 @@ import (
 	"time"
 )
 
-// RestoreDocument убирает soft delete.
+// RestoreDocument снимает мягкое удаление
 func (r *Repo) RestoreDocument(ctx context.Context, uuid string, updatedAt time.Time) error {
 	query := `
 		UPDATE documents

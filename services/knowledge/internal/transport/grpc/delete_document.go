@@ -18,6 +18,7 @@ func (s *KnowledgeServiceServerImpl) DeleteDocument(
 	if err != nil {
 		return nil, toGRPCError(err)
 	}
+
 	return &pb.DeleteDocumentResponse{
 		DocumentUuid: result.DocumentUUID,
 		Deleted:      true,

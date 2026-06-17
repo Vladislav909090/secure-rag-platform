@@ -6,16 +6,16 @@ option go_package = "secure-rag-platform/api/gen/go/rag/v1;ragv1";
 
 import "google/api/annotations.proto";
 
-// RAGService — генерация ответов на базе найденных знаний.
+// RAGService — генерация ответов на базе найденных знаний
 service RAGService {
-  // Health проверяет работоспособность rag.
+  // Health проверяет работоспособность rag
   rpc Health(HealthRequest) returns (HealthResponse) {
     option (google.api.http) = {
       get: "/rag/health"
     };
   }
 
-  // IndexDocument индексирует документ в векторное хранилище.
+  // IndexDocument индексирует документ в векторное хранилище
   rpc IndexDocument(IndexDocumentRequest) returns (IndexDocumentResponse) {
     option (google.api.http) = {
       post: "/rag/api/v1/documents/{document_uuid}/index"
@@ -23,14 +23,14 @@ service RAGService {
     };
   }
 
-  // DeleteDocumentIndex удаляет документ из векторного хранилища.
+  // DeleteDocumentIndex удаляет документ из векторного хранилища
   rpc DeleteDocumentIndex(DeleteDocumentIndexRequest) returns (DeleteDocumentIndexResponse) {
     option (google.api.http) = {
       delete: "/rag/api/v1/documents/{document_uuid}/index"
     };
   }
 
-  // Query выполняет поиск контекста и генерацию ответа.
+  // Query выполняет поиск контекста и генерацию ответа
   rpc Query(QueryRequest) returns (QueryResponse) {
     option (google.api.http) = {
       post: "/rag/api/v1/query"

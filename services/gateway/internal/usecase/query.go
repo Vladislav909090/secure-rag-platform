@@ -11,7 +11,7 @@ import (
 	ragv1 "secure-rag-platform/api/gen/go/rag/v1"
 )
 
-// Query выполняет поиск и генерацию ответа через RAG.
+// Query выполняет поиск и генерацию ответа через RAG
 func (s *Service) Query(ctx context.Context, req QueryRequest, accessToken string) (*QueryResult, error) {
 	if !s.Ready() {
 		return nil, ErrNotConfigured
@@ -185,7 +185,9 @@ func (s *Service) allowDocument(
 		if errors.Is(err, ErrPolicyRequired) {
 			return false, err
 		}
+
 		return false, fmt.Errorf("%w: %v", ErrPolicyUnavailable, err)
 	}
+
 	return allowed, nil
 }

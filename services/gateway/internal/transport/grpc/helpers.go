@@ -15,6 +15,7 @@ func (s *Server) requireUC() error {
 	if s.uc == nil || !s.uc.Ready() {
 		return status.Error(codes.Unavailable, "service not configured")
 	}
+
 	return nil
 }
 
@@ -26,6 +27,7 @@ func mapToStruct(value map[string]any) *structpb.Struct {
 	if err != nil {
 		return &structpb.Struct{Fields: map[string]*structpb.Value{}}
 	}
+
 	return out
 }
 
@@ -48,6 +50,7 @@ func toGRPCError(err error) error {
 			"component", "gateway.grpc",
 			"error", err,
 		)
+
 		return status.Error(codes.Internal, "internal error")
 	}
 }

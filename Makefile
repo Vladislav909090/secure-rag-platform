@@ -48,7 +48,7 @@ ifeq ($(OS),Windows_NT)
 PROTOC = $(shell powershell -NoProfile -Command "$$cmd=Get-Command protoc -ErrorAction SilentlyContinue; if($$cmd){$$cmd.Source}else{$$p1=Join-Path $$env:LOCALAPPDATA 'Microsoft\\WinGet\\Packages\\Google.Protobuf_Microsoft.Winget.Source_8wekyb3d8bbwe\\bin\\protoc.exe'; $$p2=Join-Path $$env:LOCALAPPDATA 'protoc\\bin\\protoc.exe'; if(Test-Path -LiteralPath $$p1 -ErrorAction SilentlyContinue){$$p1}elseif(Test-Path -LiteralPath $$p2 -ErrorAction SilentlyContinue){$$p2}else{'protoc'}}")
 endif
 
-# ── Lint ──────────────────────────────────────────────
+# Проверка
 
 lint\:gateway:
 	$(MAKE) -C services/gateway lint
@@ -67,7 +67,7 @@ lint\:ai-inference:
 
 lint: lint\:gateway lint\:iam lint\:knowledge lint\:rag lint\:ai-inference
 
-# ── Test ──────────────────────────────────────────────
+# Тесты
 
 test\:gateway:
 	$(MAKE) -C services/gateway test
@@ -86,7 +86,7 @@ test\:ai-inference:
 
 test: test\:gateway test\:iam test\:knowledge test\:rag test\:ai-inference
 
-# ── Build ─────────────────────────────────────────────
+# Сборка
 
 build\:gateway:
 	$(MAKE) -C services/gateway build
@@ -105,7 +105,7 @@ build\:ai-inference:
 
 build: build\:gateway build\:iam build\:knowledge build\:rag build\:ai-inference
 
-# ── Proto и публичный API ─────────────────────────────
+# Proto и публичный API
 
 proto\:tools:
 	go install google.golang.org/protobuf/cmd/protoc-gen-go@v1.36.11
@@ -159,7 +159,7 @@ proto\:gen\:knowledge: api\:gen
 proto\:gen\:rag: api\:gen
 proto\:gen\:ai-inference: api\:gen
 
-# ── gRPC transport stubs ──────────────────────────────
+# gRPC-заглушки транспорта
 
 grpc\:stubs\:gateway:
 	$(MAKE) -C services/gateway grpc:stubs
@@ -178,7 +178,7 @@ grpc\:stubs\:ai-inference:
 
 grpc\:stubs: grpc\:stubs\:gateway grpc\:stubs\:iam grpc\:stubs\:knowledge grpc\:stubs\:rag grpc\:stubs\:ai-inference
 
-# ── Миграции баз данных ───────────────────────────────
+# Миграции баз данных
 
 migrate\:validate\:iam:
 	$(MAKE) -C services/iam migrate:validate
@@ -233,7 +233,7 @@ migrate\:create\:knowledge:
 migrate\:create\:rag:
 	$(MAKE) -C services/rag migrate:create MIGRATION_NAME="$(MIGRATION_NAME)"
 
-# ── Docker Compose ───────────────────────────────────
+# Docker Compose
 
 compose\:up:
 	docker compose -f $(COMPOSE_FILE) up -d --no-recreate

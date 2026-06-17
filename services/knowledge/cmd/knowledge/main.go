@@ -49,8 +49,6 @@ func main() {
 		}
 	}
 
-	// --- Опциональная инфраструктура: БД + S3 ---
-
 	var uc *usecase.DocumentUsecase
 
 	if dbDSN := config.GetValue(config.DatabaseDSN); dbDSN != "" {
@@ -83,8 +81,6 @@ func main() {
 		logger.Warn("DATABASE_DSN не задан, документные ручки недоступны", "component", "knowledge.db")
 	}
 
-	// --- gRPC-сервер ---
-
 	serverImpl := transportgrpc.NewKnowledgeServiceServer(uc)
 	grpcServer := grpc.NewServer()
 	knowledgev1.RegisterKnowledgeServiceServer(grpcServer, serverImpl)
@@ -94,11 +90,9 @@ func main() {
 		fatal(logger, "не удалось открыть порт gRPC", err)
 	}
 
-	// --- HTTP mux ---
-
 	mux := http.NewServeMux()
 
-	// gRPC-gateway
+	// HTTP-шлюз к gRPC
 	gwMux := runtime.NewServeMux(
 		runtime.WithMarshalerOption(runtime.MIMEWildcard, &runtime.JSONPb{
 			MarshalOptions: protojson.MarshalOptions{
@@ -128,8 +122,6 @@ func main() {
 
 	docs.RegisterAt(mux, "Knowledge", "/knowledge/docs")
 
-	// --- Запуск ---
-
 	app := application.New()
 
 	httpServer := &http.Server{Addr: ":" + port, Handler: mux}
@@ -145,6 +137,7 @@ func main() {
 		if err := httpServer.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
 			return err
 		}
+
 		return nil
 	})
 

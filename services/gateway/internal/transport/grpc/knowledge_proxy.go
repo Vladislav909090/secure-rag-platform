@@ -28,6 +28,7 @@ func (s *Server) ListDocuments(
 	for _, item := range items {
 		out = append(out, documentItemToProto(item))
 	}
+
 	return &pb.ListDocumentsResponse{Items: out}, nil
 }
 

@@ -15,12 +15,12 @@ var (
 	ErrInvalidRoleCode = errors.New("invalid role code")
 )
 
-// Repo реализует операции персистентности IAM.
+// Repo реализует операции персистентности IAM
 type Repo struct {
 	pool *pgxpool.Pool
 }
 
-// NewRepo создает новый экземпляр Repo.
+// NewRepo создает новый экземпляр Repo
 func NewRepo(pool *pgxpool.Pool) *Repo {
 	return &Repo{pool: pool}
 }
@@ -50,6 +50,7 @@ func normalizeAttributes(attrs map[string]any) map[string]any {
 	if attrs == nil {
 		return map[string]any{}
 	}
+
 	return attrs
 }
 
@@ -59,6 +60,7 @@ func toJSON(attrs map[string]any) ([]byte, error) {
 	if err != nil {
 		return nil, fmt.Errorf("marshal attributes: %w", err)
 	}
+
 	return b, nil
 }
 
@@ -70,5 +72,6 @@ func fromJSON(raw []byte) (map[string]any, error) {
 	if err := json.Unmarshal(raw, &out); err != nil {
 		return nil, fmt.Errorf("unmarshal attributes: %w", err)
 	}
+
 	return out, nil
 }

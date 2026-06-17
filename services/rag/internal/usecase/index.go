@@ -14,7 +14,7 @@ import (
 	"github.com/pgvector/pgvector-go"
 )
 
-// IndexDocument индексирует документ в векторное хранилище.
+// IndexDocument индексирует документ в векторное хранилище
 func (s *Service) IndexDocument(
 	ctx context.Context,
 	req IndexDocumentRequest,

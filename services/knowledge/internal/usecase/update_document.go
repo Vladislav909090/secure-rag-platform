@@ -8,7 +8,7 @@ import (
 	"secure-rag-platform/services/knowledge/internal/model"
 )
 
-// UpdateDocument обновляет title/description.
+// UpdateDocument обновляет заголовок и описание
 func (uc *DocumentUsecase) UpdateDocument(
 	ctx context.Context,
 	docUUID string,

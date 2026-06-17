@@ -56,5 +56,6 @@ func (a *App) Run() error {
 	}
 
 	wg.Wait()
+
 	return runErr
 }

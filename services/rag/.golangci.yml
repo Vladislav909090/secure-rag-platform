@@ -8,9 +8,12 @@ linters:
     - errcheck
     - gosimple
     - ineffassign
+    - nlreturn
     - revive
 
 linters-settings:
+  nlreturn:
+    block-size: 2
   errcheck:
     check-type-assertions: true
   govet:

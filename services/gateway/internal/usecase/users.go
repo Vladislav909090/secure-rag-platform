@@ -10,7 +10,7 @@ import (
 	"google.golang.org/protobuf/types/known/structpb"
 )
 
-// CreateUser создаёт пользователя через IAM. Доступно администратору доступа или суперадмину.
+// CreateUser создаёт пользователя с правами администратора
 func (s *Service) CreateUser(ctx context.Context, req CreateUserRequest, accessToken string) (*User, error) {
 	if !s.Ready() {
 		return nil, ErrNotConfigured
@@ -60,7 +60,7 @@ func (s *Service) CreateUser(ctx context.Context, req CreateUserRequest, accessT
 	return userFromProto(resp.GetUser()), nil
 }
 
-// UpdateUser обновляет пользователя через IAM. Доступно администратору доступа или суперадмину.
+// UpdateUser обновляет пользователя с правами администратора
 func (s *Service) UpdateUser(ctx context.Context, req UpdateUserRequest, accessToken string) (*User, error) {
 	if !s.Ready() {
 		return nil, ErrNotConfigured
@@ -101,7 +101,7 @@ func (s *Service) UpdateUser(ctx context.Context, req UpdateUserRequest, accessT
 	return userFromProto(resp.GetUser()), nil
 }
 
-// ListRoles возвращает фиксированные роли IAM через gateway.
+// ListRoles возвращает фиксированные роли IAM через gateway
 func (s *Service) ListRoles(ctx context.Context, accessToken string) ([]Role, error) {
 	if !s.Ready() {
 		return nil, ErrNotConfigured
@@ -131,7 +131,7 @@ func (s *Service) ListRoles(ctx context.Context, accessToken string) ([]Role, er
 	return rolesFromProto(resp.GetRoles()), nil
 }
 
-// SetUserRoles полностью заменяет роли пользователя через IAM.
+// SetUserRoles полностью заменяет роли пользователя через IAM
 func (s *Service) SetUserRoles(ctx context.Context, userID string, roleCodes []string, accessToken string) (*UserRolesResult, error) {
 	if !s.Ready() {
 		return nil, ErrNotConfigured
@@ -173,7 +173,7 @@ func (s *Service) SetUserRoles(ctx context.Context, userID string, roleCodes []s
 	}, nil
 }
 
-// ReplaceUserAttributes полностью заменяет attributes пользователя через IAM.
+// ReplaceUserAttributes полностью заменяет атрибуты пользователя через IAM
 func (s *Service) ReplaceUserAttributes(ctx context.Context, userID string, attrs map[string]any, accessToken string) (*UserAttributesResult, error) {
 	if !s.Ready() {
 		return nil, ErrNotConfigured
@@ -217,6 +217,7 @@ func (s *Service) ReplaceUserAttributes(ctx context.Context, userID string, attr
 	if resp.GetAttributes() != nil {
 		out = resp.GetAttributes().AsMap()
 	}
+
 	return &UserAttributesResult{UserID: resp.GetUserId(), Attributes: out, CtxVer: resp.GetCtxVer()}, nil
 }
 
@@ -225,6 +226,7 @@ func mapIAMError(err error, operation string) error {
 	if mapped != nil {
 		return mapped
 	}
+
 	return fmt.Errorf("%s: %w", operation, err)
 }
 
@@ -236,6 +238,7 @@ func userFromProto(user *iamv1.User) *User {
 	if user.GetAttributes() != nil {
 		attrs = user.GetAttributes().AsMap()
 	}
+
 	return &User{
 		ID:         user.GetId(),
 		Login:      user.GetLogin(),
@@ -262,5 +265,6 @@ func rolesFromProto(roles []*iamv1.Role) []Role {
 			CreatedAt:   role.GetCreatedAt(),
 		})
 	}
+
 	return out
 }

@@ -61,10 +61,11 @@ func NewUserHandlers(uc *usecase.Service, logger *slog.Logger) *UserHandlers {
 	if logger == nil {
 		logger = slog.Default()
 	}
+
 	return &UserHandlers{uc: uc, logger: logger}
 }
 
-// CreateUser создаёт пользователя через gateway.
+// CreateUser создаёт пользователя через gateway
 func (h *UserHandlers) CreateUser(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
 		writeJSONError(w, http.StatusMethodNotAllowed, "method not allowed")
@@ -95,13 +96,14 @@ func (h *UserHandlers) CreateUser(w http.ResponseWriter, r *http.Request) {
 			"error", err,
 		)
 		writeUsecaseError(w, err)
+
 		return
 	}
 
 	writeJSON(w, http.StatusOK, createUserResponse{User: user})
 }
 
-// ListRoles возвращает роли IAM через gateway.
+// ListRoles возвращает роли IAM через gateway
 func (h *UserHandlers) ListRoles(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodGet {
 		writeJSONError(w, http.StatusMethodNotAllowed, "method not allowed")
@@ -119,13 +121,14 @@ func (h *UserHandlers) ListRoles(w http.ResponseWriter, r *http.Request) {
 			"error", err,
 		)
 		writeUsecaseError(w, err)
+
 		return
 	}
 
 	writeJSON(w, http.StatusOK, rolesResponse{Roles: roles})
 }
 
-// Users обрабатывает административные операции над существующими пользователями.
+// Users обрабатывает административные операции над существующими пользователями
 func (h *UserHandlers) Users(w http.ResponseWriter, r *http.Request) {
 	if h.uc == nil {
 		writeJSONError(w, http.StatusServiceUnavailable, "service not configured")
@@ -170,6 +173,7 @@ func (h *UserHandlers) updateUser(w http.ResponseWriter, r *http.Request, userID
 			"error", err,
 		)
 		writeUsecaseError(w, err)
+
 		return
 	}
 
@@ -191,6 +195,7 @@ func (h *UserHandlers) setUserRoles(w http.ResponseWriter, r *http.Request, user
 			"error", err,
 		)
 		writeUsecaseError(w, err)
+
 		return
 	}
 
@@ -216,6 +221,7 @@ func (h *UserHandlers) replaceUserAttributes(w http.ResponseWriter, r *http.Requ
 			"error", err,
 		)
 		writeUsecaseError(w, err)
+
 		return
 	}
 
@@ -243,6 +249,7 @@ func parseAdminUserPath(path string) (string, string, bool) {
 	if len(parts) == 1 {
 		return parts[0], "", true
 	}
+
 	return parts[0], strings.Trim(parts[1], "/"), true
 }
 
@@ -254,6 +261,7 @@ func extractAccessToken(r *http.Request) string {
 	if strings.HasPrefix(strings.ToLower(value), "bearer ") {
 		return strings.TrimSpace(value[7:])
 	}
+
 	return value
 }
 

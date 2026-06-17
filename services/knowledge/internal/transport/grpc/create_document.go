@@ -64,6 +64,7 @@ func (s *KnowledgeServiceServerImpl) CreateDocumentStream(stream pb.KnowledgeSer
 			if res.err != nil {
 				return toGRPCError(res.err)
 			}
+
 			return toGRPCError(recvErr)
 		}
 
@@ -77,6 +78,7 @@ func (s *KnowledgeServiceServerImpl) CreateDocumentStream(stream pb.KnowledgeSer
 			if res.err != nil {
 				return toGRPCError(res.err)
 			}
+
 			return toGRPCError(writeErr)
 		}
 	}

@@ -31,10 +31,11 @@ func NewDocumentHandlers(uc *usecase.Service, logger *slog.Logger) *DocumentHand
 	if logger == nil {
 		logger = slog.Default()
 	}
+
 	return &DocumentHandlers{uc: uc, logger: logger}
 }
 
-// Documents перехватывает административные PATCH-операции над документами.
+// Documents перехватывает административные PATCH-операции над документами
 func (h *DocumentHandlers) Documents(gateway http.Handler) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		documentUUID, tail, ok := parseDocumentPath(r.URL.Path)
@@ -79,6 +80,7 @@ func (h *DocumentHandlers) updateDocument(w http.ResponseWriter, r *http.Request
 			"error", err,
 		)
 		writeUsecaseError(w, err)
+
 		return
 	}
 
@@ -103,6 +105,7 @@ func (h *DocumentHandlers) updateDocumentAttributes(w http.ResponseWriter, r *ht
 			"error", err,
 		)
 		writeUsecaseError(w, err)
+
 		return
 	}
 
@@ -126,5 +129,6 @@ func parseDocumentPath(path string) (string, string, bool) {
 	if len(parts) == 1 {
 		return parts[0], "", true
 	}
+
 	return parts[0], strings.Trim(parts[1], "/"), true
 }

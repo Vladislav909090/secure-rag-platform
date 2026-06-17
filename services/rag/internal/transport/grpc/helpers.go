@@ -14,6 +14,7 @@ func (s *Server) requireUC() error {
 	if s.uc == nil || !s.uc.Ready() {
 		return status.Error(codes.Unavailable, "service not configured")
 	}
+
 	return nil
 }
 
@@ -30,6 +31,7 @@ func toGRPCError(err error) error {
 			"component", "rag.grpc",
 			"error", err,
 		)
+
 		return status.Error(codes.Internal, "internal error")
 	}
 }

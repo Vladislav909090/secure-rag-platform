@@ -12,12 +12,12 @@ import (
 	"github.com/jackc/pgx/v5/pgconn"
 )
 
-// ListUsers возвращает всех пользователей с ролями и атрибутами.
+// ListUsers возвращает всех пользователей с ролями и атрибутами
 func (uc *IAMUsecase) ListUsers(ctx context.Context) ([]*model.UserView, error) {
 	return uc.repo.ListUserViews(ctx)
 }
 
-// GetUser возвращает одного пользователя с ролями и атрибутами.
+// GetUser возвращает одного пользователя с ролями и атрибутами
 func (uc *IAMUsecase) GetUser(ctx context.Context, userID string) (*model.UserView, error) {
 	userID = strings.TrimSpace(userID)
 	if userID == "" {
@@ -35,7 +35,7 @@ func (uc *IAMUsecase) GetUser(ctx context.Context, userID string) (*model.UserVi
 	return view, nil
 }
 
-// CreateUser создает пользователя, атрибуты и назначения ролей.
+// CreateUser создает пользователя, атрибуты и назначения ролей
 func (uc *IAMUsecase) CreateUser(ctx context.Context, input CreateUserInput) (*model.UserView, error) {
 	login := strings.TrimSpace(input.Login)
 	if login == "" {
@@ -76,6 +76,7 @@ func (uc *IAMUsecase) CreateUser(ctx context.Context, input CreateUserInput) (*m
 		if errors.Is(err, repository.ErrInvalidRoleCode) {
 			return nil, ErrInvalidArgument
 		}
+
 		return nil, fmt.Errorf("create user: %w", err)
 	}
 
@@ -88,10 +89,11 @@ func (uc *IAMUsecase) CreateUser(ctx context.Context, input CreateUserInput) (*m
 	}
 
 	uc.InvalidateSubjectContextCache(ctx, created.ID)
+
 	return view, nil
 }
 
-// UpdateUser обновляет поля пользователя и увеличивает версию контекста.
+// UpdateUser обновляет поля пользователя и увеличивает версию контекста
 func (uc *IAMUsecase) UpdateUser(ctx context.Context, input UpdateUserInput) (*model.UserView, error) {
 	input.UserID = strings.TrimSpace(input.UserID)
 	if input.UserID == "" {
@@ -134,6 +136,7 @@ func (uc *IAMUsecase) UpdateUser(ctx context.Context, input UpdateUserInput) (*m
 		if errors.As(err, &pgErr) && pgErr.Code == "23505" {
 			return nil, ErrUserExists
 		}
+
 		return nil, err
 	}
 

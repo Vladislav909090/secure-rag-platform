@@ -1,4 +1,4 @@
-// Package docs предоставляет Swagger UI для отображения OpenAPI-спецификации.
+// Пакет docs предоставляет Swagger UI для отображения OpenAPI-спецификации
 package docs
 
 import (
@@ -26,7 +26,7 @@ const uiTemplate = `<!DOCTYPE html>
   <script>
 	const spec = JSON.parse(%s);
 
-	// Добавляем Bearer auth schema для сгенерированных спецификаций без securityDefinitions.
+	// Добавляем схему Bearer-аутентификации для спецификаций без securityDefinitions
 	if (!spec.securityDefinitions) {
 	  spec.securityDefinitions = {};
 	}
@@ -290,6 +290,7 @@ func jsonOperation(summary string, operationID string, tag string, params []any,
 	if params == nil {
 		params = []any{}
 	}
+
 	return map[string]any{
 		"summary":     summary,
 		"operationId": operationID,
@@ -316,7 +317,7 @@ func bodyParam(schema map[string]any) map[string]any {
 	return map[string]any{"name": "body", "in": "body", "required": true, "schema": schema}
 }
 
-// RegisterAt регистрирует Swagger UI по заданному пути.
+// RegisterAt регистрирует Swagger UI по заданному пути
 func RegisterAt(mux *http.ServeMux, serviceName string, docsPath string) {
 	specJSON, err := loadSpecJSON()
 	if err != nil {
@@ -324,6 +325,7 @@ func RegisterAt(mux *http.ServeMux, serviceName string, docsPath string) {
 			"component", "gateway.docs",
 			"error", err,
 		)
+
 		return
 	}
 

@@ -9,17 +9,17 @@ import (
 
 const maxIndexedEmbeddingDimension = 2000
 
-// Repo обеспечивает доступ к векторному хранилищу.
+// Repo обеспечивает доступ к векторному хранилищу
 type Repo struct {
 	pool *pgxpool.Pool
 }
 
-// NewRepo создаёт новый репозиторий.
+// NewRepo создаёт новый репозиторий
 func NewRepo(pool *pgxpool.Pool) *Repo {
 	return &Repo{pool: pool}
 }
 
-// EnsureEmbeddingIndex создает HNSW-индекс для выбранной размерности embeddings.
+// EnsureEmbeddingIndex создает HNSW-индекс для выбранной размерности embeddings
 func (r *Repo) EnsureEmbeddingIndex(ctx context.Context, dimension int32) error {
 	if dimension <= 0 {
 		return fmt.Errorf("indexed embedding dimension is required")
@@ -39,5 +39,6 @@ func (r *Repo) EnsureEmbeddingIndex(ctx context.Context, dimension int32) error 
 	if _, err := r.pool.Exec(ctx, query); err != nil {
 		return fmt.Errorf("create embedding hnsw index: %w", err)
 	}
+
 	return nil
 }

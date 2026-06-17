@@ -92,6 +92,7 @@ func valueOrDefault(value string, fallback string) string {
 	if value == "" {
 		return fallback
 	}
+
 	return value
 }
 
@@ -105,6 +106,7 @@ func connectPostgres(ctx context.Context) (*pgxpool.Pool, error) {
 	if err != nil {
 		return nil, errors.New("failed to connect to PostgreSQL: " + err.Error())
 	}
+
 	return pool, nil
 }
 
@@ -126,11 +128,13 @@ func connectRedis(ctx context.Context, logger *slog.Logger) *redis.Client {
 			"error", err,
 		)
 		_ = client.Close()
+
 		return nil
 	}
 
 	closer.Add(func() { _ = client.Close() })
 	logger.InfoContext(ctx, "Redis подключен", "component", "iam.cache", "addr", redisAddr)
+
 	return client
 }
 
@@ -139,6 +143,7 @@ func usecaseConfig() usecase.Config {
 	ucCfg.JWTSecret = config.GetValue(config.JWTSecret)
 	ucCfg.JWTIssuer = config.GetValue(config.JWTIssuer)
 	ucCfg.JWTAudience = config.GetValue(config.JWTAudience)
+
 	return ucCfg
 }
 
@@ -163,6 +168,7 @@ func bootstrapSuperAdmin(ctx context.Context, uc *usecase.IAMUsecase, logger *sl
 			"login", bootstrapLogin,
 			"password", bootstrapPassword,
 		)
+
 		return nil
 	}
 
@@ -170,6 +176,7 @@ func bootstrapSuperAdmin(ctx context.Context, uc *usecase.IAMUsecase, logger *sl
 		"component", "iam.bootstrap",
 		"login", bootstrapLogin,
 	)
+
 	return nil
 }
 
@@ -194,6 +201,7 @@ func newGRPCServer(servers serverSet) *grpc.Server {
 	iamv1.RegisterAttributeServiceServer(grpcServer, servers.attribute)
 	iamv1.RegisterSessionServiceServer(grpcServer, servers.session)
 	iamv1.RegisterInternalIAMServiceServer(grpcServer, servers.internalIAM)
+
 	return grpcServer
 }
 
@@ -240,6 +248,7 @@ func registerRunners(app *application.App, grpcServer *grpc.Server, grpcLis net.
 		if err := httpServer.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
 			return err
 		}
+
 		return nil
 	})
 

@@ -1,4 +1,4 @@
-// Package docs предоставляет веб-интерфейс Swagger для отображения OpenAPI-спецификации.
+// Пакет docs предоставляет веб-интерфейс Swagger для отображения OpenAPI-спецификации
 package docs
 
 import (
@@ -25,7 +25,7 @@ const uiTemplate = `<!DOCTYPE html>
   <script>
 	const spec = JSON.parse(%s);
 
-	// Добавляем Bearer auth schema для сгенерированных спецификаций без securityDefinitions.
+	// Добавляем схему Bearer-аутентификации для спецификаций без securityDefinitions
 	if (!spec.securityDefinitions) {
 	  spec.securityDefinitions = {};
 	}
@@ -99,7 +99,7 @@ func loadSpecJSON() ([]byte, error) {
 	return specJSON, nil
 }
 
-// RegisterAt регистрирует интерфейс Swagger по заданному пути.
+// RegisterAt регистрирует интерфейс Swagger по заданному пути
 func RegisterAt(mux *http.ServeMux, serviceName string, docsPath string) {
 	specJSON, err := loadSpecJSON()
 	if err != nil {
@@ -107,6 +107,7 @@ func RegisterAt(mux *http.ServeMux, serviceName string, docsPath string) {
 			"component", "ai-inference.docs",
 			"error", err,
 		)
+
 		return
 	}
 

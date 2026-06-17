@@ -44,10 +44,11 @@ func New(uc *usecase.Service, logger *slog.Logger) *UploadHandlers {
 	if logger == nil {
 		logger = slog.Default()
 	}
+
 	return &UploadHandlers{uc: uc, logger: logger, chunkSize: defaultChunkSize}
 }
 
-// CreateDocument перехватывает multipart-загрузку документа через gateway.
+// CreateDocument перехватывает multipart-загрузку документа через gateway
 func (h *UploadHandlers) CreateDocument(gateway http.Handler) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodPost || r.URL.Path != gatewayDocumentsPath {
@@ -125,6 +126,7 @@ func (h *UploadHandlers) processCreateDocumentPart(
 			return usecase.ErrInvalidRequest
 		}
 		state.title = strings.TrimSpace(string(value))
+
 		return nil
 	case "description":
 		value, err := readLimitedPart(part, 1<<20)
@@ -133,6 +135,7 @@ func (h *UploadHandlers) processCreateDocumentPart(
 		}
 		state.hasDescription = true
 		state.description = string(value)
+
 		return nil
 	case "attributes":
 		value, err := readLimitedPart(part, 4<<20)
@@ -144,6 +147,7 @@ func (h *UploadHandlers) processCreateDocumentPart(
 			return usecase.ErrInvalidRequest
 		}
 		state.attrs = attrs
+
 		return nil
 	case "file":
 		return h.sendCreateDocumentFilePart(part, stream, state)
@@ -196,6 +200,7 @@ func (h *UploadHandlers) sendCreateDocumentFilePart(
 	}
 
 	state.fileSent = true
+
 	return nil
 }
 
@@ -250,6 +255,7 @@ func writeProtoJSON(w http.ResponseWriter, status int, msg any) error {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(status)
 	_, _ = w.Write(b)
+
 	return nil
 }
 
@@ -294,6 +300,7 @@ func extractAccessToken(r *http.Request) string {
 	if strings.HasPrefix(strings.ToLower(value), "bearer ") {
 		return strings.TrimSpace(value[7:])
 	}
+
 	return value
 }
 
@@ -302,6 +309,7 @@ func isMultipart(contentType string) bool {
 	if err != nil {
 		return false
 	}
+
 	return mediatype == "multipart/form-data"
 }
 
@@ -310,5 +318,6 @@ func extension(fileName string) string {
 	if idx < 0 || idx+1 >= len(fileName) {
 		return ""
 	}
+
 	return fileName[idx+1:]
 }

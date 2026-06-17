@@ -26,6 +26,7 @@ func NewOPAAuthorizer(baseURL string) *OPAAuthorizer {
 	if baseURL == "" {
 		return nil
 	}
+
 	return &OPAAuthorizer{
 		endpoint:   baseURL + "/v1/data/secure_rag/document/allow",
 		httpClient: &http.Client{Timeout: 5 * time.Second},
@@ -94,5 +95,6 @@ func (a *OPAAuthorizer) AllowDocument(
 	if err := json.NewDecoder(resp.Body).Decode(&out); err != nil {
 		return false, fmt.Errorf("decode opa response: %w", err)
 	}
+
 	return out.Result, nil
 }

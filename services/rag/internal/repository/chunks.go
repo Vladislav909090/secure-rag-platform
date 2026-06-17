@@ -8,7 +8,7 @@ import (
 	"github.com/pgvector/pgvector-go"
 )
 
-// Chunk представляет сегмент документа с эмбеддингом.
+// Chunk представляет сегмент документа с эмбеддингом
 type Chunk struct {
 	DocumentUUID       string
 	ChunkIndex         int32
@@ -18,7 +18,7 @@ type Chunk struct {
 	EmbeddingDimension int32
 }
 
-// ChunkMatch возвращается при поиске по вектору.
+// ChunkMatch возвращается при поиске по вектору
 type ChunkMatch struct {
 	DocumentUUID string
 	ChunkIndex   int32
@@ -26,14 +26,15 @@ type ChunkMatch struct {
 	Distance     float32
 }
 
-// DeleteChunks удаляет все сегменты документа.
+// DeleteChunks удаляет все сегменты документа
 func (r *Repo) DeleteChunks(ctx context.Context, documentUUID string) error {
 	query := `DELETE FROM rag_chunks WHERE document_uuid = $1`
 	_, err := r.pool.Exec(ctx, query, documentUUID)
+
 	return err
 }
 
-// InsertChunks добавляет набор сегментов.
+// InsertChunks добавляет набор сегментов
 func (r *Repo) InsertChunks(ctx context.Context, chunks []Chunk) error {
 	if len(chunks) == 0 {
 		return nil
@@ -93,10 +94,11 @@ func (r *Repo) InsertChunks(ctx context.Context, chunks []Chunk) error {
 	if err := tx.Commit(ctx); err != nil {
 		return fmt.Errorf("commit tx: %w", err)
 	}
+
 	return nil
 }
 
-// SearchSimilar ищет ближайшие сегменты по вектору.
+// SearchSimilar ищет ближайшие сегменты по вектору
 func (r *Repo) SearchSimilar(
 	ctx context.Context,
 	vector pgvector.Vector,

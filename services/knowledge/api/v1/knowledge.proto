@@ -8,54 +8,54 @@ import "google/api/annotations.proto";
 import "google/api/httpbody.proto";
 import "google/protobuf/struct.proto";
 
-// KnowledgeService — управление базой знаний.
+// KnowledgeService — управление базой знаний
 service KnowledgeService {
-  // Health проверяет работоспособность knowledge.
+  // Health проверяет работоспособность knowledge
   rpc Health(HealthRequest) returns (HealthResponse) {
     option (google.api.http) = {
       get: "/knowledge/api/health"
     };
   }
 
-  // CreateDocumentStream создаёт документ с файлом через client-streaming.
+  // CreateDocumentStream создаёт документ с файлом через клиентский поток
   rpc CreateDocumentStream(stream CreateDocumentStreamRequest) returns (CreateDocumentResponse);
 
-  // DeleteDocument выполняет soft delete документа.
+  // DeleteDocument мягко удаляет документ
   rpc DeleteDocument(DeleteDocumentRequest) returns (DeleteDocumentResponse) {
     option (google.api.http) = {
       delete: "/knowledge/api/v1/documents/{document_uuid}"
     };
   }
 
-  // RestoreDocument восстанавливает ранее удалённый документ.
+  // RestoreDocument восстанавливает ранее удалённый документ
   rpc RestoreDocument(RestoreDocumentRequest) returns (RestoreDocumentResponse) {
     option (google.api.http) = {
       post: "/knowledge/api/v1/documents/{document_uuid}/restore"
     };
   }
 
-  // ListDocuments возвращает список активных документов.
+  // ListDocuments возвращает список активных документов
   rpc ListDocuments(ListDocumentsRequest) returns (ListDocumentsResponse) {
     option (google.api.http) = {
       get: "/knowledge/api/v1/documents"
     };
   }
 
-  // GetDocument возвращает документ.
+  // GetDocument возвращает документ
   rpc GetDocument(GetDocumentRequest) returns (GetDocumentResponse) {
     option (google.api.http) = {
       get: "/knowledge/api/v1/documents/{document_uuid}"
     };
   }
 
-  // DownloadFile скачивает файл документа.
+  // DownloadFile скачивает файл документа
   rpc DownloadFile(DownloadFileRequest) returns (google.api.HttpBody) {
     option (google.api.http) = {
       get: "/knowledge/api/v1/documents/{document_uuid}/file"
     };
   }
 
-  // UpdateDocument обновляет title и/или description.
+  // UpdateDocument обновляет заголовок и/или описание
   rpc UpdateDocument(UpdateDocumentRequest) returns (UpdateDocumentResponse) {
     option (google.api.http) = {
       patch: "/knowledge/api/v1/documents/{document_uuid}"
@@ -63,7 +63,7 @@ service KnowledgeService {
     };
   }
 
-  // UpdateDocumentAttributes заменяет attributes документа.
+  // UpdateDocumentAttributes заменяет атрибуты документа
   rpc UpdateDocumentAttributes(UpdateDocumentAttributesRequest) returns (UpdateDocumentAttributesResponse) {
     option (google.api.http) = {
       patch: "/knowledge/api/v1/documents/{document_uuid}/attributes"
@@ -71,7 +71,7 @@ service KnowledgeService {
     };
   }
 
-  // ReindexDocument помечает документ для повторной индексации.
+  // ReindexDocument помечает документ для повторной индексации
   rpc ReindexDocument(ReindexDocumentRequest) returns (ReindexDocumentResponse) {
     option (google.api.http) = {
       post: "/knowledge/api/v1/documents/{document_uuid}/reindex"
@@ -79,15 +79,11 @@ service KnowledgeService {
   }
 }
 
-// --- Health ---
-
 message HealthRequest {}
 
 message HealthResponse {
   string status = 1;
 }
-
-// --- Domain ---
 
 message Document {
   int64 id = 1;
@@ -107,8 +103,6 @@ message Document {
   string deleted_at = 15;
 }
 
-// --- Delete ---
-
 message DeleteDocumentRequest {
   string document_uuid = 1;
 }
@@ -119,8 +113,6 @@ message DeleteDocumentResponse {
   string deleted_at = 3;
 }
 
-// --- Restore ---
-
 message RestoreDocumentRequest {
   string document_uuid = 1;
 }
@@ -128,8 +120,6 @@ message RestoreDocumentRequest {
 message RestoreDocumentResponse {
   Document document = 1;
 }
-
-// --- List ---
 
 message ListDocumentsRequest {}
 
@@ -141,8 +131,6 @@ message ListDocumentsResponse {
   repeated DocumentItem items = 1;
 }
 
-// --- Get ---
-
 message GetDocumentRequest {
   string document_uuid = 1;
 }
@@ -150,8 +138,6 @@ message GetDocumentRequest {
 message GetDocumentResponse {
   Document document = 1;
 }
-
-// --- Update ---
 
 message UpdateDocumentRequest {
   string document_uuid = 1;
@@ -163,8 +149,6 @@ message UpdateDocumentResponse {
   Document document = 1;
 }
 
-// --- Update Attributes ---
-
 message UpdateDocumentAttributesRequest {
   string document_uuid = 1;
   google.protobuf.Struct attributes = 2;
@@ -174,8 +158,6 @@ message UpdateDocumentAttributesResponse {
   Document document = 1;
 }
 
-// --- Reindex ---
-
 message ReindexDocumentRequest {
   string document_uuid = 1;
 }
@@ -184,8 +166,6 @@ message ReindexDocumentResponse {
   string document_uuid = 1;
   string index_status = 2;
 }
-
-// --- Create Document Stream ---
 
 message CreateDocumentMeta {
   string title = 1;
@@ -209,8 +189,6 @@ message CreateDocumentStreamRequest {
 message CreateDocumentResponse {
   Document document = 1;
 }
-
-// --- Download File ---
 
 message DownloadFileRequest {
   string document_uuid = 1;

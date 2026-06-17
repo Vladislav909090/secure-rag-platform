@@ -19,7 +19,7 @@ func isValidationFailure(err error) bool {
 		errors.Is(err, ErrNotFound)
 }
 
-// ValidateAccessToken проверяет токен и при успешной валидации возвращает контекст субъекта.
+// ValidateAccessToken проверяет токен и при успешной валидации возвращает контекст субъекта
 func (uc *IAMUsecase) ValidateAccessToken(ctx context.Context, accessToken string) (*ValidateTokenResult, error) {
 	accessToken = strings.TrimSpace(accessToken)
 	if accessToken == "" {
@@ -31,6 +31,7 @@ func (uc *IAMUsecase) ValidateAccessToken(ctx context.Context, accessToken strin
 		if isValidationFailure(err) {
 			return &ValidateTokenResult{Valid: false, Reason: err.Error()}, nil
 		}
+
 		return nil, err
 	}
 
@@ -43,7 +44,7 @@ func (uc *IAMUsecase) ValidateAccessToken(ctx context.Context, accessToken strin
 	}, nil
 }
 
-// GetSubjectContextByUserID возвращает нормализованный контекст для внутренних вызовов.
+// GetSubjectContextByUserID возвращает нормализованный контекст для внутренних вызовов
 func (uc *IAMUsecase) GetSubjectContextByUserID(ctx context.Context, userID string) (*model.SubjectContext, error) {
 	return uc.GetSubjectContext(ctx, userID)
 }

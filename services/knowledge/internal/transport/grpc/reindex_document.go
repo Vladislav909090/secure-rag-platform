@@ -17,6 +17,7 @@ func (s *KnowledgeServiceServerImpl) ReindexDocument(
 	if err != nil {
 		return nil, toGRPCError(err)
 	}
+
 	return &pb.ReindexDocumentResponse{
 		DocumentUuid: result.DocumentUUID,
 		IndexStatus:  result.IndexStatus,

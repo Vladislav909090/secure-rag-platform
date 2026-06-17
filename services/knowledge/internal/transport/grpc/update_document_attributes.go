@@ -23,5 +23,6 @@ func (s *KnowledgeServiceServerImpl) UpdateDocumentAttributes(
 	if err != nil {
 		return nil, toGRPCError(err)
 	}
+
 	return &pb.UpdateDocumentAttributesResponse{Document: documentToProto(doc)}, nil
 }

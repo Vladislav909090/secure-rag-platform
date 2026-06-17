@@ -5,7 +5,7 @@ import (
 	"secure-rag-platform/services/gateway/internal/usecase"
 )
 
-// Server реализует gRPC-сервисы Gateway.
+// Server реализует gRPC-сервисы Gateway
 type Server struct {
 	pb.UnimplementedGatewayServiceServer
 	pb.UnimplementedGatewayAuthServiceServer
@@ -14,7 +14,7 @@ type Server struct {
 	uc *usecase.Service
 }
 
-// NewServer создаёт новый gRPC сервер gateway.
+// NewServer создаёт новый gRPC сервер gateway
 func NewServer(uc *usecase.Service) *Server {
 	return &Server{uc: uc}
 }

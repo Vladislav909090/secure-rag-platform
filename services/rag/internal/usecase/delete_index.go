@@ -6,7 +6,7 @@ import (
 	"strings"
 )
 
-// DeleteDocumentIndex удаляет все чанки документа из векторного хранилища.
+// DeleteDocumentIndex удаляет все чанки документа из векторного хранилища
 func (s *Service) DeleteDocumentIndex(ctx context.Context, documentUUID string) error {
 	if !s.Ready() {
 		return ErrNotConfigured
@@ -25,5 +25,6 @@ func (s *Service) DeleteDocumentIndex(ctx context.Context, documentUUID string) 
 		"component", "rag.index",
 		"document_uuid", documentUUID,
 	)
+
 	return nil
 }

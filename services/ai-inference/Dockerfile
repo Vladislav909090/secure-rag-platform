@@ -12,8 +12,6 @@ COPY services/ai-inference ./services/ai-inference
 WORKDIR /repo/services/ai-inference
 RUN CGO_ENABLED=0 GOOS=linux go build -o /bin/ai-inference ./cmd/ai-inference
 
-# ---
-
 FROM alpine:3.21
 
 RUN apk add --no-cache ca-certificates

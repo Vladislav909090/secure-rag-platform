@@ -18,7 +18,7 @@ type Defaults struct {
 	IndexedEmbeddingDim  int32
 }
 
-// Service содержит бизнес-логику RAG.
+// Service содержит бизнес-логику RAG
 type Service struct {
 	repo       *repository.Repo
 	storage    *storage.S3Storage
@@ -29,7 +29,7 @@ type Service struct {
 	logger     *slog.Logger
 }
 
-// NewService создаёт RAG usecase.
+// NewService создаёт сервисный слой RAG
 func NewService(
 	repo *repository.Repo,
 	storage *storage.S3Storage,
@@ -42,6 +42,7 @@ func NewService(
 	if logger == nil {
 		logger = slog.Default()
 	}
+
 	return &Service{
 		repo:       repo,
 		storage:    storage,
@@ -53,7 +54,7 @@ func NewService(
 	}
 }
 
-// Ready проверяет минимальную конфигурацию.
+// Ready проверяет минимальную конфигурацию
 func (s *Service) Ready() bool {
 	return s != nil &&
 		s.repo != nil &&

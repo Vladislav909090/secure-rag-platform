@@ -6,7 +6,7 @@ import (
 	"strings"
 	"time"
 
-	pb "secure-rag-platform/services/knowledge/gen/v1"
+	pb "secure-rag-platform/api/gen/go/knowledge/v1"
 	"secure-rag-platform/services/knowledge/internal/model"
 	"secure-rag-platform/services/knowledge/internal/usecase"
 
@@ -19,6 +19,7 @@ func (s *KnowledgeServiceServerImpl) requireUC() error {
 	if s.uc == nil {
 		return status.Error(codes.Unavailable, "service not configured")
 	}
+
 	return nil
 }
 
@@ -46,6 +47,7 @@ func documentToProto(doc *model.Document) *pb.Document {
 	if doc.Attributes != nil {
 		d.Attributes, _ = structpb.NewStruct(doc.Attributes)
 	}
+
 	return d
 }
 
@@ -68,6 +70,7 @@ func toGRPCError(err error) error {
 			"component", "knowledge.grpc",
 			"error", err,
 		)
+
 		return status.Error(codes.Internal, "internal error")
 	}
 }

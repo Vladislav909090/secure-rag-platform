@@ -1,53 +1,35 @@
-# If you prefer the allow list template instead of the deny list, see community template:
-# https://github.com/github/gitignore/blob/main/community/Golang/Go.AllowList.gitignore
-#
-# Binaries for programs and plugins
+# Бинарные файлы программ и плагинов
 *.exe
 *.exe~
 *.dll
 *.so
 *.dylib
 
-# Test binary, built with `go test -c`
+# Тестовые бинарники, собранные через `go test -c`
 *.test
 
-# Code coverage profiles and other test artifacts
+# Профили покрытия и другие тестовые артефакты
 *.out
 coverage.*
 *.coverprofile
 profile.cov
 
-# Dependency directories (remove the comment below to include it)
+# Каталоги зависимостей (раскомментировать при необходимости)
 # vendor/
 
-# Go workspace file
+# Файлы Go workspace
 go.work
 go.work.sum
 
-# Local linter cache
+# Локальный кеш линтера
 .golangci/
 .golangci-cache/
 .golangci-cache-*/
 .gocache/
 
-# env file
+# Файлы окружения
 .env
 
-# Editor/IDE
+# Редакторы и IDE
 .idea/
 .vscode/
-
-# Generated proto code (regenerate with make proto:gen)
-services/*/gen/*
-
-# Downloaded third-party protos
-third_party/google/
-
-# postman files
-postman
-
-# test data
-demo_docs
-
-# ai-inference local config
-services/ai-inference/config/models.json

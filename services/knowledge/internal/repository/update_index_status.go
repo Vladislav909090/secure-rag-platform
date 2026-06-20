@@ -2,7 +2,7 @@ package repository
 
 import "context"
 
-// UpdateIndexStatus обновляет статус индексации документа.
+// UpdateIndexStatus обновляет статус индексации документа
 func (r *Repo) UpdateIndexStatus(ctx context.Context, docID int64, status string) error {
 	query := `
 		UPDATE documents

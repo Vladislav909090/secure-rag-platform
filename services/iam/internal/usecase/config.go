@@ -2,7 +2,7 @@ package usecase
 
 import "time"
 
-// Config задает бизнес-настройки IAM.
+// Config задает бизнес-настройки IAM
 type Config struct {
 	JWTSecret         string
 	JWTIssuer         string
@@ -16,7 +16,7 @@ type Config struct {
 	RefreshRateWindow time.Duration
 }
 
-// DefaultConfig возвращает безопасные значения по умолчанию для рабочих настроек IAM.
+// DefaultConfig возвращает безопасные значения по умолчанию для рабочих настроек IAM
 func DefaultConfig() Config {
 	return Config{
 		JWTIssuer:         "secure-rag-iam",

@@ -1,0 +1,24 @@
+networks:
+  ai-inference-net:
+    driver: bridge
+  ai-inference-egress-net:
+    driver: bridge
+
+services:
+  ai-inference:
+    build:
+      context: ../..
+      dockerfile: services/ai-inference/Dockerfile
+    environment:
+      HTTP_PORT: "8084"
+      GRPC_PORT: "9094"
+      AI_INFERENCE_PROVIDER_TIMEOUT: 180s
+    volumes:
+      - ./config/models.json:/app/config/models.json:ro
+    expose:
+      - "8084"
+      - "9094"
+    networks:
+      - ai-inference-net
+      - ai-inference-egress-net
+

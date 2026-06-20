@@ -8,7 +8,7 @@ import (
 	"github.com/pgvector/pgvector-go"
 )
 
-// Chunk представляет сегмент документа с эмбеддингом.
+// Chunk представляет сегмент документа с эмбеддингом
 type Chunk struct {
 	DocumentUUID       string
 	ChunkIndex         int32
@@ -18,7 +18,7 @@ type Chunk struct {
 	EmbeddingDimension int32
 }
 
-// ChunkMatch возвращается при поиске по вектору.
+// ChunkMatch возвращается при поиске по вектору
 type ChunkMatch struct {
 	DocumentUUID string
 	ChunkIndex   int32
@@ -26,14 +26,15 @@ type ChunkMatch struct {
 	Distance     float32
 }
 
-// DeleteChunks удаляет все сегменты документа.
+// DeleteChunks удаляет все сегменты документа
 func (r *Repo) DeleteChunks(ctx context.Context, documentUUID string) error {
 	query := `DELETE FROM rag_chunks WHERE document_uuid = $1`
 	_, err := r.pool.Exec(ctx, query, documentUUID)
+
 	return err
 }
 
-// InsertChunks добавляет набор сегментов.
+// InsertChunks добавляет набор сегментов
 func (r *Repo) InsertChunks(ctx context.Context, chunks []Chunk) error {
 	if len(chunks) == 0 {
 		return nil
@@ -93,14 +94,17 @@ func (r *Repo) InsertChunks(ctx context.Context, chunks []Chunk) error {
 	if err := tx.Commit(ctx); err != nil {
 		return fmt.Errorf("commit tx: %w", err)
 	}
+
 	return nil
 }
 
-// SearchSimilar ищет ближайшие сегменты по вектору.
+// SearchSimilar ищет ближайшие сегменты по вектору
 func (r *Repo) SearchSimilar(
 	ctx context.Context,
 	vector pgvector.Vector,
 	embeddingModel string,
+	embeddingDimension int32,
+	indexedDimension int32,
 	topK int32,
 	documentUUIDs []string,
 ) ([]ChunkMatch, error) {
@@ -115,23 +119,41 @@ func (r *Repo) SearchSimilar(
 	if embeddingModel == "" {
 		return nil, fmt.Errorf("embedding model is required")
 	}
+	if embeddingDimension <= 0 {
+		return nil, fmt.Errorf("embedding dimension is required")
+	}
 
-	args := []any{vector, embeddingModel, topK}
+	distanceExpr := "e.embedding <=> $1"
+	dimensionFilter := "e.embedding_dimension = $3"
+	topKPlaceholder := "$4"
+	documentUUIDsPlaceholder := "$5"
+	args := []any{vector, embeddingModel, embeddingDimension, topK}
+
+	if indexedDimension > 0 && embeddingDimension == indexedDimension {
+		dim := int(indexedDimension)
+		distanceExpr = fmt.Sprintf("(e.embedding::vector(%d) <=> $1::vector(%d))", dim, dim)
+		dimensionFilter = fmt.Sprintf("e.embedding_dimension = %d", dim)
+		topKPlaceholder = "$3"
+		documentUUIDsPlaceholder = "$4"
+		args = []any{vector, embeddingModel, topK}
+	}
+
 	where := ""
 	if len(documentUUIDs) > 0 {
-		where = " AND c.document_uuid = ANY($4)"
+		where = " AND c.document_uuid = ANY(" + documentUUIDsPlaceholder + ")"
 		args = append(args, documentUUIDs)
 	}
 
 	query := strings.Join([]string{
 		"SELECT c.document_uuid, c.chunk_index, c.chunk_text,",
-		"  (e.embedding <=> $1) AS distance",
+		"  " + distanceExpr + " AS distance",
 		"FROM rag_chunks c",
 		"JOIN rag_embeddings e ON e.chunk_id = c.id",
 		"WHERE e.embedding_model = $2",
+		"  AND " + dimensionFilter,
 		where,
-		"ORDER BY e.embedding <=> $1",
-		"LIMIT $3",
+		"ORDER BY " + distanceExpr,
+		"LIMIT " + topKPlaceholder,
 	}, " ")
 
 	rows, err := r.pool.Query(ctx, query, args...)

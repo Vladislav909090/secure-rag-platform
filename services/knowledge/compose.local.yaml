@@ -1,0 +1,15 @@
+services:
+  knowledge:
+    ports:
+      - "8082:8082"
+      - "9092:9092"
+
+  knowledge-db:
+    ports:
+      - "5434:5432"
+
+  knowledge-minio:
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+

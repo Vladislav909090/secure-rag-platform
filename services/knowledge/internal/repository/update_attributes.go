@@ -7,7 +7,7 @@ import (
 	"time"
 )
 
-// UpdateAttributes полностью заменяет attributes документа.
+// UpdateAttributes полностью заменяет атрибуты документа
 func (r *Repo) UpdateAttributes(
 	ctx context.Context,
 	uuid string,

@@ -4,7 +4,7 @@ import (
 	"context"
 )
 
-// DownloadFile скачивает файл документа.
+// DownloadFile скачивает файл документа
 func (uc *DocumentUsecase) DownloadFile(ctx context.Context, docUUID string) (*FileDownload, error) {
 	doc, err := uc.getActiveDocument(ctx, docUUID)
 	if err != nil {

@@ -4,7 +4,7 @@ package grpc
 
 import (
 	"context"
-	pb "secure-rag-platform/services/ai-inference/gen/v1"
+	pb "secure-rag-platform/api/gen/go/aiinference/v1"
 )
 
 func (s *GenerationServiceServerImpl) ListModels(ctx context.Context, req *pb.ListModelsRequest) (*pb.ListModelsResponse, error) {

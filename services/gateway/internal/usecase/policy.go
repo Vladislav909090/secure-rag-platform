@@ -9,7 +9,7 @@ import (
 	"strings"
 	"time"
 
-	iamv1 "secure-rag-platform/services/iam/gen/v1"
+	iamv1 "secure-rag-platform/api/gen/go/iam/v1"
 )
 
 type PolicyAuthorizer interface {
@@ -26,6 +26,7 @@ func NewOPAAuthorizer(baseURL string) *OPAAuthorizer {
 	if baseURL == "" {
 		return nil
 	}
+
 	return &OPAAuthorizer{
 		endpoint:   baseURL + "/v1/data/secure_rag/document/allow",
 		httpClient: &http.Client{Timeout: 5 * time.Second},
@@ -38,7 +39,7 @@ func (a *OPAAuthorizer) AllowDocument(
 	documentAttributes map[string]any,
 ) (bool, error) {
 	if a == nil {
-		return allowedByAttributes(documentAttributes, subject), nil
+		return false, ErrPolicyRequired
 	}
 
 	subjectInput := map[string]any{
@@ -94,5 +95,6 @@ func (a *OPAAuthorizer) AllowDocument(
 	if err := json.NewDecoder(resp.Body).Decode(&out); err != nil {
 		return false, fmt.Errorf("decode opa response: %w", err)
 	}
+
 	return out.Result, nil
 }

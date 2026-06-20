@@ -4,7 +4,7 @@ package grpc
 
 import (
 	"context"
-	pb "secure-rag-platform/services/iam/gen/v1"
+	pb "secure-rag-platform/api/gen/go/iam/v1"
 )
 
 func (s *RoleServiceServerImpl) ListRoles(ctx context.Context, req *pb.ListRolesRequest) (*pb.ListRolesResponse, error) {

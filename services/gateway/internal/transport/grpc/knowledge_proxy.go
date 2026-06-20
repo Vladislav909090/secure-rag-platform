@@ -3,7 +3,7 @@ package grpc
 import (
 	"context"
 
-	pb "secure-rag-platform/services/gateway/gen/v1"
+	pb "secure-rag-platform/api/gen/go/gateway/v1"
 	"secure-rag-platform/services/gateway/internal/usecase"
 
 	"google.golang.org/genproto/googleapis/api/httpbody"
@@ -28,6 +28,7 @@ func (s *Server) ListDocuments(
 	for _, item := range items {
 		out = append(out, documentItemToProto(item))
 	}
+
 	return &pb.ListDocumentsResponse{Items: out}, nil
 }
 

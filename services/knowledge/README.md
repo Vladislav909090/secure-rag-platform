@@ -9,16 +9,26 @@
 | HTTP | `8082` |
 | gRPC | `9092` |
 
-В обычном compose сервис используется gateway и RAG по внутренней сети. Прямой HTTP через Traefik включается в dev-режиме:
+В глобальном compose сервис используется gateway и RAG по внутренней сети. Прямой HTTP через Traefik включается в dev-режиме из корня репозитория:
 
 ```bash
-make compose:up DEV=1
+# из корня репозитория
+make compose:up:dev
 ```
 
 После этого:
 
 - `http://localhost/knowledge/docs`
 - `http://localhost/knowledge/api/health`
+
+Для локального запуска отдельного Knowledge со своей PostgreSQL, MinIO и миграциями:
+
+```bash
+cd services/knowledge
+make compose:up
+```
+
+После этого доступны прямые порты `8082`, `9092`, `5434`, `9000` и `9001`.
 
 ## Основные маршруты
 
@@ -45,27 +55,29 @@ make compose:up DEV=1
 
 ## Миграции
 
-Миграции находятся в `services/knowledge/migrations`. Makefile по умолчанию ждет БД на `localhost:5434`:
+Миграции находятся в `services/knowledge/migrations`. Локальный compose сам применяет их при старте. Если нужно выполнить миграции вручную, локальный Makefile по умолчанию ждет БД на `localhost:5434`:
 
 ```bash
-make compose:up DEV=1
-make migrate:up:knowledge
-make migrate:status:knowledge
+cd services/knowledge
+make compose:up
+make migrate:up
+make migrate:status
 ```
 
 ## Разработка
 
 ```bash
-make proto:gen:knowledge
-make grpc:stubs:knowledge
-make lint:knowledge
-make test:knowledge
-make build:knowledge
+cd services/knowledge
+make api:gen
+make grpc:stubs
+make lint
+make test
+make build
+make compose:config
 ```
 
 Локальный запуск:
 
 ```bash
-cd services/knowledge
 go run ./cmd/knowledge
 ```

@@ -6,7 +6,7 @@ import (
 	"strings"
 	"time"
 
-	pb "secure-rag-platform/services/iam/gen/v1"
+	pb "secure-rag-platform/api/gen/go/iam/v1"
 	"secure-rag-platform/services/iam/internal/model"
 	"secure-rag-platform/services/iam/internal/usecase"
 
@@ -20,6 +20,7 @@ func requireUC(uc *usecase.IAMUsecase) error {
 	if uc == nil {
 		return status.Error(codes.Unavailable, "service not configured")
 	}
+
 	return nil
 }
 
@@ -47,6 +48,7 @@ func hasRole(roles []string, roleCode string) bool {
 			return true
 		}
 	}
+
 	return false
 }
 
@@ -54,6 +56,7 @@ func isAdmin(principal *usecase.Principal) bool {
 	if principal == nil {
 		return false
 	}
+
 	return hasRole(principal.Roles, usecase.RoleAccessAdmin) || hasRole(principal.Roles, usecase.RoleSuperAdmin)
 }
 
@@ -64,6 +67,7 @@ func canAccessUser(principal *usecase.Principal, userID string) bool {
 	if principal.UserID == userID {
 		return true
 	}
+
 	return isAdmin(principal)
 }
 
@@ -103,6 +107,7 @@ func structToMap(value *structpb.Struct) map[string]any {
 	if value == nil {
 		return map[string]any{}
 	}
+
 	return value.AsMap()
 }
 
@@ -114,6 +119,7 @@ func mapToStruct(value map[string]any) *structpb.Struct {
 	if err != nil {
 		return &structpb.Struct{Fields: map[string]*structpb.Value{}}
 	}
+
 	return out
 }
 
@@ -153,6 +159,7 @@ func roleToProto(role *model.Role) *pb.Role {
 	if role == nil {
 		return nil
 	}
+
 	return &pb.Role{
 		Id:          role.ID,
 		Code:        role.Code,
@@ -167,6 +174,7 @@ func rolesToProto(roles []*model.Role) []*pb.Role {
 	for _, role := range roles {
 		out = append(out, roleToProto(role))
 	}
+
 	return out
 }
 

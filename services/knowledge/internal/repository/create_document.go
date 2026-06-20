@@ -8,7 +8,7 @@ import (
 	"secure-rag-platform/services/knowledge/internal/model"
 )
 
-// CreateDocument вставляет документ и возвращает сгенерированный id.
+// CreateDocument вставляет документ и возвращает сгенерированный id
 func (r *Repo) CreateDocument(ctx context.Context, doc *model.Document) error {
 	query := `
 		INSERT INTO documents (

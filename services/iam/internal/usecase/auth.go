@@ -11,7 +11,7 @@ import (
 	"secure-rag-platform/services/iam/internal/repository"
 )
 
-// Login выполняет аутентификацию по логину/паролю и выдает пару токенов доступа и обновления.
+// Login выполняет аутентификацию по логину/паролю и выдает пару токенов доступа и обновления
 func (uc *IAMUsecase) Login(ctx context.Context, input LoginInput) (*TokenPair, error) {
 	login := strings.TrimSpace(input.Login)
 	password := input.Password
@@ -69,7 +69,7 @@ func (uc *IAMUsecase) Login(ctx context.Context, input LoginInput) (*TokenPair, 
 	}, nil
 }
 
-// RefreshToken выполняет ротацию токена обновления и возвращает новую пару токенов доступа и обновления.
+// RefreshToken ротирует токен обновления и выдаёт новую пару токенов
 func (uc *IAMUsecase) RefreshToken(ctx context.Context, input RefreshTokenInput) (*TokenPair, error) {
 	refreshRaw := strings.TrimSpace(input.RefreshToken)
 	if refreshRaw == "" {
@@ -129,6 +129,7 @@ func (uc *IAMUsecase) RefreshToken(ctx context.Context, input RefreshTokenInput)
 		if errors.Is(err, repository.ErrNotFound) {
 			return nil, ErrSessionRevoked
 		}
+
 		return nil, err
 	}
 
@@ -145,7 +146,7 @@ func (uc *IAMUsecase) RefreshToken(ctx context.Context, input RefreshTokenInput)
 	}, nil
 }
 
-// Logout отзывает одну сессию.
+// Logout отзывает одну сессию
 func (uc *IAMUsecase) Logout(ctx context.Context, principal *Principal, sessionID string) (bool, error) {
 	if principal == nil {
 		return false, ErrUnauthorized
@@ -176,10 +177,11 @@ func (uc *IAMUsecase) Logout(ctx context.Context, principal *Principal, sessionI
 	if err != nil {
 		return false, err
 	}
+
 	return revoked, nil
 }
 
-// LogoutAll отзывает все активные сессии целевого пользователя.
+// LogoutAll отзывает все активные сессии целевого пользователя
 func (uc *IAMUsecase) LogoutAll(ctx context.Context, principal *Principal, userID string) (*LogoutAllResult, error) {
 	if principal == nil {
 		return nil, ErrUnauthorized
@@ -214,10 +216,11 @@ func (uc *IAMUsecase) LogoutAll(ctx context.Context, principal *Principal, userI
 	}, nil
 }
 
-// GetMe возвращает текущий нормализованный контекст субъекта.
+// GetMe возвращает текущий нормализованный контекст субъекта
 func (uc *IAMUsecase) GetMe(ctx context.Context, principal *Principal) (*model.SubjectContext, error) {
 	if principal == nil {
 		return nil, ErrUnauthorized
 	}
+
 	return uc.GetSubjectContext(ctx, principal.UserID)
 }

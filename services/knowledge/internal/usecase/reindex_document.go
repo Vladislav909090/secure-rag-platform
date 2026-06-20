@@ -7,7 +7,7 @@ import (
 	"secure-rag-platform/services/knowledge/internal/model"
 )
 
-// ReindexDocument ставит статус PENDING перед переиндексацией.
+// ReindexDocument ставит статус PENDING перед переиндексацией
 func (uc *DocumentUsecase) ReindexDocument(
 	ctx context.Context,
 	docUUID string,

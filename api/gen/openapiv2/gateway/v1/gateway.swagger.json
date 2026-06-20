@@ -1,0 +1,808 @@
+{
+  "swagger": "2.0",
+  "info": {
+    "title": "gateway/v1/gateway.proto",
+    "version": "version not set"
+  },
+  "tags": [
+    {
+      "name": "GatewayService"
+    },
+    {
+      "name": "GatewayAuthService"
+    },
+    {
+      "name": "GatewayKnowledgeService"
+    },
+    {
+      "name": "GatewayRAGService"
+    }
+  ],
+  "consumes": [
+    "application/json"
+  ],
+  "produces": [
+    "application/json"
+  ],
+  "paths": {
+    "/gateway/api/v1/admin/rag/documents/{documentUuid}/reindex": {
+      "post": {
+        "summary": "ReindexDocument переиндексирует один документ. Доступно редактору документов.",
+        "operationId": "GatewayRAGService_ReindexDocument",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/gatewayv1ReindexDocumentResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "documentUuid",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/v1GatewayRAGServiceReindexDocumentBody"
+            }
+          }
+        ],
+        "tags": [
+          "GatewayRAGService"
+        ]
+      }
+    },
+    "/gateway/api/v1/admin/rag/reindex": {
+      "post": {
+        "summary": "ReindexAllDocuments переиндексирует доступные активные документы. Доступно редактору документов.",
+        "operationId": "GatewayRAGService_ReindexAllDocuments",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/v1ReindexAllDocumentsResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/v1ReindexAllDocumentsRequest"
+            }
+          }
+        ],
+        "tags": [
+          "GatewayRAGService"
+        ]
+      }
+    },
+    "/gateway/api/v1/auth/login": {
+      "post": {
+        "summary": "Login аутентифицирует пользователя через IAM.",
+        "operationId": "GatewayAuthService_Login",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/gatewayv1TokenPairResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/gatewayv1LoginRequest"
+            }
+          }
+        ],
+        "tags": [
+          "GatewayAuthService"
+        ]
+      }
+    },
+    "/gateway/api/v1/auth/logout": {
+      "post": {
+        "summary": "Logout отзывает текущую сессию через IAM.",
+        "operationId": "GatewayAuthService_Logout",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/gatewayv1LogoutResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/gatewayv1LogoutRequest"
+            }
+          }
+        ],
+        "tags": [
+          "GatewayAuthService"
+        ]
+      }
+    },
+    "/gateway/api/v1/auth/me": {
+      "get": {
+        "summary": "GetMe возвращает текущего аутентифицированного субъекта.",
+        "operationId": "GatewayAuthService_GetMe",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/gatewayv1GetMeResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "tags": [
+          "GatewayAuthService"
+        ]
+      }
+    },
+    "/gateway/api/v1/auth/refresh": {
+      "post": {
+        "summary": "RefreshToken обновляет access token через IAM.",
+        "operationId": "GatewayAuthService_RefreshToken",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/gatewayv1TokenPairResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/gatewayv1RefreshTokenRequest"
+            }
+          }
+        ],
+        "tags": [
+          "GatewayAuthService"
+        ]
+      }
+    },
+    "/gateway/api/v1/documents": {
+      "get": {
+        "summary": "ListDocuments возвращает документы, доступные текущему субъекту.",
+        "operationId": "GatewayKnowledgeService_ListDocuments",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/gatewayv1ListDocumentsResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "tags": [
+          "GatewayKnowledgeService"
+        ]
+      }
+    },
+    "/gateway/api/v1/documents/{documentUuid}": {
+      "get": {
+        "summary": "GetDocument возвращает доступный документ.",
+        "operationId": "GatewayKnowledgeService_GetDocument",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/gatewayv1GetDocumentResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "documentUuid",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "tags": [
+          "GatewayKnowledgeService"
+        ]
+      },
+      "delete": {
+        "summary": "DeleteDocument удаляет документ, если текущий субъект может редактировать документы и документ ему доступен.",
+        "operationId": "GatewayKnowledgeService_DeleteDocument",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/gatewayv1DeleteDocumentResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "documentUuid",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "tags": [
+          "GatewayKnowledgeService"
+        ]
+      }
+    },
+    "/gateway/api/v1/documents/{documentUuid}/file": {
+      "get": {
+        "summary": "DownloadFile скачивает файл документа, если документ доступен текущему субъекту.",
+        "operationId": "GatewayKnowledgeService_DownloadFile",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/apiHttpBody"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "documentUuid",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "tags": [
+          "GatewayKnowledgeService"
+        ]
+      }
+    },
+    "/gateway/api/v1/rag/query": {
+      "post": {
+        "summary": "QueryRAG выполняет поиск и генерацию ответа через RAG.",
+        "operationId": "GatewayRAGService_QueryRAG",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/v1QueryRAGResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/v1QueryRAGRequest"
+            }
+          }
+        ],
+        "tags": [
+          "GatewayRAGService"
+        ]
+      }
+    },
+    "/gateway/health": {
+      "get": {
+        "summary": "Health проверяет работоспособность gateway.",
+        "operationId": "GatewayService_Health",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/gatewayv1HealthResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "tags": [
+          "GatewayService"
+        ]
+      }
+    }
+  },
+  "definitions": {
+    "apiHttpBody": {
+      "type": "object",
+      "properties": {
+        "contentType": {
+          "type": "string",
+          "description": "The HTTP Content-Type header value specifying the content type of the body."
+        },
+        "data": {
+          "type": "string",
+          "format": "byte",
+          "description": "The HTTP request/response body as raw binary."
+        },
+        "extensions": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "$ref": "#/definitions/protobufAny"
+          },
+          "description": "Application specific response metadata. Must be set in the first response\nfor streaming APIs."
+        }
+      },
+      "description": "Message that represents an arbitrary HTTP body. It should only be used for\npayload formats that can't be represented as JSON, such as raw binary or\nan HTML page.\n\n\nThis message can be used both in streaming and non-streaming API methods in\nthe request as well as the response.\n\nIt can be used as a top-level request field, which is convenient if one\nwants to extract parameters from either the URL or HTTP template into the\nrequest fields and also want access to the raw HTTP body.\n\nExample:\n\n    message GetResourceRequest {\n      // A unique request id.\n      string request_id = 1;\n\n      // The raw HTTP body is bound to this field.\n      google.api.HttpBody http_body = 2;\n\n    }\n\n    service ResourceService {\n      rpc GetResource(GetResourceRequest)\n        returns (google.api.HttpBody);\n      rpc UpdateResource(google.api.HttpBody)\n        returns (google.protobuf.Empty);\n\n    }\n\nExample with streaming methods:\n\n    service CaldavService {\n      rpc GetCalendar(stream google.api.HttpBody)\n        returns (stream google.api.HttpBody);\n      rpc UpdateCalendar(stream google.api.HttpBody)\n        returns (stream google.api.HttpBody);\n\n    }\n\nUse of this type only changes how the request and response bodies are\nhandled, all other features will continue to work unchanged."
+    },
+    "gatewayv1DeleteDocumentResponse": {
+      "type": "object",
+      "properties": {
+        "documentUuid": {
+          "type": "string"
+        },
+        "deleted": {
+          "type": "boolean"
+        },
+        "deletedAt": {
+          "type": "string"
+        },
+        "indexDeleted": {
+          "type": "boolean"
+        }
+      }
+    },
+    "gatewayv1Document": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "format": "int64"
+        },
+        "uuid": {
+          "type": "string"
+        },
+        "title": {
+          "type": "string"
+        },
+        "description": {
+          "type": "string"
+        },
+        "attributes": {
+          "type": "object"
+        },
+        "fileName": {
+          "type": "string"
+        },
+        "fileExtension": {
+          "type": "string"
+        },
+        "mimeType": {
+          "type": "string"
+        },
+        "sizeBytes": {
+          "type": "string",
+          "format": "int64"
+        },
+        "checksumSha256": {
+          "type": "string"
+        },
+        "storageKey": {
+          "type": "string"
+        },
+        "indexStatus": {
+          "type": "string"
+        },
+        "createdAt": {
+          "type": "string"
+        },
+        "updatedAt": {
+          "type": "string"
+        },
+        "deletedAt": {
+          "type": "string"
+        }
+      }
+    },
+    "gatewayv1DocumentItem": {
+      "type": "object",
+      "properties": {
+        "document": {
+          "$ref": "#/definitions/gatewayv1Document"
+        }
+      }
+    },
+    "gatewayv1GetDocumentResponse": {
+      "type": "object",
+      "properties": {
+        "document": {
+          "$ref": "#/definitions/gatewayv1Document"
+        }
+      }
+    },
+    "gatewayv1GetMeResponse": {
+      "type": "object",
+      "properties": {
+        "me": {
+          "$ref": "#/definitions/gatewayv1SubjectContext"
+        }
+      }
+    },
+    "gatewayv1HealthResponse": {
+      "type": "object",
+      "properties": {
+        "status": {
+          "type": "string"
+        }
+      }
+    },
+    "gatewayv1ListDocumentsResponse": {
+      "type": "object",
+      "properties": {
+        "items": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "$ref": "#/definitions/gatewayv1DocumentItem"
+          }
+        }
+      }
+    },
+    "gatewayv1LoginRequest": {
+      "type": "object",
+      "properties": {
+        "login": {
+          "type": "string"
+        },
+        "password": {
+          "type": "string"
+        }
+      }
+    },
+    "gatewayv1LogoutRequest": {
+      "type": "object"
+    },
+    "gatewayv1LogoutResponse": {
+      "type": "object",
+      "properties": {
+        "revoked": {
+          "type": "boolean"
+        }
+      }
+    },
+    "gatewayv1QueryContext": {
+      "type": "object",
+      "properties": {
+        "documentUuid": {
+          "type": "string"
+        },
+        "chunkIndex": {
+          "type": "integer",
+          "format": "int32"
+        },
+        "text": {
+          "type": "string"
+        },
+        "score": {
+          "type": "number",
+          "format": "float"
+        }
+      }
+    },
+    "gatewayv1RefreshTokenRequest": {
+      "type": "object",
+      "properties": {
+        "refreshToken": {
+          "type": "string"
+        }
+      }
+    },
+    "gatewayv1ReindexDocumentResponse": {
+      "type": "object",
+      "properties": {
+        "documentUuid": {
+          "type": "string"
+        },
+        "chunkCount": {
+          "type": "integer",
+          "format": "int32"
+        },
+        "embeddingDimension": {
+          "type": "integer",
+          "format": "int32"
+        },
+        "resolvedEmbeddingModel": {
+          "type": "string"
+        }
+      }
+    },
+    "gatewayv1SubjectContext": {
+      "type": "object",
+      "properties": {
+        "userId": {
+          "type": "string"
+        },
+        "login": {
+          "type": "string"
+        },
+        "isActive": {
+          "type": "boolean"
+        },
+        "roles": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "attributes": {
+          "type": "object"
+        },
+        "ctxVer": {
+          "type": "string",
+          "format": "int64"
+        }
+      }
+    },
+    "gatewayv1TokenPairResponse": {
+      "type": "object",
+      "properties": {
+        "accessToken": {
+          "type": "string"
+        },
+        "refreshToken": {
+          "type": "string"
+        },
+        "expiresIn": {
+          "type": "string",
+          "format": "int64"
+        },
+        "tokenType": {
+          "type": "string"
+        }
+      }
+    },
+    "protobufAny": {
+      "type": "object",
+      "properties": {
+        "@type": {
+          "type": "string",
+          "description": "A URL/resource name that uniquely identifies the type of the serialized\nprotocol buffer message. This string must contain at least\none \"/\" character. The last segment of the URL's path must represent\nthe fully qualified name of the type (as in\n`path/google.protobuf.Duration`). The name should be in a canonical form\n(e.g., leading \".\" is not accepted).\n\nIn practice, teams usually precompile into the binary all types that they\nexpect it to use in the context of Any. However, for URLs which use the\nscheme `http`, `https`, or no scheme, one can optionally set up a type\nserver that maps type URLs to message definitions as follows:\n\n* If no scheme is provided, `https` is assumed.\n* An HTTP GET on the URL must yield a [google.protobuf.Type][]\n  value in binary format, or produce an error.\n* Applications are allowed to cache lookup results based on the\n  URL, or have them precompiled into a binary to avoid any\n  lookup. Therefore, binary compatibility needs to be preserved\n  on changes to types. (Use versioned type names to manage\n  breaking changes.)\n\nNote: this functionality is not currently available in the official\nprotobuf release, and it is not used for type URLs beginning with\ntype.googleapis.com. As of May 2023, there are no widely used type server\nimplementations and no plans to implement one.\n\nSchemes other than `http`, `https` (or the empty scheme) might be\nused with implementation specific semantics."
+        }
+      },
+      "additionalProperties": {},
+      "description": "`Any` contains an arbitrary serialized protocol buffer message along with a\nURL that describes the type of the serialized message.\n\nProtobuf library provides support to pack/unpack Any values in the form\nof utility functions or additional generated methods of the Any type.\n\nExample 1: Pack and unpack a message in C++.\n\n    Foo foo = ...;\n    Any any;\n    any.PackFrom(foo);\n    ...\n    if (any.UnpackTo(\u0026foo)) {\n      ...\n    }\n\nExample 2: Pack and unpack a message in Java.\n\n    Foo foo = ...;\n    Any any = Any.pack(foo);\n    ...\n    if (any.is(Foo.class)) {\n      foo = any.unpack(Foo.class);\n    }\n    // or ...\n    if (any.isSameTypeAs(Foo.getDefaultInstance())) {\n      foo = any.unpack(Foo.getDefaultInstance());\n    }\n\n Example 3: Pack and unpack a message in Python.\n\n    foo = Foo(...)\n    any = Any()\n    any.Pack(foo)\n    ...\n    if any.Is(Foo.DESCRIPTOR):\n      any.Unpack(foo)\n      ...\n\n Example 4: Pack and unpack a message in Go\n\n     foo := \u0026pb.Foo{...}\n     any, err := anypb.New(foo)\n     if err != nil {\n       ...\n     }\n     ...\n     foo := \u0026pb.Foo{}\n     if err := any.UnmarshalTo(foo); err != nil {\n       ...\n     }\n\nThe pack methods provided by protobuf library will by default use\n'type.googleapis.com/full.type.name' as the type URL and the unpack\nmethods only use the fully qualified type name after the last '/'\nin the type URL, for example \"foo.bar.com/x/y.z\" will yield type\nname \"y.z\".\n\nJSON\n====\nThe JSON representation of an `Any` value uses the regular\nrepresentation of the deserialized, embedded message, with an\nadditional field `@type` which contains the type URL. Example:\n\n    package google.profile;\n    message Person {\n      string first_name = 1;\n      string last_name = 2;\n    }\n\n    {\n      \"@type\": \"type.googleapis.com/google.profile.Person\",\n      \"firstName\": \u003cstring\u003e,\n      \"lastName\": \u003cstring\u003e\n    }\n\nIf the embedded message type is well-known and has a custom JSON\nrepresentation, that representation will be embedded adding a field\n`value` which holds the custom JSON in addition to the `@type`\nfield. Example (for message [google.protobuf.Duration][]):\n\n    {\n      \"@type\": \"type.googleapis.com/google.protobuf.Duration\",\n      \"value\": \"1.212s\"\n    }"
+    },
+    "protobufNullValue": {
+      "type": "string",
+      "enum": [
+        "NULL_VALUE"
+      ],
+      "default": "NULL_VALUE",
+      "description": "`NullValue` is a singleton enumeration to represent the null value for the\n`Value` type union.\n\nThe JSON representation for `NullValue` is JSON `null`.\n\n - NULL_VALUE: Null value."
+    },
+    "rpcStatus": {
+      "type": "object",
+      "properties": {
+        "code": {
+          "type": "integer",
+          "format": "int32"
+        },
+        "message": {
+          "type": "string"
+        },
+        "details": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "$ref": "#/definitions/protobufAny"
+          }
+        }
+      }
+    },
+    "v1GatewayRAGServiceReindexDocumentBody": {
+      "type": "object",
+      "properties": {
+        "embeddingModelAlias": {
+          "type": "string"
+        },
+        "chunkSize": {
+          "type": "integer",
+          "format": "int32"
+        },
+        "chunkOverlap": {
+          "type": "integer",
+          "format": "int32"
+        }
+      }
+    },
+    "v1QueryRAGRequest": {
+      "type": "object",
+      "properties": {
+        "query": {
+          "type": "string"
+        },
+        "topK": {
+          "type": "integer",
+          "format": "int32"
+        },
+        "documentUuids": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "embeddingModelAlias": {
+          "type": "string"
+        },
+        "generationModelAlias": {
+          "type": "string"
+        }
+      }
+    },
+    "v1QueryRAGResponse": {
+      "type": "object",
+      "properties": {
+        "answer": {
+          "type": "string"
+        },
+        "contexts": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "$ref": "#/definitions/gatewayv1QueryContext"
+          }
+        },
+        "resolvedEmbeddingModel": {
+          "type": "string"
+        },
+        "resolvedGenerationModel": {
+          "type": "string"
+        }
+      }
+    },
+    "v1ReindexAllDocumentsRequest": {
+      "type": "object",
+      "properties": {
+        "embeddingModelAlias": {
+          "type": "string"
+        },
+        "chunkSize": {
+          "type": "integer",
+          "format": "int32"
+        },
+        "chunkOverlap": {
+          "type": "integer",
+          "format": "int32"
+        }
+      }
+    },
+    "v1ReindexAllDocumentsResponse": {
+      "type": "object",
+      "properties": {
+        "totalCount": {
+          "type": "integer",
+          "format": "int32"
+        },
+        "indexedCount": {
+          "type": "integer",
+          "format": "int32"
+        },
+        "failedCount": {
+          "type": "integer",
+          "format": "int32"
+        },
+        "items": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "$ref": "#/definitions/v1ReindexDocumentResult"
+          }
+        }
+      }
+    },
+    "v1ReindexDocumentResult": {
+      "type": "object",
+      "properties": {
+        "documentUuid": {
+          "type": "string"
+        },
+        "indexed": {
+          "type": "boolean"
+        },
+        "error": {
+          "type": "string"
+        },
+        "chunkCount": {
+          "type": "integer",
+          "format": "int32"
+        },
+        "embeddingDimension": {
+          "type": "integer",
+          "format": "int32"
+        },
+        "resolvedEmbeddingModel": {
+          "type": "string"
+        }
+      }
+    }
+  }
+}

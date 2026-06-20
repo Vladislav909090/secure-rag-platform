@@ -4,7 +4,7 @@ import (
 	"context"
 	"strings"
 
-	iamv1 "secure-rag-platform/services/iam/gen/v1"
+	iamv1 "secure-rag-platform/api/gen/go/iam/v1"
 
 	"google.golang.org/grpc/metadata"
 )
@@ -134,6 +134,7 @@ func requireAdmin(subject *iamv1.SubjectContext) error {
 	if hasAnyRole(subject, roleSuperAdmin, roleAccessAdmin) {
 		return nil
 	}
+
 	return ErrForbidden
 }
 
@@ -144,6 +145,7 @@ func requireDocumentEditor(subject *iamv1.SubjectContext) error {
 	if hasAnyRole(subject, roleSuperAdmin, roleKnowledgeEditor) {
 		return nil
 	}
+
 	return ErrForbidden
 }
 
@@ -158,6 +160,7 @@ func hasAnyRole(subject *iamv1.SubjectContext, allowed ...string) bool {
 			}
 		}
 	}
+
 	return false
 }
 
@@ -166,6 +169,7 @@ func outgoingAuthContext(ctx context.Context, accessToken string) (context.Conte
 	if accessToken == "" {
 		return nil, ErrUnauthorized
 	}
+
 	return metadata.AppendToOutgoingContext(ctx, "authorization", "Bearer "+accessToken), nil
 }
 
@@ -173,6 +177,7 @@ func tokenPairFromProto(resp *iamv1.TokenPairResponse) *TokenPair {
 	if resp == nil {
 		return &TokenPair{}
 	}
+
 	return &TokenPair{
 		AccessToken:  resp.GetAccessToken(),
 		RefreshToken: resp.GetRefreshToken(),
@@ -189,6 +194,7 @@ func subjectFromProto(subject *iamv1.SubjectContext) *SubjectContext {
 	if subject.GetAttributes() != nil {
 		attrs = subject.GetAttributes().AsMap()
 	}
+
 	return &SubjectContext{
 		UserID:     subject.GetUserId(),
 		Login:      subject.GetLogin(),

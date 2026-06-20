@@ -43,5 +43,6 @@ func (s *Service) Generate(ctx context.Context, req GenerateRequest) (*GenerateR
 
 	result.ResolvedProvider = alias.Provider
 	result.ResolvedModel = alias.Model
+
 	return result, nil
 }

@@ -5,9 +5,9 @@ import (
 	"fmt"
 	"strings"
 
-	iamv1 "secure-rag-platform/services/iam/gen/v1"
-	knowledgev1 "secure-rag-platform/services/knowledge/gen/v1"
-	ragv1 "secure-rag-platform/services/rag/gen/v1"
+	iamv1 "secure-rag-platform/api/gen/go/iam/v1"
+	knowledgev1 "secure-rag-platform/api/gen/go/knowledge/v1"
+	ragv1 "secure-rag-platform/api/gen/go/rag/v1"
 
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -100,6 +100,7 @@ func (s *Service) DownloadFile(
 	if err != nil {
 		return nil, mapUpstreamError(err, "download file")
 	}
+
 	return &FileResult{ContentType: resp.GetContentType(), Data: resp.GetData()}, nil
 }
 
@@ -150,7 +151,7 @@ func (s *Service) DeleteDocument(
 	}, nil
 }
 
-// UpdateDocument обновляет основные поля документа через gateway.
+// UpdateDocument обновляет основные поля документа через gateway
 func (s *Service) UpdateDocument(
 	ctx context.Context,
 	req UpdateDocumentRequest,
@@ -190,7 +191,7 @@ func (s *Service) UpdateDocument(
 	return &DocumentItem{Document: documentFromProto(resp.GetDocument())}, nil
 }
 
-// UpdateDocumentAttributes заменяет attributes документа через gateway.
+// UpdateDocumentAttributes заменяет атрибуты документа через gateway
 func (s *Service) UpdateDocumentAttributes(
 	ctx context.Context,
 	req UpdateDocumentAttributesRequest,
@@ -292,6 +293,7 @@ func (s *Service) isDocumentAllowed(
 	if doc.GetAttributes() != nil {
 		attrs = doc.GetAttributes().AsMap()
 	}
+
 	return s.allowDocument(ctx, subject, attrs)
 }
 
@@ -314,6 +316,7 @@ func documentItemFromProto(item *knowledgev1.DocumentItem) DocumentItem {
 	if item == nil {
 		return DocumentItem{}
 	}
+
 	return DocumentItem{
 		Document: documentFromProto(item.GetDocument()),
 	}
@@ -327,6 +330,7 @@ func documentFromProto(doc *knowledgev1.Document) Document {
 	if doc.GetAttributes() != nil {
 		attrs = doc.GetAttributes().AsMap()
 	}
+
 	return Document{
 		ID:             doc.GetId(),
 		UUID:           doc.GetUuid(),

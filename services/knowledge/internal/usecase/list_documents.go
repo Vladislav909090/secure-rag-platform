@@ -5,7 +5,7 @@ import (
 	"fmt"
 )
 
-// ListDocuments возвращает активные документы.
+// ListDocuments возвращает активные документы
 func (uc *DocumentUsecase) ListDocuments(ctx context.Context) ([]*DocumentDetail, error) {
 	docs, err := uc.repo.ListActiveDocuments(ctx)
 	if err != nil {

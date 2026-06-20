@@ -28,5 +28,6 @@ func GetFirstValue(keys ...Key) string {
 			return value
 		}
 	}
+
 	return ""
 }

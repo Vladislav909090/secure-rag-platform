@@ -2,7 +2,7 @@ package model
 
 import "time"
 
-// Document — логическая сущность документа.
+// Document — логическая сущность документа
 type Document struct {
 	ID             int64
 	UUID           string

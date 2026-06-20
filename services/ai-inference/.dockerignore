@@ -1,0 +1,16 @@
+.env
+.golangci/
+.golangci-cache/
+.golangci-cache-*/
+.gocache/
+
+*.exe
+*.exe~
+*.test
+*.out
+coverage.*
+*.coverprofile
+profile.cov
+
+# Локальный конфиг моделей может содержать API-ключи. Его нужно монтировать при запуске.
+config/models.json

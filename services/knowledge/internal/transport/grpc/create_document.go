@@ -4,7 +4,7 @@ import (
 	"io"
 	"strings"
 
-	pb "secure-rag-platform/services/knowledge/gen/v1"
+	pb "secure-rag-platform/api/gen/go/knowledge/v1"
 	"secure-rag-platform/services/knowledge/internal/usecase"
 )
 
@@ -64,6 +64,7 @@ func (s *KnowledgeServiceServerImpl) CreateDocumentStream(stream pb.KnowledgeSer
 			if res.err != nil {
 				return toGRPCError(res.err)
 			}
+
 			return toGRPCError(recvErr)
 		}
 
@@ -77,6 +78,7 @@ func (s *KnowledgeServiceServerImpl) CreateDocumentStream(stream pb.KnowledgeSer
 			if res.err != nil {
 				return toGRPCError(res.err)
 			}
+
 			return toGRPCError(writeErr)
 		}
 	}

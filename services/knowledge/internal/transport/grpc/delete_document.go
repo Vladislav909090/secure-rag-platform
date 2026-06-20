@@ -4,7 +4,7 @@ import (
 	"context"
 	"time"
 
-	pb "secure-rag-platform/services/knowledge/gen/v1"
+	pb "secure-rag-platform/api/gen/go/knowledge/v1"
 )
 
 func (s *KnowledgeServiceServerImpl) DeleteDocument(
@@ -18,6 +18,7 @@ func (s *KnowledgeServiceServerImpl) DeleteDocument(
 	if err != nil {
 		return nil, toGRPCError(err)
 	}
+
 	return &pb.DeleteDocumentResponse{
 		DocumentUuid: result.DocumentUUID,
 		Deleted:      true,

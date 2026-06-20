@@ -50,7 +50,7 @@ type accessTokenClaims struct {
 	jwt.RegisteredClaims
 }
 
-// IAMUsecase содержит бизнес-логику IAM.
+// IAMUsecase содержит бизнес-логику IAM
 type IAMUsecase struct {
 	repo   *repository.Repo
 	redis  *redis.Client
@@ -58,7 +58,7 @@ type IAMUsecase struct {
 	logger *slog.Logger
 }
 
-// NewIAMUsecase создает слой бизнес-логики IAM с переданными зависимостями.
+// NewIAMUsecase создает слой бизнес-логики IAM с переданными зависимостями
 func NewIAMUsecase(repo *repository.Repo, redisClient *redis.Client, cfg Config, logger *slog.Logger) *IAMUsecase {
 	if logger == nil {
 		logger = slog.Default()
@@ -128,6 +128,7 @@ func normalizeRoleCodes(roleCodes []string) ([]string, error) {
 		out = []string{RoleUser}
 	}
 	slices.Sort(out)
+
 	return out, nil
 }
 
@@ -139,6 +140,7 @@ func hashPassword(password string) (string, error) {
 	if err != nil {
 		return "", fmt.Errorf("hash password: %w", err)
 	}
+
 	return string(hash), nil
 }
 
@@ -206,6 +208,7 @@ func (uc *IAMUsecase) parseAccessToken(accessToken string) (*accessTokenClaims, 
 			if token.Method != jwt.SigningMethodHS256 {
 				return nil, ErrInvalidToken
 			}
+
 			return []byte(uc.cfg.JWTSecret), nil
 		},
 		jwt.WithIssuer(uc.cfg.JWTIssuer),
@@ -245,6 +248,7 @@ func (uc *IAMUsecase) getSubjectContextFromCache(ctx context.Context, userID str
 			"component", "iam.cache",
 			"error", err,
 		)
+
 		return nil, false
 	}
 
@@ -254,6 +258,7 @@ func (uc *IAMUsecase) getSubjectContextFromCache(ctx context.Context, userID str
 			"component", "iam.cache",
 			"error", err,
 		)
+
 		return nil, false
 	}
 
@@ -271,6 +276,7 @@ func (uc *IAMUsecase) storeSubjectContextInCache(ctx context.Context, subject *m
 			"component", "iam.cache",
 			"error", err,
 		)
+
 		return
 	}
 
@@ -282,7 +288,7 @@ func (uc *IAMUsecase) storeSubjectContextInCache(ctx context.Context, subject *m
 	}
 }
 
-// InvalidateSubjectContextCache очищает кеш контекста пользователя.
+// InvalidateSubjectContextCache очищает кеш контекста пользователя
 func (uc *IAMUsecase) InvalidateSubjectContextCache(ctx context.Context, userID string) {
 	if uc.redis == nil || userID == "" {
 		return
@@ -307,6 +313,7 @@ func (uc *IAMUsecase) checkRateLimit(ctx context.Context, key string, limit int,
 			"component", "iam.rate-limit",
 			"error", err,
 		)
+
 		return nil
 	}
 
@@ -322,6 +329,7 @@ func (uc *IAMUsecase) checkRateLimit(ctx context.Context, key string, limit int,
 	if count > int64(limit) {
 		return ErrRateLimited
 	}
+
 	return nil
 }
 
@@ -331,9 +339,11 @@ func (uc *IAMUsecase) bumpContextVersion(ctx context.Context, userID string) (in
 		if errors.Is(err, repository.ErrNotFound) {
 			return 0, ErrNotFound
 		}
+
 		return 0, err
 	}
 	uc.InvalidateSubjectContextCache(ctx, userID)
+
 	return ctxVer, nil
 }
 
@@ -343,6 +353,7 @@ func hasRole(roles []string, required string) bool {
 			return true
 		}
 	}
+
 	return false
 }
 
@@ -352,6 +363,7 @@ func hasAnyRole(roles []string, required ...string) bool {
 			return true
 		}
 	}
+
 	return false
 }
 
@@ -363,10 +375,11 @@ func mergeAttributes(current map[string]any, patch map[string]any) map[string]an
 	for k, v := range patch {
 		merged[k] = v
 	}
+
 	return merged
 }
 
-// GetSubjectContext возвращает нормализованный контекст с резервным чтением из кеша.
+// GetSubjectContext возвращает нормализованный контекст с резервным чтением из кеша
 func (uc *IAMUsecase) GetSubjectContext(ctx context.Context, userID string) (*model.SubjectContext, error) {
 	if strings.TrimSpace(userID) == "" {
 		return nil, ErrInvalidArgument
@@ -385,10 +398,11 @@ func (uc *IAMUsecase) GetSubjectContext(ctx context.Context, userID string) (*mo
 	}
 
 	uc.storeSubjectContextInCache(ctx, subject)
+
 	return subject, nil
 }
 
-// AuthenticateAccessToken проверяет токен доступа и возвращает данные принципала с актуальным контекстом субъекта.
+// AuthenticateAccessToken проверяет токен доступа и возвращает актуальный контекст субъекта
 func (uc *IAMUsecase) AuthenticateAccessToken(
 	ctx context.Context,
 	accessToken string,
@@ -403,6 +417,7 @@ func (uc *IAMUsecase) AuthenticateAccessToken(
 		if errors.Is(err, ErrNotFound) {
 			return nil, nil, ErrUnauthorized
 		}
+
 		return nil, nil, err
 	}
 
@@ -435,10 +450,11 @@ func (uc *IAMUsecase) AuthenticateAccessToken(
 		CtxVer:    subject.CtxVer,
 		ExpiresAt: claims.ExpiresAt.Time,
 	}
+
 	return principal, subject, nil
 }
 
-// BootstrapSuperAdmin создает начального суперадмина, если он отсутствует.
+// BootstrapSuperAdmin создает начального суперадмина, если он отсутствует
 func (uc *IAMUsecase) BootstrapSuperAdmin(
 	ctx context.Context,
 	login string,
@@ -478,6 +494,7 @@ func (uc *IAMUsecase) BootstrapSuperAdmin(
 		if errors.Is(err, ErrUserExists) {
 			return "", false, nil
 		}
+
 		return "", false, fmt.Errorf("create bootstrap super admin: %w", err)
 	}
 

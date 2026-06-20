@@ -46,5 +46,6 @@ func (s *Service) Embed(ctx context.Context, req BatchEmbedRequest) (*BatchEmbed
 
 	result.ResolvedProvider = alias.Provider
 	result.ResolvedModel = alias.Model
+
 	return result, nil
 }

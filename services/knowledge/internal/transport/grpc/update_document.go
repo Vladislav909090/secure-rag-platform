@@ -3,7 +3,7 @@ package grpc
 import (
 	"context"
 
-	pb "secure-rag-platform/services/knowledge/gen/v1"
+	pb "secure-rag-platform/api/gen/go/knowledge/v1"
 )
 
 func (s *KnowledgeServiceServerImpl) UpdateDocument(
@@ -28,5 +28,6 @@ func (s *KnowledgeServiceServerImpl) UpdateDocument(
 	if err != nil {
 		return nil, toGRPCError(err)
 	}
+
 	return &pb.UpdateDocumentResponse{Document: documentToProto(doc)}, nil
 }

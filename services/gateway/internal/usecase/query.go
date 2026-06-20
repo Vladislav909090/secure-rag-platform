@@ -2,15 +2,16 @@ package usecase
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"strings"
 
-	iamv1 "secure-rag-platform/services/iam/gen/v1"
-	knowledgev1 "secure-rag-platform/services/knowledge/gen/v1"
-	ragv1 "secure-rag-platform/services/rag/gen/v1"
+	iamv1 "secure-rag-platform/api/gen/go/iam/v1"
+	knowledgev1 "secure-rag-platform/api/gen/go/knowledge/v1"
+	ragv1 "secure-rag-platform/api/gen/go/rag/v1"
 )
 
-// Query выполняет поиск и генерацию ответа через RAG.
+// Query выполняет поиск и генерацию ответа через RAG
 func (s *Service) Query(ctx context.Context, req QueryRequest, accessToken string) (*QueryResult, error) {
 	if !s.Ready() {
 		return nil, ErrNotConfigured
@@ -177,11 +178,16 @@ func (s *Service) allowDocument(
 	attrs map[string]any,
 ) (bool, error) {
 	if s.policy == nil {
-		return allowedByAttributes(attrs, subject), nil
+		return false, ErrPolicyRequired
 	}
 	allowed, err := s.policy.AllowDocument(ctx, subject, attrs)
 	if err != nil {
-		return false, fmt.Errorf("policy allow document: %w", err)
+		if errors.Is(err, ErrPolicyRequired) {
+			return false, err
+		}
+
+		return false, fmt.Errorf("%w: %v", ErrPolicyUnavailable, err)
 	}
+
 	return allowed, nil
 }

@@ -8,7 +8,7 @@ import (
 	"secure-rag-platform/services/knowledge/internal/model"
 )
 
-// RestoreDocument восстанавливает удалённый документ.
+// RestoreDocument восстанавливает удалённый документ
 func (uc *DocumentUsecase) RestoreDocument(ctx context.Context, docUUID string) (*model.Document, error) {
 	doc, err := uc.repo.GetDocumentByUUID(ctx, docUUID)
 	if err != nil {

@@ -10,7 +10,7 @@ import (
 	"secure-rag-platform/services/knowledge/internal/model"
 )
 
-// GetDocumentByUUID возвращает документ по uuid. Возвращает nil, nil если не найден.
+// GetDocumentByUUID возвращает документ по UUID или nil
 func (r *Repo) GetDocumentByUUID(ctx context.Context, uuid string) (*model.Document, error) {
 	query := `
 		SELECT

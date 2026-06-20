@@ -10,7 +10,7 @@ import (
 	"github.com/jackc/pgx/v5"
 )
 
-// CreateUserInput содержит данные, необходимые для создания пользователя.
+// CreateUserInput содержит данные, необходимые для создания пользователя
 type CreateUserInput struct {
 	Login        string
 	PasswordHash string
@@ -20,7 +20,7 @@ type CreateUserInput struct {
 	CreatedBy    *string
 }
 
-// UpdateUserInput содержит данные частичного обновления пользователя.
+// UpdateUserInput содержит данные частичного обновления пользователя
 type UpdateUserInput struct {
 	UserID       string
 	Login        *string
@@ -41,10 +41,11 @@ func scanUser(row pgx.Row) (*model.User, error) {
 	); err != nil {
 		return nil, err
 	}
+
 	return &user, nil
 }
 
-// GetUserByID возвращает пользователя по UUID.
+// GetUserByID возвращает пользователя по UUID
 func (r *Repo) GetUserByID(ctx context.Context, userID string) (*model.User, error) {
 	query := `
 		SELECT
@@ -64,12 +65,14 @@ func (r *Repo) GetUserByID(ctx context.Context, userID string) (*model.User, err
 		if errors.Is(err, pgx.ErrNoRows) {
 			return nil, nil
 		}
+
 		return nil, fmt.Errorf("query user by id: %w", err)
 	}
+
 	return user, nil
 }
 
-// GetUserByLogin возвращает пользователя по уникальному логину.
+// GetUserByLogin возвращает пользователя по уникальному логину
 func (r *Repo) GetUserByLogin(ctx context.Context, login string) (*model.User, error) {
 	query := `
 		SELECT
@@ -89,12 +92,14 @@ func (r *Repo) GetUserByLogin(ctx context.Context, login string) (*model.User, e
 		if errors.Is(err, pgx.ErrNoRows) {
 			return nil, nil
 		}
+
 		return nil, fmt.Errorf("query user by login: %w", err)
 	}
+
 	return user, nil
 }
 
-// ListUsers возвращает всех пользователей, отсортированных по времени создания.
+// ListUsers возвращает всех пользователей, отсортированных по времени создания
 func (r *Repo) ListUsers(ctx context.Context) ([]*model.User, error) {
 	query := `
 		SELECT
@@ -130,7 +135,7 @@ func (r *Repo) ListUsers(ctx context.Context) ([]*model.User, error) {
 	return users, nil
 }
 
-// CreateUser создает пользователя вместе с ролями и атрибутами в одной транзакции.
+// CreateUser создает пользователя вместе с ролями и атрибутами в одной транзакции
 func (r *Repo) CreateUser(ctx context.Context, input CreateUserInput) (*model.User, error) {
 	var created *model.User
 
@@ -193,6 +198,7 @@ func (r *Repo) CreateUser(ctx context.Context, input CreateUserInput) (*model.Us
 		}
 
 		created = user
+
 		return nil
 	}); err != nil {
 		return nil, err
@@ -201,7 +207,7 @@ func (r *Repo) CreateUser(ctx context.Context, input CreateUserInput) (*model.Us
 	return created, nil
 }
 
-// UpdateUser обновляет изменяемые поля пользователя.
+// UpdateUser обновляет изменяемые поля пользователя
 func (r *Repo) UpdateUser(ctx context.Context, input UpdateUserInput) (*model.User, error) {
 	var login any
 	if input.Login != nil {
@@ -241,13 +247,14 @@ func (r *Repo) UpdateUser(ctx context.Context, input UpdateUserInput) (*model.Us
 		if errors.Is(err, pgx.ErrNoRows) {
 			return nil, ErrNotFound
 		}
+
 		return nil, fmt.Errorf("update user: %w", err)
 	}
 
 	return user, nil
 }
 
-// IncrementContextVersion увеличивает ctx_ver и возвращает новое значение.
+// IncrementContextVersion увеличивает ctx_ver и возвращает новое значение
 func (r *Repo) IncrementContextVersion(ctx context.Context, userID string) (int64, error) {
 	query := `
 		UPDATE users
@@ -263,7 +270,9 @@ func (r *Repo) IncrementContextVersion(ctx context.Context, userID string) (int6
 		if errors.Is(err, pgx.ErrNoRows) {
 			return 0, ErrNotFound
 		}
+
 		return 0, fmt.Errorf("increment ctx_ver: %w", err)
 	}
+
 	return ctxVer, nil
 }

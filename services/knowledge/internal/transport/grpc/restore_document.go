@@ -3,7 +3,7 @@ package grpc
 import (
 	"context"
 
-	pb "secure-rag-platform/services/knowledge/gen/v1"
+	pb "secure-rag-platform/api/gen/go/knowledge/v1"
 )
 
 func (s *KnowledgeServiceServerImpl) RestoreDocument(
@@ -17,5 +17,6 @@ func (s *KnowledgeServiceServerImpl) RestoreDocument(
 	if err != nil {
 		return nil, toGRPCError(err)
 	}
+
 	return &pb.RestoreDocumentResponse{Document: documentToProto(doc)}, nil
 }

@@ -9,16 +9,26 @@
 | HTTP | `8081` |
 | gRPC | `9091` |
 
-В обычном compose IAM доступен другим сервисам по внутренней сети. Прямой HTTP через Traefik включается в dev-режиме:
+В глобальном compose IAM доступен другим сервисам по внутренней сети. Прямой HTTP через Traefik включается в dev-режиме из корня репозитория:
 
 ```bash
-make compose:up DEV=1
+# из корня репозитория
+make compose:up:dev
 ```
 
 После этого:
 
 - `http://localhost/iam/docs`
 - `http://localhost/iam/health`
+
+Для локального запуска отдельного IAM со своей PostgreSQL, Redis и миграциями:
+
+```bash
+cd services/iam
+make compose:up
+```
+
+После этого доступны прямые порты `8081`, `9091`, `5433` и `6380`.
 
 ## Что реализовано
 
@@ -28,6 +38,10 @@ make compose:up DEV=1
 - attributes: чтение, замена, patch, удаление ключа;
 - sessions: список и отзыв сессий;
 - internal API для gateway: subject context и проверка access token.
+
+IAM хранит несколько активных refresh-сессий на пользователя. Новый login создает
+новую строку `user_sessions`; logout/revoke отзывает конкретную сессию, а
+logout-all/revoke-all отзывает все активные сессии пользователя.
 
 ## Конфигурация
 
@@ -43,27 +57,29 @@ make compose:up DEV=1
 
 ## Миграции
 
-Миграции находятся в `services/iam/migrations`. Makefile по умолчанию ждет БД на `localhost:5433`, поэтому для локального применения нужен dev-compose:
+Миграции находятся в `services/iam/migrations`. Локальный compose сам применяет их при старте. Если нужно выполнить миграции вручную, локальный Makefile по умолчанию ждет БД на `localhost:5433`:
 
 ```bash
-make compose:up DEV=1
-make migrate:up:iam
-make migrate:status:iam
+cd services/iam
+make compose:up
+make migrate:up
+make migrate:status
 ```
 
 ## Разработка
 
 ```bash
-make proto:gen:iam
-make grpc:stubs:iam
-make lint:iam
-make test:iam
-make build:iam
+cd services/iam
+make api:gen
+make grpc:stubs
+make lint
+make test
+make build
+make compose:config
 ```
 
 Локальный запуск:
 
 ```bash
-cd services/iam
 go run ./cmd/iam
 ```

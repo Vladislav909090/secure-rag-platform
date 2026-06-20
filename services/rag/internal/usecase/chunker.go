@@ -36,5 +36,6 @@ func chunkText(text string, size int, overlap int) []string {
 			start = 0
 		}
 	}
+
 	return chunks
 }

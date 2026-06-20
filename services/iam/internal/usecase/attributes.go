@@ -5,16 +5,17 @@ import (
 	"strings"
 )
 
-// GetUserAttributes возвращает атрибуты пользователя и текущую версию контекста.
+// GetUserAttributes возвращает атрибуты пользователя и текущую версию контекста
 func (uc *IAMUsecase) GetUserAttributes(ctx context.Context, userID string) (map[string]any, int64, error) {
 	subject, err := uc.GetSubjectContext(ctx, strings.TrimSpace(userID))
 	if err != nil {
 		return nil, 0, err
 	}
+
 	return subject.Attributes, subject.CtxVer, nil
 }
 
-// ReplaceUserAttributes полностью заменяет атрибуты и увеличивает версию контекста.
+// ReplaceUserAttributes полностью заменяет атрибуты и увеличивает версию контекста
 func (uc *IAMUsecase) ReplaceUserAttributes(
 	ctx context.Context,
 	userID string,
@@ -42,7 +43,7 @@ func (uc *IAMUsecase) ReplaceUserAttributes(
 	return updated, ctxVer, nil
 }
 
-// PatchUserAttributes применяет обновления верхнего уровня ключ/значение и увеличивает версию контекста.
+// PatchUserAttributes обновляет атрибуты верхнего уровня и версию контекста
 func (uc *IAMUsecase) PatchUserAttributes(
 	ctx context.Context,
 	userID string,
@@ -76,7 +77,7 @@ func (uc *IAMUsecase) PatchUserAttributes(
 	return updated, ctxVer, nil
 }
 
-// DeleteUserAttributeKey удаляет один ключ и увеличивает версию контекста.
+// DeleteUserAttributeKey удаляет один ключ и увеличивает версию контекста
 func (uc *IAMUsecase) DeleteUserAttributeKey(
 	ctx context.Context,
 	userID string,

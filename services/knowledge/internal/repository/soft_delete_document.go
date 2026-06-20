@@ -6,7 +6,7 @@ import (
 	"time"
 )
 
-// SoftDeleteDocument выполняет soft delete документа.
+// SoftDeleteDocument мягко удаляет документ
 func (r *Repo) SoftDeleteDocument(ctx context.Context, uuid string, deletedAt time.Time) error {
 	query := `
 		UPDATE documents

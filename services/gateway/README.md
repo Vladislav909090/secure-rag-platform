@@ -9,10 +9,20 @@
 | HTTP | `8080` |
 | gRPC | `9090` |
 
-В compose сервис не публикует `8080` напрямую. С хоста используется Traefik:
+В глобальном dev/prod compose с хоста используется Traefik:
 
 - `http://localhost/gateway/docs`
 - `http://localhost/gateway/health`
+
+Для локального запуска отдельного gateway из каталога сервиса:
+
+```bash
+cd services/gateway
+make compose:up
+```
+
+После этого доступны прямые порты `8080`, `9090` и локальный OPA на `8181`.
+IAM, Knowledge и RAG в этом режиме ожидаются на `host.docker.internal`.
 
 ## Основные маршруты
 
@@ -42,19 +52,24 @@ Swagger UI живет на `/gateway/docs`.
 - `GATEWAY_DEFAULT_TOP_K`
 - `GATEWAY_DEFAULT_EMBEDDING_MODEL_ALIAS`, `GATEWAY_DEFAULT_GENERATION_MODEL_ALIAS`
 
+Если фильтрация документов включена (`DISABLE_DOC_FILTER=false`), `OPA_URL` обязателен.
+При недоступной или не настроенной OPA gateway возвращает ошибку вместо локального
+fallback-решения.
+
 ## Разработка
 
 ```bash
-make proto:gen:gateway
-make grpc:stubs:gateway
-make lint:gateway
-make test:gateway
-make build:gateway
+cd services/gateway
+make api:gen
+make grpc:stubs
+make lint
+make test
+make build
+make compose:config
 ```
 
 Локальный запуск из каталога сервиса:
 
 ```bash
-cd services/gateway
 go run ./cmd/gateway
 ```

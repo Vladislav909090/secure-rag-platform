@@ -2,7 +2,7 @@ package model
 
 import "time"
 
-// User хранит учетную запись субъекта IAM.
+// User хранит учетную запись субъекта IAM
 type User struct {
 	ID           string
 	Login        string
@@ -13,7 +13,7 @@ type User struct {
 	UpdatedAt    time.Time
 }
 
-// Role - фиксированная RBAC-роль.
+// Role - фиксированная RBAC-роль
 type Role struct {
 	ID          int64
 	Code        string
@@ -22,7 +22,7 @@ type Role struct {
 	CreatedAt   time.Time
 }
 
-// SubjectContext - нормализованный рабочий контекст безопасности.
+// SubjectContext - нормализованный рабочий контекст безопасности
 type SubjectContext struct {
 	UserID     string
 	Login      string
@@ -32,7 +32,7 @@ type SubjectContext struct {
 	CtxVer     int64
 }
 
-// UserView предоставляет данные пользователя вместе с ролями и атрибутами.
+// UserView предоставляет данные пользователя вместе с ролями и атрибутами
 type UserView struct {
 	ID         string
 	Login      string
@@ -44,7 +44,7 @@ type UserView struct {
 	UpdatedAt  time.Time
 }
 
-// UserSession хранит состояние сессии токена обновления.
+// UserSession хранит состояние сессии токена обновления
 type UserSession struct {
 	ID               string
 	UserID           string

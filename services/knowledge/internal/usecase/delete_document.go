@@ -6,7 +6,7 @@ import (
 	"time"
 )
 
-// DeleteDocument выполняет soft delete.
+// DeleteDocument мягко удаляет документ
 func (uc *DocumentUsecase) DeleteDocument(ctx context.Context, docUUID string) (*DeleteDocumentOutput, error) {
 	doc, err := uc.repo.GetDocumentByUUID(ctx, docUUID)
 	if err != nil {

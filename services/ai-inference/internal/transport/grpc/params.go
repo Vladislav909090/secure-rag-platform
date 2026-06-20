@@ -1,7 +1,7 @@
 package grpc
 
 import (
-	aiinferencev1 "secure-rag-platform/services/ai-inference/gen/v1"
+	aiinferencev1 "secure-rag-platform/api/gen/go/aiinference/v1"
 	"secure-rag-platform/services/ai-inference/internal/config"
 	"secure-rag-platform/services/ai-inference/internal/usecase"
 )
@@ -25,6 +25,7 @@ func float32FromWrapper(value interface{ GetValue() float32 }) *float32 {
 		return nil
 	}
 	v := value.GetValue()
+
 	return &v
 }
 
@@ -33,6 +34,7 @@ func int32FromWrapper(value interface{ GetValue() int32 }) *int32 {
 		return nil
 	}
 	v := value.GetValue()
+
 	return &v
 }
 

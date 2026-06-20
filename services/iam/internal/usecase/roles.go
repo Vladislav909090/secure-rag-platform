@@ -17,15 +17,16 @@ func (uc *IAMUsecase) ensureUserExists(ctx context.Context, userID string) error
 	if user == nil {
 		return ErrNotFound
 	}
+
 	return nil
 }
 
-// ListRoles возвращает фиксированные системные роли.
+// ListRoles возвращает фиксированные системные роли
 func (uc *IAMUsecase) ListRoles(ctx context.Context) ([]*model.Role, error) {
 	return uc.repo.ListRoles(ctx)
 }
 
-// GetUserRoles возвращает назначенные роли и текущую версию контекста.
+// GetUserRoles возвращает назначенные роли и текущую версию контекста
 func (uc *IAMUsecase) GetUserRoles(ctx context.Context, userID string) ([]*model.Role, int64, error) {
 	userID = strings.TrimSpace(userID)
 	if userID == "" {
@@ -37,6 +38,7 @@ func (uc *IAMUsecase) GetUserRoles(ctx context.Context, userID string) ([]*model
 		if errors.Is(err, ErrNotFound) {
 			return nil, 0, ErrNotFound
 		}
+
 		return nil, 0, err
 	}
 
@@ -48,7 +50,7 @@ func (uc *IAMUsecase) GetUserRoles(ctx context.Context, userID string) ([]*model
 	return roles, subject.CtxVer, nil
 }
 
-// SetUserRoles полностью заменяет набор ролей и увеличивает версию контекста.
+// SetUserRoles полностью заменяет набор ролей и увеличивает версию контекста
 func (uc *IAMUsecase) SetUserRoles(
 	ctx context.Context,
 	userID string,
@@ -73,6 +75,7 @@ func (uc *IAMUsecase) SetUserRoles(
 		if errors.Is(err, repository.ErrInvalidRoleCode) {
 			return nil, 0, ErrInvalidArgument
 		}
+
 		return nil, 0, err
 	}
 
@@ -85,10 +88,11 @@ func (uc *IAMUsecase) SetUserRoles(
 	if err != nil {
 		return nil, 0, err
 	}
+
 	return roles, ctxVer, nil
 }
 
-// AddUserRole добавляет роль и увеличивает версию контекста.
+// AddUserRole добавляет роль и увеличивает версию контекста
 func (uc *IAMUsecase) AddUserRole(
 	ctx context.Context,
 	userID string,
@@ -112,6 +116,7 @@ func (uc *IAMUsecase) AddUserRole(
 		if errors.Is(err, repository.ErrInvalidRoleCode) {
 			return nil, 0, ErrInvalidArgument
 		}
+
 		return nil, 0, err
 	}
 
@@ -119,10 +124,11 @@ func (uc *IAMUsecase) AddUserRole(
 	if err != nil {
 		return nil, 0, err
 	}
+
 	return roles, ctxVer, nil
 }
 
-// RemoveUserRole удаляет роль и увеличивает версию контекста.
+// RemoveUserRole удаляет роль и увеличивает версию контекста
 func (uc *IAMUsecase) RemoveUserRole(
 	ctx context.Context,
 	userID string,
@@ -145,6 +151,7 @@ func (uc *IAMUsecase) RemoveUserRole(
 		if errors.Is(err, repository.ErrInvalidRoleCode) {
 			return nil, 0, ErrInvalidArgument
 		}
+
 		return nil, 0, err
 	}
 
@@ -152,5 +159,6 @@ func (uc *IAMUsecase) RemoveUserRole(
 	if err != nil {
 		return nil, 0, err
 	}
+
 	return roles, ctxVer, nil
 }

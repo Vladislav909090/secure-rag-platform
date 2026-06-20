@@ -5,7 +5,7 @@ import (
 	"fmt"
 )
 
-// GetDocument возвращает документ.
+// GetDocument возвращает документ
 func (uc *DocumentUsecase) GetDocument(ctx context.Context, docUUID string) (*DocumentDetail, error) {
 	doc, err := uc.repo.GetDocumentByUUID(ctx, docUUID)
 	if err != nil {

@@ -5,35 +5,35 @@ import (
 	"fmt"
 	"strings"
 
-	aiinferencev1 "secure-rag-platform/services/ai-inference/gen/v1"
+	aiinferencev1 "secure-rag-platform/api/gen/go/aiinference/v1"
 
 	"github.com/pgvector/pgvector-go"
 )
 
 const (
-	// contextMaxCandidates ограничивает число ближайших кандидатов, которые мы забираем из БД до фильтрации.
+	// Лимит кандидатов до фильтрации
 	contextMaxCandidates = 50
-	// contextMaxChunks задаёт жёсткий предел на размер контекста, чтобы не раздувать промпт.
+	// Лимит чанков в контексте
 	contextMaxChunks = 12
-	// contextMaxDistance отсекает чанки, которые слишком далеко от вектора запроса.
+	// Максимальная дистанция от вектора запроса
 	contextMaxDistance = 0.8
-	// defaultTopK — значение по умолчанию для TopK, если не задано в запросе или конфиге.
+	// TopK по умолчанию
 	defaultTopK = 3
 )
 
 const (
-	// systemPromptTemplate — системная инструкция для модели.
-	// Описывает, как отвечать и как ссылаться на источники.
+	// systemPromptTemplate — системная инструкция для модели
+	// Описывает, как отвечать и как ссылаться на источники
 	systemPromptTemplate = "Отвечай на русском языке только по предоставленному контексту. " +
 		"Если в контексте есть факты, числа, таблицы или CSV-строки, используй их для ответа. " +
 		"Если ответа нет в контексте, напиши: Не знаю. " +
 		"Отвечай кратко. Не добавляй source IDs и цитирования в текст ответа; " +
 		"источники возвращаются отдельно в structured contexts field."
-	// userPromptTemplate — шаблон пользовательской части промпта.
+	// userPromptTemplate — шаблон пользовательской части промпта
 	userPromptTemplate = "Вопрос:\n%s\n\nКонтекст:\n%s"
 )
 
-// Query выполняет поиск контекста и генерацию ответа.
+// Query выполняет поиск контекста и генерацию ответа
 func (s *Service) Query(ctx context.Context, req QueryRequest) (*QueryResult, error) {
 	if !s.Ready() {
 		return nil, ErrNotConfigured
@@ -81,6 +81,13 @@ func (s *Service) Query(ctx context.Context, req QueryRequest) (*QueryResult, er
 	if resolvedModel == "" {
 		resolvedModel = embedAlias
 	}
+	embeddingDimension := embedResp.GetDimension()
+	if embeddingDimension <= 0 {
+		embeddingDimension = int32(len(embedResp.GetVector()))
+	}
+	if embeddingDimension <= 0 || len(embedResp.GetVector()) != int(embeddingDimension) {
+		return nil, fmt.Errorf("embedding dimension mismatch")
+	}
 
 	candidateLimit := min(max(int(topK)*4, int(topK)), contextMaxCandidates)
 
@@ -88,6 +95,8 @@ func (s *Service) Query(ctx context.Context, req QueryRequest) (*QueryResult, er
 		ctx,
 		pgvector.NewVector(embedResp.GetVector()),
 		resolvedModel,
+		embeddingDimension,
+		s.defaults.IndexedEmbeddingDim,
 		int32(candidateLimit),
 		req.DocumentUUIDs,
 	)
@@ -154,5 +163,6 @@ func buildPrompts(question string, contexts []QueryContext) (string, string) {
 
 	system := systemPromptTemplate
 	user := fmt.Sprintf(userPromptTemplate, question, strings.Join(parts, "\n\n"))
+
 	return system, user
 }

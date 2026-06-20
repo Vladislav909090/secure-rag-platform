@@ -3,7 +3,7 @@ package grpc
 import (
 	"context"
 
-	pb "secure-rag-platform/services/gateway/gen/v1"
+	pb "secure-rag-platform/api/gen/go/gateway/v1"
 	"secure-rag-platform/services/gateway/internal/usecase"
 )
 
@@ -70,6 +70,7 @@ func tokenPairToProto(tokens *usecase.TokenPair) *pb.TokenPairResponse {
 	if tokens == nil {
 		return &pb.TokenPairResponse{}
 	}
+
 	return &pb.TokenPairResponse{
 		AccessToken:  tokens.AccessToken,
 		RefreshToken: tokens.RefreshToken,
@@ -82,6 +83,7 @@ func subjectToProto(subject *usecase.SubjectContext) *pb.SubjectContext {
 	if subject == nil {
 		return nil
 	}
+
 	return &pb.SubjectContext{
 		UserId:     subject.UserID,
 		Login:      subject.Login,

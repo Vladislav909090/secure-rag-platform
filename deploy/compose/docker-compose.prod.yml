@@ -1,0 +1,77 @@
+networks:
+  traefik-net:
+    driver: bridge
+  app-net:
+    driver: bridge
+    internal: true
+  egress-net:
+    driver: bridge
+
+services:
+  traefik:
+    image: traefik:latest
+    ports:
+      - "80:80"
+      - "8090:8080"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - ../traefik/traefik.yml:/etc/traefik/traefik.yml:ro
+      - ../traefik/dynamic.yml:/etc/traefik/dynamic.yml:ro
+    networks:
+      - traefik-net
+
+  gateway:
+    environment:
+      IAM_GRPC_ADDR: iam:9091
+      KNOWLEDGE_GRPC_ADDR: knowledge:9092
+      RAG_GRPC_ADDR: rag:9093
+      DISABLE_AUTH: "false"
+      DISABLE_DOC_FILTER: "false"
+    labels:
+      - "traefik.enable=true"
+      - "traefik.docker.network=secure-rag-platform_traefik-net"
+      - "traefik.http.routers.gateway.rule=PathPrefix(`/gateway`)"
+      - "traefik.http.routers.gateway.entrypoints=web"
+      - "traefik.http.routers.gateway.priority=100"
+      - "traefik.http.services.gateway.loadbalancer.server.port=8080"
+    networks:
+      - traefik-net
+      - app-net
+      - gateway-net
+
+  iam:
+    networks:
+      - app-net
+      - iam-net
+      - iam-db-net
+      - iam-redis-net
+
+  knowledge:
+    networks:
+      - app-net
+      - knowledge-net
+      - knowledge-db-net
+      - knowledge-minio-net
+
+  knowledge-minio:
+    networks:
+      - knowledge-minio-net
+      - rag-s3-net
+
+  rag:
+    environment:
+      KNOWLEDGE_GRPC_ADDR: knowledge:9092
+      AI_INFERENCE_GRPC_ADDR: ai-inference:9094
+      S3_ENDPOINT: knowledge-minio:9000
+    networks:
+      - app-net
+      - rag-net
+      - rag-db-net
+      - rag-s3-net
+
+  ai-inference:
+    networks:
+      - app-net
+      - egress-net
+      - ai-inference-net
+      - ai-inference-egress-net

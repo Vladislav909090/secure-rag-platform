@@ -9,9 +9,11 @@ import (
 	"net/http/httptest"
 	"strings"
 	"testing"
+
+	"secure-rag-platform/services/knowledge/internal/usecase"
 )
 
-func TestUploadHelpers(t *testing.T) {
+func TestKnowledgeUploadHelpers(t *testing.T) {
 	if !isMultipart("multipart/form-data; boundary=abc") {
 		t.Fatalf("expected multipart content type")
 	}
@@ -29,7 +31,7 @@ func TestUploadHelpers(t *testing.T) {
 	}
 }
 
-func TestSendChunksCopiesDataAndStopsOnSendError(t *testing.T) {
+func TestKnowledgeSendChunksCopiesDataAndStopsOnSendError(t *testing.T) {
 	var chunks [][]byte
 	err := sendChunks(strings.NewReader("abcdef"), 2, func(chunk []byte) error {
 		chunks = append(chunks, chunk)
@@ -53,12 +55,62 @@ func TestSendChunksCopiesDataAndStopsOnSendError(t *testing.T) {
 	}
 }
 
-func TestReadLimitedPartRejectsOversizedPart(t *testing.T) {
+func TestKnowledgeReadLimitedPartRejectsOversizedPart(t *testing.T) {
 	part := newMultipartFieldPart(t, "title", "abcdef")
 
 	_, err := readLimitedPart(part, 3)
 	if err == nil {
 		t.Fatalf("expected size limit error")
+	}
+}
+
+func TestParseStructAttributes(t *testing.T) {
+	attrs, err := parseStructAttributes([]byte(`{"department":"legal","level":2}`))
+	if err != nil {
+		t.Fatalf("parseStructAttributes() error = %v", err)
+	}
+	level, ok := attrs.AsMap()["level"].(float64)
+	if !ok || attrs.AsMap()["department"] != "legal" || level != 2 {
+		t.Fatalf("unexpected attrs: %#v", attrs.AsMap())
+	}
+
+	attrs, err = parseStructAttributes([]byte(" "))
+	if err != nil {
+		t.Fatalf("blank attributes error = %v", err)
+	}
+	if attrs != nil {
+		t.Fatalf("blank attributes should produce nil struct, got %#v", attrs)
+	}
+
+	if _, err = parseStructAttributes([]byte(`{"bad"`)); err == nil {
+		t.Fatalf("expected invalid JSON error")
+	}
+}
+
+func TestWriteDownloadResponse(t *testing.T) {
+	handler := New(nil, nil)
+	rec := httptest.NewRecorder()
+	handler.writeDownloadResponse(rec, &usecase.FileDownload{
+		Body:      io.NopCloser(strings.NewReader("file body")),
+		FileName:  "Отчет 2026.txt",
+		MimeType:  "",
+		SizeBytes: 9,
+	})
+
+	if rec.Code != http.StatusOK {
+		t.Fatalf("status = %d, want %d", rec.Code, http.StatusOK)
+	}
+	if got := rec.Header().Get("Content-Type"); got != "application/octet-stream" {
+		t.Fatalf("content type = %q", got)
+	}
+	if got := rec.Header().Get("Content-Length"); got != "9" {
+		t.Fatalf("content length = %q", got)
+	}
+	if got := rec.Body.String(); got != "file body" {
+		t.Fatalf("body = %q", got)
+	}
+	if got := rec.Header().Get("Content-Disposition"); !strings.Contains(got, `filename="2026.txt"`) || !strings.Contains(got, "filename*=UTF-8''") {
+		t.Fatalf("unexpected content disposition: %q", got)
 	}
 }
 

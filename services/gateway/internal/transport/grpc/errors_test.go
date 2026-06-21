@@ -4,20 +4,22 @@ import (
 	"errors"
 	"testing"
 
-	"secure-rag-platform/services/rag/internal/usecase"
+	"secure-rag-platform/services/gateway/internal/usecase"
 
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 )
 
-func TestToGRPCError(t *testing.T) {
+func TestGatewayToGRPCError(t *testing.T) {
 	tests := []struct {
 		err  error
 		code codes.Code
 	}{
 		{usecase.ErrNotConfigured, codes.Unavailable},
 		{usecase.ErrInvalidRequest, codes.InvalidArgument},
-		{usecase.ErrNoContexts, codes.NotFound},
+		{usecase.ErrUnauthorized, codes.Unauthenticated},
+		{usecase.ErrForbidden, codes.PermissionDenied},
+		{usecase.ErrNotFound, codes.NotFound},
 		{errors.New("boom"), codes.Internal},
 	}
 

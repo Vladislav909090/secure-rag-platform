@@ -10,7 +10,7 @@ import (
 	"testing"
 )
 
-func TestUploadHelpers(t *testing.T) {
+func TestGatewayUploadHelpers(t *testing.T) {
 	if !isMultipart("multipart/form-data; boundary=abc") {
 		t.Fatalf("expected multipart content type")
 	}
@@ -27,7 +27,7 @@ func TestUploadHelpers(t *testing.T) {
 	}
 }
 
-func TestSendChunksCopiesDataAndStopsOnSendError(t *testing.T) {
+func TestGatewaySendChunksCopiesDataAndStopsOnSendError(t *testing.T) {
 	var chunks [][]byte
 	err := sendChunks(strings.NewReader("abcdef"), 2, func(chunk []byte) error {
 		chunks = append(chunks, chunk)
@@ -51,7 +51,7 @@ func TestSendChunksCopiesDataAndStopsOnSendError(t *testing.T) {
 	}
 }
 
-func TestReadLimitedPartRejectsOversizedPart(t *testing.T) {
+func TestGatewayReadLimitedPartRejectsOversizedPart(t *testing.T) {
 	part := newMultipartFieldPart(t, "title", "abcdef")
 
 	_, err := readLimitedPart(part, 3)

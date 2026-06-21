@@ -7,7 +7,7 @@ import (
 	transportgrpc "secure-rag-platform/services/iam/internal/transport/grpc"
 )
 
-func TestHealthRPC(t *testing.T) {
+func TestIAMHealthRPC(t *testing.T) {
 	server := transportgrpc.NewIAMServiceServer(nil)
 
 	resp, err := server.Health(context.Background(), nil)

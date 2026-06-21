@@ -12,7 +12,7 @@ import (
 	"google.golang.org/grpc/status"
 )
 
-func TestExtractBearerToken(t *testing.T) {
+func TestIAMExtractBearerToken(t *testing.T) {
 	ctx := metadata.NewIncomingContext(context.Background(), metadata.Pairs("authorization", " Bearer token "))
 	token, err := extractBearerToken(ctx)
 	if err != nil {
@@ -28,7 +28,7 @@ func TestExtractBearerToken(t *testing.T) {
 	}
 }
 
-func TestAccessHelpers(t *testing.T) {
+func TestIAMAccessHelpers(t *testing.T) {
 	principal := &usecase.Principal{UserID: "u1", Roles: []string{usecase.RoleUser}}
 	if !canAccessUser(principal, "u1") {
 		t.Fatalf("user should access self")
@@ -43,24 +43,11 @@ func TestAccessHelpers(t *testing.T) {
 	}
 }
 
-func TestToGRPCError(t *testing.T) {
-	tests := []struct {
-		err  error
-		code codes.Code
-	}{
-		{usecase.ErrInvalidArgument, codes.InvalidArgument},
-		{usecase.ErrRateLimited, codes.ResourceExhausted},
-		{usecase.ErrForbidden, codes.PermissionDenied},
-		{usecase.ErrNotFound, codes.NotFound},
-		{usecase.ErrUserExists, codes.AlreadyExists},
-		{usecase.ErrInactiveUser, codes.FailedPrecondition},
-		{usecase.ErrUnauthorized, codes.Unauthenticated},
-		{errors.New("boom"), codes.Internal},
+func TestIAMRequireUC(t *testing.T) {
+	if status.Code(requireUC(nil)) != codes.Unavailable {
+		t.Fatalf("requireUC(nil) should return unavailable")
 	}
-
-	for _, tt := range tests {
-		if got := status.Code(toGRPCError(tt.err)); got != tt.code {
-			t.Fatalf("toGRPCError(%v) code = %v, want %v", tt.err, got, tt.code)
-		}
+	if err := requireUC(usecase.NewIAMUsecase(nil, nil, usecase.DefaultConfig(), nil)); err != nil {
+		t.Fatalf("requireUC(non-nil) error = %v", err)
 	}
 }

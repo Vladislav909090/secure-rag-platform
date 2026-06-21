@@ -5,7 +5,7 @@ import (
 	"testing"
 )
 
-func TestNormalizeRoleCodes(t *testing.T) {
+func TestUsecaseNormalizeRoleCodes(t *testing.T) {
 	got, err := normalizeRoleCodes([]string{" knowledge_editor ", "user", "user", ""})
 	if err != nil {
 		t.Fatalf("normalizeRoleCodes() error = %v", err)
@@ -28,7 +28,7 @@ func TestNormalizeRoleCodes(t *testing.T) {
 	}
 }
 
-func TestPasswordAndTokenHelpers(t *testing.T) {
+func TestIAMPasswordAndTokenHelpers(t *testing.T) {
 	hash, err := hashPassword("secret")
 	if err != nil {
 		t.Fatalf("hashPassword() error = %v", err)

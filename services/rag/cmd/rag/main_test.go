@@ -7,7 +7,7 @@ import (
 	transportgrpc "secure-rag-platform/services/rag/internal/transport/grpc"
 )
 
-func TestHealthRPC(t *testing.T) {
+func TestRAGHealthRPC(t *testing.T) {
 	server := &transportgrpc.RAGServiceServerImpl{}
 
 	resp, err := server.Health(context.Background(), nil)

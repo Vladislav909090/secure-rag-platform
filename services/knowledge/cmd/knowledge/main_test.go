@@ -5,17 +5,17 @@ import (
 	"testing"
 
 	transportgrpc "secure-rag-platform/services/knowledge/internal/transport/grpc"
+
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestKnowledgeHealthRPC(t *testing.T) {
+	t.Parallel()
+
 	server := &transportgrpc.KnowledgeServiceServerImpl{}
 
 	resp, err := server.Health(context.Background(), nil)
-	if err != nil {
-		t.Fatalf("expected nil error, got %v", err)
-	}
-
-	if resp.GetStatus() != "ok" {
-		t.Fatalf("expected status ok, got %q", resp.GetStatus())
-	}
+	require.NoError(t, err)
+	assert.Equal(t, "ok", resp.GetStatus())
 }

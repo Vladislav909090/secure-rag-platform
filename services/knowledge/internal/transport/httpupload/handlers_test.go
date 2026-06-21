@@ -11,27 +11,24 @@ import (
 	"testing"
 
 	"secure-rag-platform/services/knowledge/internal/usecase"
+
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestKnowledgeUploadHelpers(t *testing.T) {
-	if !isMultipart("multipart/form-data; boundary=abc") {
-		t.Fatalf("expected multipart content type")
-	}
-	if isMultipart("application/json") {
-		t.Fatalf("did not expect json to be multipart")
-	}
-	if got := extension("archive.tar.gz"); got != "gz" {
-		t.Fatalf("extension() = %q", got)
-	}
-	if got := asciiFilenameFallback("Отчет 2026.pdf"); got != "2026.pdf" {
-		t.Fatalf("asciiFilenameFallback() = %q", got)
-	}
-	if got := asciiFilenameFallback("   "); got != "download.bin" {
-		t.Fatalf("blank fallback = %q", got)
-	}
+	t.Parallel()
+
+	assert.True(t, isMultipart("multipart/form-data; boundary=abc"))
+	assert.False(t, isMultipart("application/json"))
+	assert.Equal(t, "gz", extension("archive.tar.gz"))
+	assert.Equal(t, "2026.pdf", asciiFilenameFallback("Отчет 2026.pdf"))
+	assert.Equal(t, "download.bin", asciiFilenameFallback("   "))
 }
 
 func TestKnowledgeSendChunksCopiesDataAndStopsOnSendError(t *testing.T) {
+	t.Parallel()
+
 	var chunks [][]byte
 	err := sendChunks(strings.NewReader("abcdef"), 2, func(chunk []byte) error {
 		chunks = append(chunks, chunk)
@@ -39,55 +36,46 @@ func TestKnowledgeSendChunksCopiesDataAndStopsOnSendError(t *testing.T) {
 
 		return nil
 	})
-	if err != nil {
-		t.Fatalf("sendChunks() error = %v", err)
-	}
-	if got := string(bytes.Join(chunks, nil)); got != "XbXdXf" {
-		t.Fatalf("unexpected mutated local chunks %q", got)
-	}
+	require.NoError(t, err)
+	assert.Equal(t, "XbXdXf", string(bytes.Join(chunks, nil)))
 
 	errSentinel := errors.New("send failed")
 	err = sendChunks(strings.NewReader("abcdef"), 2, func(chunk []byte) error {
 		return errSentinel
 	})
-	if !errors.Is(err, errSentinel) {
-		t.Fatalf("sendChunks() error = %v, want sentinel", err)
-	}
+	require.ErrorIs(t, err, errSentinel)
 }
 
 func TestKnowledgeReadLimitedPartRejectsOversizedPart(t *testing.T) {
+	t.Parallel()
+
 	part := newMultipartFieldPart(t, "title", "abcdef")
 
 	_, err := readLimitedPart(part, 3)
-	if err == nil {
-		t.Fatalf("expected size limit error")
-	}
+	require.Error(t, err)
 }
 
 func TestParseStructAttributes(t *testing.T) {
+	t.Parallel()
+
 	attrs, err := parseStructAttributes([]byte(`{"department":"legal","level":2}`))
-	if err != nil {
-		t.Fatalf("parseStructAttributes() error = %v", err)
-	}
+	require.NoError(t, err)
 	level, ok := attrs.AsMap()["level"].(float64)
-	if !ok || attrs.AsMap()["department"] != "legal" || level != 2 {
-		t.Fatalf("unexpected attrs: %#v", attrs.AsMap())
-	}
+	require.True(t, ok)
+	assert.Equal(t, "legal", attrs.AsMap()["department"])
+	assert.Equal(t, float64(2), level)
 
 	attrs, err = parseStructAttributes([]byte(" "))
-	if err != nil {
-		t.Fatalf("blank attributes error = %v", err)
-	}
-	if attrs != nil {
-		t.Fatalf("blank attributes should produce nil struct, got %#v", attrs)
-	}
+	require.NoError(t, err)
+	assert.Nil(t, attrs)
 
-	if _, err = parseStructAttributes([]byte(`{"bad"`)); err == nil {
-		t.Fatalf("expected invalid JSON error")
-	}
+	_, err = parseStructAttributes([]byte(`{"bad"`))
+	require.Error(t, err)
 }
 
 func TestWriteDownloadResponse(t *testing.T) {
+	t.Parallel()
+
 	handler := New(nil, nil)
 	rec := httptest.NewRecorder()
 	handler.writeDownloadResponse(rec, &usecase.FileDownload{
@@ -97,24 +85,17 @@ func TestWriteDownloadResponse(t *testing.T) {
 		SizeBytes: 9,
 	})
 
-	if rec.Code != http.StatusOK {
-		t.Fatalf("status = %d, want %d", rec.Code, http.StatusOK)
-	}
-	if got := rec.Header().Get("Content-Type"); got != "application/octet-stream" {
-		t.Fatalf("content type = %q", got)
-	}
-	if got := rec.Header().Get("Content-Length"); got != "9" {
-		t.Fatalf("content length = %q", got)
-	}
-	if got := rec.Body.String(); got != "file body" {
-		t.Fatalf("body = %q", got)
-	}
-	if got := rec.Header().Get("Content-Disposition"); !strings.Contains(got, `filename="2026.txt"`) || !strings.Contains(got, "filename*=UTF-8''") {
-		t.Fatalf("unexpected content disposition: %q", got)
-	}
+	assert.Equal(t, http.StatusOK, rec.Code)
+	assert.Equal(t, "application/octet-stream", rec.Header().Get("Content-Type"))
+	assert.Equal(t, "9", rec.Header().Get("Content-Length"))
+	assert.Equal(t, "file body", rec.Body.String())
+	assert.Contains(t, rec.Header().Get("Content-Disposition"), `filename="2026.txt"`)
+	assert.Contains(t, rec.Header().Get("Content-Disposition"), "filename*=UTF-8''")
 }
 
 func TestDocumentFilesFallsThroughForNonFilePaths(t *testing.T) {
+	t.Parallel()
+
 	fallbackCalled := false
 	handler := New(nil, nil).DocumentFiles(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		fallbackCalled = true
@@ -125,9 +106,8 @@ func TestDocumentFilesFallsThroughForNonFilePaths(t *testing.T) {
 	req := httptest.NewRequest(http.MethodGet, "/knowledge/api/v1/documents/doc-1", nil)
 	handler(rec, req)
 
-	if !fallbackCalled || rec.Code != http.StatusAccepted {
-		t.Fatalf("expected fallback handler, called=%v status=%d", fallbackCalled, rec.Code)
-	}
+	assert.True(t, fallbackCalled)
+	assert.Equal(t, http.StatusAccepted, rec.Code)
 }
 
 func newMultipartFieldPart(t *testing.T, name string, value string) *multipart.Part {
@@ -136,23 +116,15 @@ func newMultipartFieldPart(t *testing.T, name string, value string) *multipart.P
 	var body bytes.Buffer
 	writer := multipart.NewWriter(&body)
 	partWriter, err := writer.CreateFormField(name)
-	if err != nil {
-		t.Fatalf("CreateFormField() error = %v", err)
-	}
+	require.NoError(t, err)
 	_, err = io.Copy(partWriter, strings.NewReader(value))
-	if err != nil {
-		t.Fatalf("write form field: %v", err)
-	}
+	require.NoError(t, err)
 	err = writer.Close()
-	if err != nil {
-		t.Fatalf("close multipart writer: %v", err)
-	}
+	require.NoError(t, err)
 
 	reader := multipart.NewReader(&body, writer.Boundary())
 	part, nextErr := reader.NextPart()
-	if nextErr != nil {
-		t.Fatalf("NextPart() error = %v", nextErr)
-	}
+	require.NoError(t, nextErr)
 
 	return part
 }

@@ -11,12 +11,12 @@ import (
 // KnowledgeServiceServerImpl реализует gRPC-сервис KnowledgeService
 type KnowledgeServiceServerImpl struct {
 	pb.UnimplementedKnowledgeServiceServer
-	uc *usecase.DocumentUsecase
+	uc documentUsecase
 }
 
 // NewKnowledgeServiceServer создаёт gRPC-сервер; при nil доступен только health
 func NewKnowledgeServiceServer(uc *usecase.DocumentUsecase) *KnowledgeServiceServerImpl {
-	return &KnowledgeServiceServerImpl{uc: uc}
+	return &KnowledgeServiceServerImpl{uc: usecaseOrNil(uc)}
 }
 
 func (s *KnowledgeServiceServerImpl) requireUC() error {

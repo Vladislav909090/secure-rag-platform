@@ -12,7 +12,7 @@ import (
 	"google.golang.org/grpc/status"
 )
 
-func requireUC(uc *usecase.IAMUsecase) error {
+func requireUC(uc iamUsecase) error {
 	if uc == nil {
 		return status.Error(codes.Unavailable, "service not configured")
 	}
@@ -20,7 +20,7 @@ func requireUC(uc *usecase.IAMUsecase) error {
 	return nil
 }
 
-func authenticate(uc *usecase.IAMUsecase, ctx context.Context) (*usecase.Principal, *model.SubjectContext, error) {
+func authenticate(uc iamUsecase, ctx context.Context) (*usecase.Principal, *model.SubjectContext, error) {
 	if err := requireUC(uc); err != nil {
 		return nil, nil, err
 	}

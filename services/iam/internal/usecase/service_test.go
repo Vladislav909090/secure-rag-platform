@@ -1,80 +1,59 @@
 package usecase
 
 import (
-	"errors"
 	"testing"
+
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestUsecaseNormalizeRoleCodes(t *testing.T) {
+	t.Parallel()
+
 	got, err := normalizeRoleCodes([]string{" knowledge_editor ", "user", "user", ""})
-	if err != nil {
-		t.Fatalf("normalizeRoleCodes() error = %v", err)
-	}
+	require.NoError(t, err)
 	want := []string{RoleKnowledgeEditor, RoleUser}
-	if len(got) != len(want) || got[0] != want[0] || got[1] != want[1] {
-		t.Fatalf("normalizeRoleCodes() = %v, want %v", got, want)
-	}
+	assert.Equal(t, want, got)
 
 	got, err = normalizeRoleCodes(nil)
-	if err != nil {
-		t.Fatalf("normalizeRoleCodes(nil) error = %v", err)
-	}
-	if len(got) != 1 || got[0] != RoleUser {
-		t.Fatalf("empty roles should default to user, got %v", got)
-	}
+	require.NoError(t, err)
+	assert.Equal(t, []string{RoleUser}, got)
 
-	if _, err = normalizeRoleCodes([]string{"bad"}); !errors.Is(err, ErrInvalidArgument) {
-		t.Fatalf("expected invalid argument, got %v", err)
-	}
+	_, err = normalizeRoleCodes([]string{"bad"})
+	require.ErrorIs(t, err, ErrInvalidArgument)
 }
 
 func TestIAMPasswordAndTokenHelpers(t *testing.T) {
+	t.Parallel()
+
 	hash, err := hashPassword("secret")
-	if err != nil {
-		t.Fatalf("hashPassword() error = %v", err)
-	}
-	if !checkPassword(hash, "secret") {
-		t.Fatalf("expected password check to pass")
-	}
-	if checkPassword(hash, "other") {
-		t.Fatalf("expected password check to fail")
-	}
+	require.NoError(t, err)
+	assert.True(t, checkPassword(hash, "secret"))
+	assert.False(t, checkPassword(hash, "other"))
 	_, err = hashPassword(" ")
-	if !errors.Is(err, ErrInvalidArgument) {
-		t.Fatalf("expected invalid argument, got %v", err)
-	}
+	require.ErrorIs(t, err, ErrInvalidArgument)
 
 	firstTokenHash := hashOpaqueToken("token")
 	secondTokenHash := hashOpaqueToken("token")
-	if firstTokenHash != secondTokenHash {
-		t.Fatalf("hashOpaqueToken should be deterministic")
-	}
+	assert.Equal(t, firstTokenHash, secondTokenHash)
 
 	token, err := randomToken(8)
-	if err != nil {
-		t.Fatalf("randomToken() error = %v", err)
-	}
-	if token == "" {
-		t.Fatalf("expected non-empty token")
-	}
+	require.NoError(t, err)
+	assert.NotEmpty(t, token)
 }
 
 func TestRoleHelpers(t *testing.T) {
+	t.Parallel()
+
 	roles := []string{RoleUser, RoleAccessAdmin}
-	if !hasRole(roles, RoleUser) {
-		t.Fatalf("expected user role")
-	}
-	if !hasAnyRole(roles, RoleSuperAdmin, RoleAccessAdmin) {
-		t.Fatalf("expected access admin role")
-	}
-	if hasAnyRole(roles, RoleSuperAdmin, RoleKnowledgeEditor) {
-		t.Fatalf("did not expect super/admin editor role")
-	}
+	assert.True(t, hasRole(roles, RoleUser))
+	assert.True(t, hasAnyRole(roles, RoleSuperAdmin, RoleAccessAdmin))
+	assert.False(t, hasAnyRole(roles, RoleSuperAdmin, RoleKnowledgeEditor))
 }
 
 func TestMergeAttributes(t *testing.T) {
+	t.Parallel()
+
 	got := mergeAttributes(map[string]any{"a": 1, "b": 2}, map[string]any{"b": 3, "c": 4})
-	if got["a"] != 1 || got["b"] != 3 || got["c"] != 4 {
-		t.Fatalf("unexpected merged attrs: %#v", got)
-	}
+	assert.Equal(t, map[string]any{"a": 1, "b": 3, "c": 4}, got)
 }

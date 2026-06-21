@@ -7,10 +7,14 @@ import (
 	"secure-rag-platform/services/iam/internal/model"
 	"secure-rag-platform/services/iam/internal/usecase"
 
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"google.golang.org/protobuf/types/known/structpb"
 )
 
 func TestIAMProtoConversions(t *testing.T) {
+	t.Parallel()
+
 	now := time.Date(2026, 6, 21, 12, 30, 0, 0, time.UTC)
 	revokedAt := now.Add(time.Hour)
 
@@ -22,9 +26,8 @@ func TestIAMProtoConversions(t *testing.T) {
 		Attributes: map[string]any{"department": "search"},
 		CtxVer:     7,
 	})
-	if subject.GetUserId() != "u1" || subject.GetAttributes().AsMap()["department"] != "search" {
-		t.Fatalf("unexpected subject proto: %#v", subject)
-	}
+	assert.Equal(t, "u1", subject.GetUserId())
+	assert.Equal(t, "search", subject.GetAttributes().AsMap()["department"])
 
 	user := userToProto(&model.UserView{
 		ID:         "u1",
@@ -36,9 +39,8 @@ func TestIAMProtoConversions(t *testing.T) {
 		CreatedAt:  now,
 		UpdatedAt:  now.Add(time.Minute),
 	})
-	if user.GetId() != "u1" || user.GetCreatedAt() != now.Format(time.RFC3339) {
-		t.Fatalf("unexpected user proto: %#v", user)
-	}
+	assert.Equal(t, "u1", user.GetId())
+	assert.Equal(t, now.Format(time.RFC3339), user.GetCreatedAt())
 
 	role := roleToProto(&model.Role{
 		ID:          1,
@@ -47,14 +49,13 @@ func TestIAMProtoConversions(t *testing.T) {
 		Description: "Default user",
 		CreatedAt:   now,
 	})
-	if role.GetCode() != usecase.RoleUser || role.GetCreatedAt() != now.Format(time.RFC3339) {
-		t.Fatalf("unexpected role proto: %#v", role)
-	}
+	assert.Equal(t, usecase.RoleUser, role.GetCode())
+	assert.Equal(t, now.Format(time.RFC3339), role.GetCreatedAt())
 
 	roles := rolesToProto([]*model.Role{{ID: 1, Code: usecase.RoleUser, CreatedAt: now}, nil})
-	if len(roles) != 2 || roles[0].GetCode() != usecase.RoleUser || roles[1] != nil {
-		t.Fatalf("unexpected roles proto: %#v", roles)
-	}
+	require.Len(t, roles, 2)
+	assert.Equal(t, usecase.RoleUser, roles[0].GetCode())
+	assert.Nil(t, roles[1])
 
 	session := sessionToProto(&model.UserSession{
 		ID:        "s1",
@@ -64,44 +65,27 @@ func TestIAMProtoConversions(t *testing.T) {
 		CreatedAt: now,
 		UpdatedAt: now.Add(time.Minute),
 	})
-	if session.GetId() != "s1" || session.GetRevokedAt() != revokedAt.Format(time.RFC3339) {
-		t.Fatalf("unexpected session proto: %#v", session)
-	}
+	assert.Equal(t, "s1", session.GetId())
+	assert.Equal(t, revokedAt.Format(time.RFC3339), session.GetRevokedAt())
 }
 
 func TestIAMProtoConversionsNilAndFallbacks(t *testing.T) {
-	if subjectToProto(nil) != nil {
-		t.Fatalf("subjectToProto(nil) should return nil")
-	}
-	if userToProto(nil) != nil {
-		t.Fatalf("userToProto(nil) should return nil")
-	}
-	if roleToProto(nil) != nil {
-		t.Fatalf("roleToProto(nil) should return nil")
-	}
-	if sessionToProto(nil) != nil {
-		t.Fatalf("sessionToProto(nil) should return nil")
-	}
+	t.Parallel()
+
+	assert.Nil(t, subjectToProto(nil))
+	assert.Nil(t, userToProto(nil))
+	assert.Nil(t, roleToProto(nil))
+	assert.Nil(t, sessionToProto(nil))
 
 	empty := mapToStruct(nil)
-	if len(empty.GetFields()) != 0 {
-		t.Fatalf("mapToStruct(nil) = %#v, want empty struct", empty)
-	}
+	assert.Empty(t, empty.GetFields())
 
 	fallback := mapToStruct(map[string]any{"bad": func() {}})
-	if len(fallback.GetFields()) != 0 {
-		t.Fatalf("mapToStruct(unsupported) = %#v, want empty struct", fallback)
-	}
+	assert.Empty(t, fallback.GetFields())
 
-	if got := structToMap(nil); len(got) != 0 {
-		t.Fatalf("structToMap(nil) = %#v, want empty map", got)
-	}
+	assert.Empty(t, structToMap(nil))
 
 	value, err := structpb.NewStruct(map[string]any{"a": "b"})
-	if err != nil {
-		t.Fatalf("structpb.NewStruct() error = %v", err)
-	}
-	if got := structToMap(value); got["a"] != "b" {
-		t.Fatalf("structToMap() = %#v", got)
-	}
+	require.NoError(t, err)
+	assert.Equal(t, "b", structToMap(value)["a"])
 }

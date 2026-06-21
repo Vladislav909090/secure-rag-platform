@@ -9,11 +9,11 @@ import (
 
 type RoleServiceServerImpl struct {
 	pb.UnimplementedRoleServiceServer
-	svc *usecase.IAMUsecase
+	svc iamUsecase
 }
 
 func NewRoleServiceServer(uc *usecase.IAMUsecase) *RoleServiceServerImpl {
-	return &RoleServiceServerImpl{svc: uc}
+	return &RoleServiceServerImpl{svc: usecaseOrNil(uc)}
 }
 
 var _ pb.RoleServiceServer = (*RoleServiceServerImpl)(nil)

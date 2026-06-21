@@ -1,18 +1,17 @@
 package repository
 
 import (
-	"reflect"
 	"testing"
+
+	"github.com/stretchr/testify/assert"
 )
 
 func TestRepositoryNormalizeRoleCodes(t *testing.T) {
+	t.Parallel()
+
 	got := normalizeRoleCodes([]string{" user ", "access_admin", "user", "", "knowledge_editor"})
 	want := []string{"access_admin", "knowledge_editor", "user"}
-	if !reflect.DeepEqual(got, want) {
-		t.Fatalf("normalizeRoleCodes() = %v, want %v", got, want)
-	}
+	assert.Equal(t, want, got)
 
-	if got = normalizeRoleCodes(nil); got != nil {
-		t.Fatalf("normalizeRoleCodes(nil) = %v, want nil", got)
-	}
+	assert.Nil(t, normalizeRoleCodes(nil))
 }

@@ -3,52 +3,41 @@ package repository
 import (
 	"encoding/json"
 	"testing"
+
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestAttributesJSONHelpers(t *testing.T) {
+	t.Parallel()
+
 	normalized := normalizeAttributes(nil)
-	if len(normalized) != 0 {
-		t.Fatalf("normalizeAttributes(nil) = %#v, want empty map", normalized)
-	}
+	assert.Empty(t, normalized)
 
 	raw, err := toJSON(map[string]any{"level": 3, "team": "search"})
-	if err != nil {
-		t.Fatalf("toJSON() error = %v", err)
-	}
+	require.NoError(t, err)
 
 	var decoded map[string]any
-	if err = json.Unmarshal(raw, &decoded); err != nil {
-		t.Fatalf("json.Unmarshal() error = %v", err)
-	}
-	if decoded["team"] != "search" || decoded["level"] != float64(3) {
-		t.Fatalf("unexpected JSON payload: %#v", decoded)
-	}
+	require.NoError(t, json.Unmarshal(raw, &decoded))
+	assert.Equal(t, "search", decoded["team"])
+	assert.Equal(t, float64(3), decoded["level"])
 
 	attrs, err := fromJSON(raw)
-	if err != nil {
-		t.Fatalf("fromJSON() error = %v", err)
-	}
-	if attrs["team"] != "search" || attrs["level"] != float64(3) {
-		t.Fatalf("unexpected attrs: %#v", attrs)
-	}
+	require.NoError(t, err)
+	assert.Equal(t, "search", attrs["team"])
+	assert.Equal(t, float64(3), attrs["level"])
 
 	attrs, err = fromJSON(nil)
-	if err != nil {
-		t.Fatalf("fromJSON(nil) error = %v", err)
-	}
-	if len(attrs) != 0 {
-		t.Fatalf("fromJSON(nil) = %#v, want empty map", attrs)
-	}
+	require.NoError(t, err)
+	assert.Empty(t, attrs)
 }
 
 func TestAttributesJSONHelpersRejectUnsupportedValue(t *testing.T) {
+	t.Parallel()
+
 	_, err := toJSON(map[string]any{"bad": func() {}})
-	if err == nil {
-		t.Fatalf("expected toJSON() error for unsupported value")
-	}
+	require.Error(t, err)
 
 	_, err = fromJSON([]byte("{"))
-	if err == nil {
-		t.Fatalf("expected fromJSON() error for malformed JSON")
-	}
+	require.Error(t, err)
 }

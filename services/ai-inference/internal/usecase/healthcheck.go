@@ -10,8 +10,14 @@ import (
 )
 
 func (s *Service) CheckDependencies(ctx context.Context) error {
+	if s == nil {
+		return fmt.Errorf("service is not ready: aliases=0 providers=0")
+	}
 	if !s.Ready() {
 		return fmt.Errorf("service is not ready: aliases=%d providers=%d", len(s.aliases), len(s.providers))
+	}
+	if s.dependencyChecksDisabled {
+		return nil
 	}
 
 	aliasNames := make([]string, 0, len(s.aliases))

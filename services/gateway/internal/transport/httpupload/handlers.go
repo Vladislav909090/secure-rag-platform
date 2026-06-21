@@ -205,7 +205,15 @@ func (h *UploadHandlers) sendCreateDocumentFilePart(
 }
 
 func readLimitedPart(part *multipart.Part, limit int64) ([]byte, error) {
-	return io.ReadAll(io.LimitReader(part, limit))
+	data, err := io.ReadAll(io.LimitReader(part, limit+1))
+	if err != nil {
+		return nil, err
+	}
+	if int64(len(data)) > limit {
+		return nil, errors.New("part size limit exceeded")
+	}
+
+	return data, nil
 }
 
 func parseStructAttributes(rawJSON []byte) (*structpb.Struct, error) {

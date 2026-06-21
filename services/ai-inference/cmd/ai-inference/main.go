@@ -57,14 +57,30 @@ func main() {
 	providerSet := []usecase.Provider{
 		provider.NewOpenAICompatProvider(providerTimeout),
 	}
+	if runtimeCfg.MockProviderResponses {
+		providerSet = []usecase.Provider{provider.NewMockProvider()}
+		logger.Warn("ai-inference запущен с моковыми ответами провайдера",
+			"component", "ai-inference.startup",
+			"env", config.MockProviderResponses,
+		)
+	}
 	inferenceService := usecase.NewService(runtimeCfg.ModelAliases, providerSet, logger)
 
-	startupCheckTimeout := providerTimeout + 5*time.Second
-	startupCtx, cancel := context.WithTimeout(context.Background(), startupCheckTimeout)
-	defer cancel()
-	err = inferenceService.CheckDependencies(startupCtx)
-	if err != nil {
-		fatal(logger, "проверка зависимостей не прошла", err)
+	if runtimeCfg.SkipProviderHealthcheck || runtimeCfg.MockProviderResponses {
+		inferenceService.SetDependencyChecksDisabled(true)
+		logger.Warn("проверка живости embedding и LLM моделей отключена",
+			"component", "ai-inference.startup",
+			"skip_provider_healthcheck", runtimeCfg.SkipProviderHealthcheck,
+			"mock_provider_responses", runtimeCfg.MockProviderResponses,
+		)
+	} else {
+		startupCheckTimeout := providerTimeout + 5*time.Second
+		startupCtx, cancel := context.WithTimeout(context.Background(), startupCheckTimeout)
+		defer cancel()
+		err = inferenceService.CheckDependencies(startupCtx)
+		if err != nil {
+			fatal(logger, "проверка зависимостей не прошла", err)
+		}
 	}
 
 	grpcServer := grpc.NewServer(grpc.UnaryInterceptor(loggingInterceptor(logger)))

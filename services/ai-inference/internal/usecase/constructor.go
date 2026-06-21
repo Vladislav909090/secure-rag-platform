@@ -7,9 +7,10 @@ import (
 )
 
 type Service struct {
-	aliases   map[string]config.ModelAlias
-	providers map[string]Provider
-	logger    *slog.Logger
+	aliases                  map[string]config.ModelAlias
+	providers                map[string]Provider
+	logger                   *slog.Logger
+	dependencyChecksDisabled bool
 }
 
 func NewService(aliases map[string]config.ModelAlias, providers []Provider, logger *slog.Logger) *Service {
@@ -35,6 +36,18 @@ func NewService(aliases map[string]config.ModelAlias, providers []Provider, logg
 		providers: providerMap,
 		logger:    logger,
 	}
+}
+
+func (s *Service) SetDependencyChecksDisabled(disabled bool) {
+	if s == nil {
+		return
+	}
+
+	s.dependencyChecksDisabled = disabled
+}
+
+func (s *Service) DependencyChecksDisabled() bool {
+	return s != nil && s.dependencyChecksDisabled
 }
 
 func (s *Service) Ready() bool {

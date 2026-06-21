@@ -1,5 +1,6 @@
 .PHONY: lint lint\:gateway lint\:iam lint\:knowledge lint\:rag lint\:ai-inference \
 	test test\:gateway test\:iam test\:knowledge test\:rag test\:ai-inference \
+	test\:cover test\:cover\:gateway test\:cover\:iam test\:cover\:knowledge test\:cover\:rag test\:cover\:ai-inference coverage \
 	build build\:gateway build\:iam build\:knowledge build\:rag build\:ai-inference \
 	api\:sync api\:gen api\:clean \
 	proto\:tools proto\:deps proto\:gen \
@@ -85,6 +86,25 @@ test\:ai-inference:
 	$(MAKE) -C services/ai-inference test
 
 test: test\:gateway test\:iam test\:knowledge test\:rag test\:ai-inference
+
+test\:cover\:gateway:
+	$(MAKE) -C services/gateway test:cover
+
+test\:cover\:iam:
+	$(MAKE) -C services/iam test:cover
+
+test\:cover\:knowledge:
+	$(MAKE) -C services/knowledge test:cover
+
+test\:cover\:rag:
+	$(MAKE) -C services/rag test:cover
+
+test\:cover\:ai-inference:
+	$(MAKE) -C services/ai-inference test:cover
+
+test\:cover: test\:cover\:gateway test\:cover\:iam test\:cover\:knowledge test\:cover\:rag test\:cover\:ai-inference
+
+coverage: test\:cover
 
 # Сборка
 

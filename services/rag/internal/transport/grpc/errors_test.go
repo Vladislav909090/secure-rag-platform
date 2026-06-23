@@ -6,11 +6,14 @@ import (
 
 	"secure-rag-platform/services/rag/internal/usecase"
 
+	"github.com/stretchr/testify/assert"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 )
 
 func TestRAGToGRPCError(t *testing.T) {
+	t.Parallel()
+
 	tests := []struct {
 		err  error
 		code codes.Code
@@ -22,8 +25,10 @@ func TestRAGToGRPCError(t *testing.T) {
 	}
 
 	for _, tt := range tests {
-		if got := status.Code(toGRPCError(tt.err)); got != tt.code {
-			t.Fatalf("toGRPCError(%v) code = %v, want %v", tt.err, got, tt.code)
-		}
+		t.Run(tt.err.Error(), func(t *testing.T) {
+			t.Parallel()
+
+			assert.Equal(t, tt.code, status.Code(toGRPCError(tt.err)))
+		})
 	}
 }

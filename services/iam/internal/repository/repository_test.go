@@ -32,6 +32,14 @@ func TestAttributesJSONHelpers(t *testing.T) {
 	assert.Empty(t, attrs)
 }
 
+func TestNewRepo(t *testing.T) {
+	t.Parallel()
+
+	repo := NewRepo(nil)
+	require.NotNil(t, repo)
+	assert.Nil(t, repo.pool)
+}
+
 func TestAttributesJSONHelpersRejectUnsupportedValue(t *testing.T) {
 	t.Parallel()
 

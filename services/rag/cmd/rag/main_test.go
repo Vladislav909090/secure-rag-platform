@@ -5,17 +5,26 @@ import (
 	"testing"
 
 	transportgrpc "secure-rag-platform/services/rag/internal/transport/grpc"
+
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestRAGHealthRPC(t *testing.T) {
+	t.Parallel()
+
 	server := &transportgrpc.RAGServiceServerImpl{}
 
 	resp, err := server.Health(context.Background(), nil)
-	if err != nil {
-		t.Fatalf("expected nil error, got %v", err)
-	}
+	require.NoError(t, err)
+	assert.Equal(t, "ok", resp.GetStatus())
+}
 
-	if resp.GetStatus() != "ok" {
-		t.Fatalf("expected status ok, got %q", resp.GetStatus())
-	}
+func TestParseInt(t *testing.T) {
+	t.Parallel()
+
+	assert.Equal(t, 10, parseInt("10", 3))
+	assert.Equal(t, 3, parseInt("", 3))
+	assert.Equal(t, 3, parseInt("bad", 3))
+	assert.Equal(t, 3, parseInt("-1", 3))
 }

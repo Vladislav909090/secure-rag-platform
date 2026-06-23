@@ -1,6 +1,8 @@
 package grpc
 
 import (
+	"context"
+
 	pb "secure-rag-platform/api/gen/go/rag/v1"
 	"secure-rag-platform/services/rag/internal/usecase"
 
@@ -11,7 +13,14 @@ import (
 // Server реализует gRPC-сервис RAGService
 type Server struct {
 	pb.UnimplementedRAGServiceServer
-	uc *usecase.Service
+	uc ragUsecase
+}
+
+type ragUsecase interface {
+	DeleteDocumentIndex(context.Context, string) error
+	IndexDocument(context.Context, usecase.IndexDocumentRequest) (*usecase.IndexDocumentResult, error)
+	Query(context.Context, usecase.QueryRequest) (*usecase.QueryResult, error)
+	Ready() bool
 }
 
 // NewServer создаёт новый gRPC сервер RAG

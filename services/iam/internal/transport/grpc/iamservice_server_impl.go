@@ -9,7 +9,7 @@ import (
 
 type IAMServiceServerImpl struct {
 	pb.UnimplementedIAMServiceServer
-	svc iamUsecase
+	svc IAMUsecaseContract
 }
 
 func NewIAMServiceServer(uc *usecase.IAMUsecase) *IAMServiceServerImpl {

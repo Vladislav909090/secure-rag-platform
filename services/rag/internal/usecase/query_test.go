@@ -9,6 +9,7 @@ import (
 
 	"github.com/pgvector/pgvector-go"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 	"google.golang.org/grpc"
 )
@@ -28,9 +29,10 @@ func TestBuildPrompts(t *testing.T) {
 func TestRAGServiceQuerySearchesAndGeneratesAnswer(t *testing.T) {
 	t.Parallel()
 
-	repo := &mockRAGRepo{
-		t: t,
-		searchSimilar: func(
+	repo := NewMockRAGRepo(t)
+	repo.EXPECT().
+		SearchSimilar(mock.Anything, mock.Anything, "embed-resolved", int32(4), int32(4), int32(8), []string{"doc-1"}).
+		RunAndReturn(func(
 			_ context.Context,
 			vector pgvector.Vector,
 			embeddingModel string,
@@ -50,12 +52,12 @@ func TestRAGServiceQuerySearchesAndGeneratesAnswer(t *testing.T) {
 				{DocumentUUID: "doc-1", ChunkIndex: 1, ChunkText: "first", Distance: 0.2},
 				{DocumentUUID: "doc-1", ChunkIndex: 2, ChunkText: "far", Distance: 0.9},
 			}, nil
-		},
-	}
+		})
 	svc := newRAGTestService(t, repo)
-	svc.embedding = &mockEmbeddingClient{
-		t: t,
-		embed: func(_ context.Context, req *aiinferencev1.EmbedRequest, _ ...grpc.CallOption) (*aiinferencev1.EmbedResponse, error) {
+	embedding := NewMockEmbeddingServiceClient(t)
+	embedding.EXPECT().
+		Embed(mock.Anything, mock.Anything).
+		RunAndReturn(func(_ context.Context, req *aiinferencev1.EmbedRequest, _ ...grpc.CallOption) (*aiinferencev1.EmbedResponse, error) {
 			assert.Equal(t, "embed-default", req.GetModelAlias())
 			assert.Equal(t, "question", req.GetText())
 			assert.True(t, req.GetNormalize())
@@ -65,19 +67,20 @@ func TestRAGServiceQuerySearchesAndGeneratesAnswer(t *testing.T) {
 				Dimension:     4,
 				ResolvedModel: "embed-resolved",
 			}, nil
-		},
-	}
-	svc.generation = &mockGenerationClient{
-		t: t,
-		generate: func(_ context.Context, req *aiinferencev1.GenerateRequest, _ ...grpc.CallOption) (*aiinferencev1.GenerateResponse, error) {
+		})
+	svc.embedding = embedding
+	generation := NewMockGenerationServiceClient(t)
+	generation.EXPECT().
+		Generate(mock.Anything, mock.Anything).
+		RunAndReturn(func(_ context.Context, req *aiinferencev1.GenerateRequest, _ ...grpc.CallOption) (*aiinferencev1.GenerateResponse, error) {
 			assert.Equal(t, "gen-default", req.GetModelAlias())
 			require.Len(t, req.GetMessages(), 2)
 			assert.Contains(t, req.GetMessages()[1].GetContent(), "first")
 			assert.NotContains(t, req.GetMessages()[1].GetContent(), "far")
 
 			return &aiinferencev1.GenerateResponse{Content: " answer ", ResolvedModel: "gen-resolved"}, nil
-		},
-	}
+		})
+	svc.generation = generation
 
 	got, err := svc.Query(context.Background(), QueryRequest{
 		Query:         " question ",
@@ -96,19 +99,20 @@ func TestRAGServiceQuerySearchesAndGeneratesAnswer(t *testing.T) {
 func TestRAGServiceQueryReturnsFallbackWithoutContexts(t *testing.T) {
 	t.Parallel()
 
-	repo := &mockRAGRepo{
-		t: t,
-		searchSimilar: func(context.Context, pgvector.Vector, string, int32, int32, int32, []string) ([]repository.ChunkMatch, error) {
+	repo := NewMockRAGRepo(t)
+	repo.EXPECT().
+		SearchSimilar(mock.Anything, mock.Anything, mock.Anything, int32(2), int32(4), mock.Anything, []string{"doc-1"}).
+		RunAndReturn(func(context.Context, pgvector.Vector, string, int32, int32, int32, []string) ([]repository.ChunkMatch, error) {
 			return []repository.ChunkMatch{{DocumentUUID: "doc-1", ChunkIndex: 1, ChunkText: "far", Distance: 0.95}}, nil
-		},
-	}
+		})
 	svc := newRAGTestService(t, repo)
-	svc.embedding = &mockEmbeddingClient{
-		t: t,
-		embed: func(context.Context, *aiinferencev1.EmbedRequest, ...grpc.CallOption) (*aiinferencev1.EmbedResponse, error) {
+	embedding := NewMockEmbeddingServiceClient(t)
+	embedding.EXPECT().
+		Embed(mock.Anything, mock.Anything).
+		RunAndReturn(func(context.Context, *aiinferencev1.EmbedRequest, ...grpc.CallOption) (*aiinferencev1.EmbedResponse, error) {
 			return &aiinferencev1.EmbedResponse{Vector: []float32{1, 2}, Dimension: 2, ResolvedModel: "embed"}, nil
-		},
-	}
+		})
+	svc.embedding = embedding
 
 	got, err := svc.Query(context.Background(), QueryRequest{Query: "question", DocumentUUIDs: []string{"doc-1"}})
 	require.NoError(t, err)
@@ -120,7 +124,7 @@ func TestRAGServiceQueryReturnsFallbackWithoutContexts(t *testing.T) {
 func TestRAGServiceQueryRejectsEmptyQuestion(t *testing.T) {
 	t.Parallel()
 
-	got, err := newRAGTestService(t, &mockRAGRepo{t: t}).Query(context.Background(), QueryRequest{Query: " "})
+	got, err := newRAGTestService(t, NewMockRAGRepo(t)).Query(context.Background(), QueryRequest{Query: " "})
 	require.ErrorIs(t, err, ErrInvalidRequest)
 	assert.Nil(t, got)
 }
@@ -128,13 +132,14 @@ func TestRAGServiceQueryRejectsEmptyQuestion(t *testing.T) {
 func TestRAGServiceQueryRejectsEmbeddingDimensionMismatch(t *testing.T) {
 	t.Parallel()
 
-	svc := newRAGTestService(t, &mockRAGRepo{t: t})
-	svc.embedding = &mockEmbeddingClient{
-		t: t,
-		embed: func(context.Context, *aiinferencev1.EmbedRequest, ...grpc.CallOption) (*aiinferencev1.EmbedResponse, error) {
+	svc := newRAGTestService(t, NewMockRAGRepo(t))
+	embedding := NewMockEmbeddingServiceClient(t)
+	embedding.EXPECT().
+		Embed(mock.Anything, mock.Anything).
+		RunAndReturn(func(context.Context, *aiinferencev1.EmbedRequest, ...grpc.CallOption) (*aiinferencev1.EmbedResponse, error) {
 			return &aiinferencev1.EmbedResponse{Vector: []float32{1, 2}, Dimension: 3}, nil
-		},
-	}
+		})
+	svc.embedding = embedding
 
 	got, err := svc.Query(context.Background(), QueryRequest{Query: "question"})
 	require.Error(t, err)

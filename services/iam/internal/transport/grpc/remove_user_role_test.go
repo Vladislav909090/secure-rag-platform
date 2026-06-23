@@ -9,24 +9,27 @@ import (
 	"secure-rag-platform/services/iam/internal/usecase"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 )
 
 func TestRoleServiceRemoveUserRoleUsesUsecase(t *testing.T) {
 	t.Parallel()
 
-	mock := &mockIAMUsecase{t: t}
-	mock.authenticateAccessToken = func(ctx context.Context, accessToken string) (*usecase.Principal, *model.SubjectContext, error) {
-		return &usecase.Principal{UserID: "admin", Roles: []string{usecase.RoleAccessAdmin}}, nil, nil
-	}
-	mock.removeUserRole = func(ctx context.Context, userID string, roleCode string) ([]*model.Role, int64, error) {
-		assert.Equal(t, "u1", userID)
-		assert.Equal(t, usecase.RoleKnowledgeEditor, roleCode)
+	uc := NewMockIAMUsecase(t)
+	uc.EXPECT().
+		AuthenticateAccessToken(mock.Anything, "token").
+		Return(&usecase.Principal{UserID: "admin", Roles: []string{usecase.RoleAccessAdmin}}, (*model.SubjectContext)(nil), nil)
+	uc.EXPECT().
+		RemoveUserRole(mock.Anything, "u1", usecase.RoleKnowledgeEditor).
+		RunAndReturn(func(ctx context.Context, userID string, roleCode string) ([]*model.Role, int64, error) {
+			assert.Equal(t, "u1", userID)
+			assert.Equal(t, usecase.RoleKnowledgeEditor, roleCode)
 
-		return []*model.Role{{ID: 1, Code: usecase.RoleUser}}, 7, nil
-	}
+			return []*model.Role{{ID: 1, Code: usecase.RoleUser}}, 7, nil
+		})
 
-	resp, err := (&RoleServiceServerImpl{svc: mock}).RemoveUserRole(authContext("token"), &pb.RemoveUserRoleRequest{
+	resp, err := (&RoleServiceServerImpl{svc: uc}).RemoveUserRole(authContext("token"), &pb.RemoveUserRoleRequest{
 		UserId:   "u1",
 		RoleCode: usecase.RoleKnowledgeEditor,
 	})

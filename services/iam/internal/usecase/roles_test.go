@@ -7,6 +7,7 @@ import (
 	"secure-rag-platform/services/iam/internal/model"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 )
 
@@ -14,12 +15,12 @@ func TestIAMUsecaseListRolesReturnsRepoRoles(t *testing.T) {
 	t.Parallel()
 
 	roles := []*model.Role{iamTestRole(RoleUser), iamTestRole(RoleSuperAdmin)}
-	repo := &mockIAMRepo{
-		t: t,
-		listRoles: func(context.Context) ([]*model.Role, error) {
+	repo := NewMockIAMRepo(t)
+	repo.EXPECT().
+		ListRoles(mock.Anything).
+		RunAndReturn(func(context.Context) ([]*model.Role, error) {
 			return roles, nil
-		},
-	}
+		})
 	uc := newIAMTestUsecase(repo)
 
 	got, err := uc.ListRoles(context.Background())
@@ -31,19 +32,21 @@ func TestIAMUsecaseGetUserRolesReturnsRolesAndContextVersion(t *testing.T) {
 	t.Parallel()
 
 	roles := []*model.Role{iamTestRole(RoleUser)}
-	repo := &mockIAMRepo{
-		t: t,
-		getSubjectContext: func(_ context.Context, userID string) (*model.SubjectContext, error) {
+	repo := NewMockIAMRepo(t)
+	repo.EXPECT().
+		GetSubjectContext(mock.Anything, "u1").
+		RunAndReturn(func(_ context.Context, userID string) (*model.SubjectContext, error) {
 			assert.Equal(t, "u1", userID)
 
 			return iamTestSubject("u1"), nil
-		},
-		getUserRoles: func(_ context.Context, userID string) ([]*model.Role, error) {
+		})
+	repo.EXPECT().
+		GetUserRoles(mock.Anything, "u1").
+		RunAndReturn(func(_ context.Context, userID string) ([]*model.Role, error) {
 			assert.Equal(t, "u1", userID)
 
 			return roles, nil
-		},
-	}
+		})
 	uc := newIAMTestUsecase(repo)
 
 	got, ctxVer, err := uc.GetUserRoles(context.Background(), " u1 ")
@@ -55,7 +58,7 @@ func TestIAMUsecaseGetUserRolesReturnsRolesAndContextVersion(t *testing.T) {
 func TestIAMUsecaseGetUserRolesRejectsEmptyUserID(t *testing.T) {
 	t.Parallel()
 
-	uc := newIAMTestUsecase(&mockIAMRepo{t: t})
+	uc := newIAMTestUsecase(NewMockIAMRepo(t))
 
 	roles, ctxVer, err := uc.GetUserRoles(context.Background(), " ")
 	require.ErrorIs(t, err, ErrInvalidArgument)
@@ -67,31 +70,37 @@ func TestIAMUsecaseSetUserRolesNormalizesAndBumpsVersion(t *testing.T) {
 	t.Parallel()
 
 	roles := []*model.Role{iamTestRole(RoleAccessAdmin), iamTestRole(RoleUser)}
-	repo := &mockIAMRepo{
-		t: t,
-		getUserByID: func(_ context.Context, userID string) (*model.User, error) {
+	repo := NewMockIAMRepo(t)
+	repo.EXPECT().
+		GetUserByID(mock.Anything, "u1").
+		RunAndReturn(func(_ context.Context, userID string) (*model.User, error) {
 			assert.Equal(t, "u1", userID)
 
 			return iamTestUser("u1"), nil
-		},
-		setUserRoles: func(_ context.Context, userID string, roleCodes []string, assignedBy *string) ([]*model.Role, error) {
+		})
+	repo.EXPECT().
+		SetUserRoles(mock.Anything, "u1", []string{RoleAccessAdmin, RoleUser}, (*string)(nil)).
+		RunAndReturn(func(_ context.Context, userID string, roleCodes []string, assignedBy *string) ([]*model.Role, error) {
 			assert.Equal(t, "u1", userID)
 			assert.Equal(t, []string{RoleAccessAdmin, RoleUser}, roleCodes)
 			assert.Nil(t, assignedBy)
 
 			return roles, nil
-		},
-		incrementContextVersion: func(_ context.Context, userID string) (int64, error) {
+		})
+	repo.EXPECT().
+		IncrementContextVersion(mock.Anything, "u1").
+		RunAndReturn(func(_ context.Context, userID string) (int64, error) {
 			assert.Equal(t, "u1", userID)
 
 			return 4, nil
-		},
-		getUserRoles: func(_ context.Context, userID string) ([]*model.Role, error) {
+		})
+	repo.EXPECT().
+		GetUserRoles(mock.Anything, "u1").
+		RunAndReturn(func(_ context.Context, userID string) ([]*model.Role, error) {
 			assert.Equal(t, "u1", userID)
 
 			return roles, nil
-		},
-	}
+		})
 	uc := newIAMTestUsecase(repo)
 
 	got, ctxVer, err := uc.SetUserRoles(context.Background(), " u1 ", []string{RoleUser, RoleAccessAdmin}, nil)
@@ -103,12 +112,12 @@ func TestIAMUsecaseSetUserRolesNormalizesAndBumpsVersion(t *testing.T) {
 func TestIAMUsecaseSetUserRolesRejectsUnknownRole(t *testing.T) {
 	t.Parallel()
 
-	repo := &mockIAMRepo{
-		t: t,
-		getUserByID: func(context.Context, string) (*model.User, error) {
+	repo := NewMockIAMRepo(t)
+	repo.EXPECT().
+		GetUserByID(mock.Anything, "u1").
+		RunAndReturn(func(context.Context, string) (*model.User, error) {
 			return iamTestUser("u1"), nil
-		},
-	}
+		})
 	uc := newIAMTestUsecase(repo)
 
 	roles, ctxVer, err := uc.SetUserRoles(context.Background(), "u1", []string{"unknown"}, nil)
@@ -120,12 +129,12 @@ func TestIAMUsecaseSetUserRolesRejectsUnknownRole(t *testing.T) {
 func TestIAMUsecaseSetUserRolesReturnsNotFoundWhenUserMissing(t *testing.T) {
 	t.Parallel()
 
-	repo := &mockIAMRepo{
-		t: t,
-		getUserByID: func(context.Context, string) (*model.User, error) {
+	repo := NewMockIAMRepo(t)
+	repo.EXPECT().
+		GetUserByID(mock.Anything, "u1").
+		RunAndReturn(func(context.Context, string) (*model.User, error) {
 			return nil, nil
-		},
-	}
+		})
 	uc := newIAMTestUsecase(repo)
 
 	roles, ctxVer, err := uc.SetUserRoles(context.Background(), "u1", []string{RoleUser}, nil)
@@ -138,21 +147,25 @@ func TestIAMUsecaseAddUserRoleAddsRoleAndBumpsVersion(t *testing.T) {
 	t.Parallel()
 
 	roles := []*model.Role{iamTestRole(RoleKnowledgeEditor)}
-	repo := &mockIAMRepo{
-		t: t,
-		getUserByID: func(context.Context, string) (*model.User, error) {
+	repo := NewMockIAMRepo(t)
+	repo.EXPECT().
+		GetUserByID(mock.Anything, "u1").
+		RunAndReturn(func(context.Context, string) (*model.User, error) {
 			return iamTestUser("u1"), nil
-		},
-		addUserRole: func(_ context.Context, userID string, roleCode string, _ *string) ([]*model.Role, error) {
+		})
+	repo.EXPECT().
+		AddUserRole(mock.Anything, "u1", RoleKnowledgeEditor, (*string)(nil)).
+		RunAndReturn(func(_ context.Context, userID string, roleCode string, _ *string) ([]*model.Role, error) {
 			assert.Equal(t, "u1", userID)
 			assert.Equal(t, RoleKnowledgeEditor, roleCode)
 
 			return roles, nil
-		},
-		incrementContextVersion: func(context.Context, string) (int64, error) {
+		})
+	repo.EXPECT().
+		IncrementContextVersion(mock.Anything, "u1").
+		RunAndReturn(func(context.Context, string) (int64, error) {
 			return 5, nil
-		},
-	}
+		})
 	uc := newIAMTestUsecase(repo)
 
 	got, ctxVer, err := uc.AddUserRole(context.Background(), "u1", RoleKnowledgeEditor, nil)
@@ -165,21 +178,25 @@ func TestIAMUsecaseRemoveUserRoleRemovesRoleAndBumpsVersion(t *testing.T) {
 	t.Parallel()
 
 	roles := []*model.Role{iamTestRole(RoleUser)}
-	repo := &mockIAMRepo{
-		t: t,
-		getUserByID: func(context.Context, string) (*model.User, error) {
+	repo := NewMockIAMRepo(t)
+	repo.EXPECT().
+		GetUserByID(mock.Anything, "u1").
+		RunAndReturn(func(context.Context, string) (*model.User, error) {
 			return iamTestUser("u1"), nil
-		},
-		removeUserRole: func(_ context.Context, userID string, roleCode string) ([]*model.Role, error) {
+		})
+	repo.EXPECT().
+		RemoveUserRole(mock.Anything, "u1", RoleKnowledgeEditor).
+		RunAndReturn(func(_ context.Context, userID string, roleCode string) ([]*model.Role, error) {
 			assert.Equal(t, "u1", userID)
 			assert.Equal(t, RoleKnowledgeEditor, roleCode)
 
 			return roles, nil
-		},
-		incrementContextVersion: func(context.Context, string) (int64, error) {
+		})
+	repo.EXPECT().
+		IncrementContextVersion(mock.Anything, "u1").
+		RunAndReturn(func(context.Context, string) (int64, error) {
 			return 6, nil
-		},
-	}
+		})
 	uc := newIAMTestUsecase(repo)
 
 	got, ctxVer, err := uc.RemoveUserRole(context.Background(), "u1", RoleKnowledgeEditor)
@@ -191,12 +208,12 @@ func TestIAMUsecaseRemoveUserRoleRemovesRoleAndBumpsVersion(t *testing.T) {
 func TestIAMUsecaseAddUserRoleRejectsUnknownRole(t *testing.T) {
 	t.Parallel()
 
-	repo := &mockIAMRepo{
-		t: t,
-		getUserByID: func(context.Context, string) (*model.User, error) {
+	repo := NewMockIAMRepo(t)
+	repo.EXPECT().
+		GetUserByID(mock.Anything, "u1").
+		RunAndReturn(func(context.Context, string) (*model.User, error) {
 			return iamTestUser("u1"), nil
-		},
-	}
+		})
 	uc := newIAMTestUsecase(repo)
 
 	roles, ctxVer, err := uc.AddUserRole(context.Background(), "u1", "unknown", nil)
@@ -208,12 +225,12 @@ func TestIAMUsecaseAddUserRoleRejectsUnknownRole(t *testing.T) {
 func TestIAMUsecaseRemoveUserRoleRejectsUnknownRole(t *testing.T) {
 	t.Parallel()
 
-	repo := &mockIAMRepo{
-		t: t,
-		getUserByID: func(context.Context, string) (*model.User, error) {
+	repo := NewMockIAMRepo(t)
+	repo.EXPECT().
+		GetUserByID(mock.Anything, "u1").
+		RunAndReturn(func(context.Context, string) (*model.User, error) {
 			return iamTestUser("u1"), nil
-		},
-	}
+		})
 	uc := newIAMTestUsecase(repo)
 
 	roles, ctxVer, err := uc.RemoveUserRole(context.Background(), "u1", "unknown")

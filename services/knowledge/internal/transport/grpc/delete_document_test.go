@@ -9,6 +9,7 @@ import (
 	"secure-rag-platform/services/knowledge/internal/usecase"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 )
 
@@ -16,14 +17,16 @@ func TestKnowledgeServiceDeleteDocumentMapsResult(t *testing.T) {
 	t.Parallel()
 
 	deletedAt := time.Date(2026, 6, 22, 13, 0, 0, 0, time.UTC)
-	mock := &mockDocumentUsecase{t: t}
-	mock.deleteDocument = func(ctx context.Context, docUUID string) (*usecase.DeleteDocumentOutput, error) {
-		assert.Equal(t, "doc-1", docUUID)
+	uc := NewMockDocumentUsecase(t)
+	uc.EXPECT().
+		DeleteDocument(mock.Anything, "doc-1").
+		RunAndReturn(func(ctx context.Context, docUUID string) (*usecase.DeleteDocumentOutput, error) {
+			assert.Equal(t, "doc-1", docUUID)
 
-		return &usecase.DeleteDocumentOutput{DocumentUUID: docUUID, DeletedAt: deletedAt}, nil
-	}
+			return &usecase.DeleteDocumentOutput{DocumentUUID: docUUID, DeletedAt: deletedAt}, nil
+		})
 
-	resp, err := (&KnowledgeServiceServerImpl{uc: mock}).DeleteDocument(context.Background(), &pb.DeleteDocumentRequest{
+	resp, err := (&KnowledgeServiceServerImpl{uc: uc}).DeleteDocument(context.Background(), &pb.DeleteDocumentRequest{
 		DocumentUuid: "doc-1",
 	})
 	require.NoError(t, err)

@@ -8,15 +8,18 @@ import (
 	"secure-rag-platform/services/rag/internal/usecase"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 )
 
 func TestRAGServerQueryMapsRequestAndResult(t *testing.T) {
 	t.Parallel()
 
-	mock := &mockRAGUsecase{
-		t: t,
-		query: func(_ context.Context, req usecase.QueryRequest) (*usecase.QueryResult, error) {
+	uc := NewMockRAGUsecase(t)
+	uc.EXPECT().Ready().Return(true)
+	uc.EXPECT().
+		Query(mock.Anything, mock.Anything).
+		RunAndReturn(func(_ context.Context, req usecase.QueryRequest) (*usecase.QueryResult, error) {
 			assert.Equal(t, "question", req.Query)
 			assert.Equal(t, int32(2), req.TopK)
 			assert.Equal(t, []string{"doc-1", "doc-2"}, req.DocumentUUIDs)
@@ -31,10 +34,9 @@ func TestRAGServerQueryMapsRequestAndResult(t *testing.T) {
 				ResolvedEmbeddingModel:  "embed-model",
 				ResolvedGenerationModel: "gen-model",
 			}, nil
-		},
-	}
+		})
 
-	resp, err := (&Server{uc: mock}).Query(context.Background(), &pb.QueryRequest{
+	resp, err := (&Server{uc: uc}).Query(context.Background(), &pb.QueryRequest{
 		Query:                "question",
 		TopK:                 2,
 		DocumentUuids:        []string{"doc-1", "doc-2"},

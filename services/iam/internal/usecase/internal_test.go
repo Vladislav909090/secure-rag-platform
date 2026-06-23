@@ -7,6 +7,7 @@ import (
 	"secure-rag-platform/services/iam/internal/model"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 )
 
@@ -15,19 +16,21 @@ func TestIAMUsecaseValidateAccessTokenReturnsValidResult(t *testing.T) {
 
 	subject := iamTestSubject("u1")
 	session := iamTestSession("s1", "u1")
-	repo := &mockIAMRepo{
-		t: t,
-		getSubjectContext: func(_ context.Context, userID string) (*model.SubjectContext, error) {
+	repo := NewMockIAMRepo(t)
+	repo.EXPECT().
+		GetSubjectContext(mock.Anything, "u1").
+		RunAndReturn(func(_ context.Context, userID string) (*model.SubjectContext, error) {
 			assert.Equal(t, "u1", userID)
 
 			return subject, nil
-		},
-		getSessionByID: func(_ context.Context, sessionID string) (*model.UserSession, error) {
+		})
+	repo.EXPECT().
+		GetSessionByID(mock.Anything, "s1").
+		RunAndReturn(func(_ context.Context, sessionID string) (*model.UserSession, error) {
 			assert.Equal(t, "s1", sessionID)
 
 			return session, nil
-		},
-	}
+		})
 	uc := newIAMTestUsecase(repo)
 	token, _, _, err := uc.issueAccessToken(subject, "s1")
 	require.NoError(t, err)
@@ -47,7 +50,7 @@ func TestIAMUsecaseValidateAccessTokenReturnsValidResult(t *testing.T) {
 func TestIAMUsecaseValidateAccessTokenReturnsInvalidResult(t *testing.T) {
 	t.Parallel()
 
-	uc := newIAMTestUsecase(&mockIAMRepo{t: t})
+	uc := newIAMTestUsecase(NewMockIAMRepo(t))
 
 	got, err := uc.ValidateAccessToken(context.Background(), " ")
 	require.NoError(t, err)
@@ -59,7 +62,7 @@ func TestIAMUsecaseValidateAccessTokenReturnsInvalidResult(t *testing.T) {
 func TestIAMUsecaseValidateAccessTokenMapsMalformedTokenToInvalidResult(t *testing.T) {
 	t.Parallel()
 
-	uc := newIAMTestUsecase(&mockIAMRepo{t: t})
+	uc := newIAMTestUsecase(NewMockIAMRepo(t))
 
 	got, err := uc.ValidateAccessToken(context.Background(), "not-a-jwt")
 	require.NoError(t, err)
@@ -72,14 +75,14 @@ func TestIAMUsecaseGetSubjectContextByUserIDDelegatesToSubjectContext(t *testing
 	t.Parallel()
 
 	subject := iamTestSubject("u1")
-	repo := &mockIAMRepo{
-		t: t,
-		getSubjectContext: func(_ context.Context, userID string) (*model.SubjectContext, error) {
+	repo := NewMockIAMRepo(t)
+	repo.EXPECT().
+		GetSubjectContext(mock.Anything, "u1").
+		RunAndReturn(func(_ context.Context, userID string) (*model.SubjectContext, error) {
 			assert.Equal(t, "u1", userID)
 
 			return subject, nil
-		},
-	}
+		})
 	uc := newIAMTestUsecase(repo)
 
 	got, err := uc.GetSubjectContextByUserID(context.Background(), "u1")

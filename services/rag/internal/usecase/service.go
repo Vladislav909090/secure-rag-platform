@@ -24,8 +24,8 @@ type Defaults struct {
 
 // Service содержит бизнес-логику RAG
 type Service struct {
-	repo       ragRepo
-	storage    objectStorage
+	repo       RAGRepo
+	storage    ObjectStorage
 	knowledge  knowledgev1.KnowledgeServiceClient
 	embedding  aiinferencev1.EmbeddingServiceClient
 	generation aiinferencev1.GenerationServiceClient
@@ -33,13 +33,13 @@ type Service struct {
 	logger     *slog.Logger
 }
 
-type ragRepo interface {
+type RAGRepo interface {
 	DeleteChunks(context.Context, string) error
 	InsertChunks(context.Context, []repository.Chunk) error
 	SearchSimilar(context.Context, pgvector.Vector, string, int32, int32, int32, []string) ([]repository.ChunkMatch, error)
 }
 
-type objectStorage interface {
+type ObjectStorage interface {
 	Download(context.Context, string) (io.ReadCloser, error)
 }
 

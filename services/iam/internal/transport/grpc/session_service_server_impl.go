@@ -9,7 +9,7 @@ import (
 
 type SessionServiceServerImpl struct {
 	pb.UnimplementedSessionServiceServer
-	svc iamUsecase
+	svc IAMUsecaseContract
 }
 
 func NewSessionServiceServer(uc *usecase.IAMUsecase) *SessionServiceServerImpl {

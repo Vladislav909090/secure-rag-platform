@@ -10,6 +10,7 @@ import (
 	"secure-rag-platform/services/iam/internal/usecase"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 )
 
@@ -17,9 +18,10 @@ func TestInternalValidateAccessTokenFallsBackToMetadata(t *testing.T) {
 	t.Parallel()
 
 	expiresAt := time.Date(2026, 6, 22, 12, 0, 0, 0, time.UTC)
-	mock := &mockIAMUsecase{
-		t: t,
-		validateAccessToken: func(ctx context.Context, accessToken string) (*usecase.ValidateTokenResult, error) {
+	uc := NewMockIAMUsecase(t)
+	uc.EXPECT().
+		ValidateAccessToken(mock.Anything, "fallback-token").
+		RunAndReturn(func(ctx context.Context, accessToken string) (*usecase.ValidateTokenResult, error) {
 			assert.Equal(t, "fallback-token", accessToken)
 
 			return &usecase.ValidateTokenResult{
@@ -38,10 +40,9 @@ func TestInternalValidateAccessTokenFallsBackToMetadata(t *testing.T) {
 				},
 				ExpiresAtUnix: expiresAt.Unix(),
 			}, nil
-		},
-	}
+		})
 
-	resp, err := (&InternalIAMServiceServerImpl{svc: mock}).ValidateAccessToken(
+	resp, err := (&InternalIAMServiceServerImpl{svc: uc}).ValidateAccessToken(
 		authContext("fallback-token"),
 		&pb.ValidateAccessTokenRequest{},
 	)

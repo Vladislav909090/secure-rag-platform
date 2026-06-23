@@ -9,6 +9,7 @@ import (
 	"secure-rag-platform/services/iam/internal/usecase"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 )
 
@@ -16,18 +17,20 @@ func TestAuthServiceLogoutAllMapsResult(t *testing.T) {
 	t.Parallel()
 
 	principal := &usecase.Principal{UserID: "admin", Roles: []string{usecase.RoleAccessAdmin}}
-	mock := &mockIAMUsecase{t: t}
-	mock.authenticateAccessToken = func(ctx context.Context, accessToken string) (*usecase.Principal, *model.SubjectContext, error) {
-		return principal, nil, nil
-	}
-	mock.logoutAll = func(ctx context.Context, got *usecase.Principal, userID string) (*usecase.LogoutAllResult, error) {
-		assert.Same(t, principal, got)
-		assert.Equal(t, "u1", userID)
+	uc := NewMockIAMUsecase(t)
+	uc.EXPECT().
+		AuthenticateAccessToken(mock.Anything, "token").
+		Return(principal, (*model.SubjectContext)(nil), nil)
+	uc.EXPECT().
+		LogoutAll(mock.Anything, principal, "u1").
+		RunAndReturn(func(ctx context.Context, got *usecase.Principal, userID string) (*usecase.LogoutAllResult, error) {
+			assert.Same(t, principal, got)
+			assert.Equal(t, "u1", userID)
 
-		return &usecase.LogoutAllResult{UserID: userID, RevokedCount: 3, CtxVer: 9}, nil
-	}
+			return &usecase.LogoutAllResult{UserID: userID, RevokedCount: 3, CtxVer: 9}, nil
+		})
 
-	resp, err := (&AuthServiceServerImpl{svc: mock}).LogoutAll(authContext("token"), &pb.LogoutAllRequest{UserId: "u1"})
+	resp, err := (&AuthServiceServerImpl{svc: uc}).LogoutAll(authContext("token"), &pb.LogoutAllRequest{UserId: "u1"})
 	require.NoError(t, err)
 	assert.Equal(t, "u1", resp.GetUserId())
 	assert.Equal(t, int64(3), resp.GetRevokedCount())

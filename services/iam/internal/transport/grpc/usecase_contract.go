@@ -7,7 +7,7 @@ import (
 	"secure-rag-platform/services/iam/internal/usecase"
 )
 
-type iamUsecase interface {
+type IAMUsecaseContract interface {
 	AddUserRole(ctx context.Context, userID string, roleCode string, assignedBy *string) ([]*model.Role, int64, error)
 	AuthenticateAccessToken(ctx context.Context, accessToken string) (*usecase.Principal, *model.SubjectContext, error)
 	CreateUser(ctx context.Context, input usecase.CreateUserInput) (*model.UserView, error)
@@ -34,7 +34,7 @@ type iamUsecase interface {
 	ValidateAccessToken(ctx context.Context, accessToken string) (*usecase.ValidateTokenResult, error)
 }
 
-func usecaseOrNil(uc *usecase.IAMUsecase) iamUsecase {
+func usecaseOrNil(uc *usecase.IAMUsecase) IAMUsecaseContract {
 	if uc == nil {
 		return nil
 	}

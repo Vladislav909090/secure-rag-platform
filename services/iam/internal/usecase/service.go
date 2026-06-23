@@ -52,13 +52,13 @@ type accessTokenClaims struct {
 
 // IAMUsecase содержит бизнес-логику IAM
 type IAMUsecase struct {
-	repo   iamRepo
+	repo   IAMRepo
 	redis  *redis.Client
 	cfg    Config
 	logger *slog.Logger
 }
 
-type iamRepo interface {
+type IAMRepo interface {
 	AddUserRole(context.Context, string, string, *string) ([]*model.Role, error)
 	CreateSession(context.Context, repository.CreateSessionInput) (*model.UserSession, error)
 	CreateUser(context.Context, repository.CreateUserInput) (*model.User, error)

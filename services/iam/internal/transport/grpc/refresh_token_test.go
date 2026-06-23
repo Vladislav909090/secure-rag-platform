@@ -8,15 +8,17 @@ import (
 	"secure-rag-platform/services/iam/internal/usecase"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 )
 
 func TestAuthServiceRefreshTokenUsesUsecase(t *testing.T) {
 	t.Parallel()
 
-	mock := &mockIAMUsecase{
-		t: t,
-		refreshToken: func(ctx context.Context, input usecase.RefreshTokenInput) (*usecase.TokenPair, error) {
+	uc := NewMockIAMUsecase(t)
+	uc.EXPECT().
+		RefreshToken(mock.Anything, mock.Anything).
+		RunAndReturn(func(ctx context.Context, input usecase.RefreshTokenInput) (*usecase.TokenPair, error) {
 			assert.Equal(t, "old-refresh", input.RefreshToken)
 
 			return &usecase.TokenPair{
@@ -25,10 +27,9 @@ func TestAuthServiceRefreshTokenUsesUsecase(t *testing.T) {
 				ExpiresIn:    1800,
 				TokenType:    "Bearer",
 			}, nil
-		},
-	}
+		})
 
-	resp, err := (&AuthServiceServerImpl{svc: mock}).RefreshToken(context.Background(), &pb.RefreshTokenRequest{
+	resp, err := (&AuthServiceServerImpl{svc: uc}).RefreshToken(context.Background(), &pb.RefreshTokenRequest{
 		RefreshToken: "old-refresh",
 	})
 	require.NoError(t, err)

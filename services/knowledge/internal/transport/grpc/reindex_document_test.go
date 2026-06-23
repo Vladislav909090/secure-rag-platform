@@ -9,20 +9,23 @@ import (
 	"secure-rag-platform/services/knowledge/internal/usecase"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 )
 
 func TestKnowledgeServiceReindexDocumentMapsResult(t *testing.T) {
 	t.Parallel()
 
-	mock := &mockDocumentUsecase{t: t}
-	mock.reindexDocument = func(ctx context.Context, docUUID string) (*usecase.ReindexOutput, error) {
-		assert.Equal(t, "doc-1", docUUID)
+	uc := NewMockDocumentUsecase(t)
+	uc.EXPECT().
+		ReindexDocument(mock.Anything, "doc-1").
+		RunAndReturn(func(ctx context.Context, docUUID string) (*usecase.ReindexOutput, error) {
+			assert.Equal(t, "doc-1", docUUID)
 
-		return &usecase.ReindexOutput{DocumentUUID: docUUID, IndexStatus: model.IndexStatusPending}, nil
-	}
+			return &usecase.ReindexOutput{DocumentUUID: docUUID, IndexStatus: model.IndexStatusPending}, nil
+		})
 
-	resp, err := (&KnowledgeServiceServerImpl{uc: mock}).ReindexDocument(context.Background(), &pb.ReindexDocumentRequest{
+	resp, err := (&KnowledgeServiceServerImpl{uc: uc}).ReindexDocument(context.Background(), &pb.ReindexDocumentRequest{
 		DocumentUuid: "doc-1",
 	})
 	require.NoError(t, err)

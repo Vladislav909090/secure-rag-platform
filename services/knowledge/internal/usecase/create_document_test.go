@@ -9,6 +9,7 @@ import (
 	"secure-rag-platform/services/knowledge/internal/model"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 )
 
@@ -18,9 +19,10 @@ func TestDocumentUsecaseCreateDocumentUploadsAndStoresMetadata(t *testing.T) {
 	const expectedChecksum = "b94d27b9934d3e08a52e52d7da7dabfac484efe37a5380ee9088f7ace2efcde9"
 
 	desc := "description"
-	storage := &mockDocumentStorage{
-		t: t,
-		upload: func(_ context.Context, key string, reader io.Reader, size int64, contentType string) error {
+	storage := NewMockDocumentStorage(t)
+	storage.EXPECT().
+		Upload(mock.Anything, mock.Anything, mock.Anything, int64(-1), "application/octet-stream").
+		RunAndReturn(func(_ context.Context, key string, reader io.Reader, size int64, contentType string) error {
 			data, err := io.ReadAll(reader)
 			require.NoError(t, err)
 
@@ -31,11 +33,11 @@ func TestDocumentUsecaseCreateDocumentUploadsAndStoresMetadata(t *testing.T) {
 			assert.Equal(t, "hello world", string(data))
 
 			return nil
-		},
-	}
-	repo := &mockDocumentRepo{
-		t: t,
-		createDocument: func(_ context.Context, doc *model.Document) error {
+		})
+	repo := NewMockDocumentRepo(t)
+	repo.EXPECT().
+		CreateDocument(mock.Anything, mock.Anything).
+		RunAndReturn(func(_ context.Context, doc *model.Document) error {
 			require.NotNil(t, doc)
 			assert.NotEmpty(t, doc.UUID)
 			assert.Equal(t, "title", doc.Title)
@@ -52,8 +54,7 @@ func TestDocumentUsecaseCreateDocumentUploadsAndStoresMetadata(t *testing.T) {
 			assert.NotZero(t, doc.UpdatedAt)
 
 			return nil
-		},
-	}
+		})
 	uc := &DocumentUsecase{repo: repo, storage: storage, maxSize: 64}
 
 	out, err := uc.CreateDocument(context.Background(), CreateDocumentInput{
@@ -79,16 +80,16 @@ func TestDocumentUsecaseCreateDocumentRejectsEmptyTitle(t *testing.T) {
 func TestDocumentUsecaseCreateDocumentReturnsFileTooLarge(t *testing.T) {
 	t.Parallel()
 
-	storage := &mockDocumentStorage{
-		t: t,
-		upload: func(_ context.Context, _ string, reader io.Reader, _ int64, _ string) error {
+	storage := NewMockDocumentStorage(t)
+	storage.EXPECT().
+		Upload(mock.Anything, mock.Anything, mock.Anything, int64(-1), "text/plain").
+		RunAndReturn(func(_ context.Context, _ string, reader io.Reader, _ int64, _ string) error {
 			_, err := io.ReadAll(reader)
 
 			return err
-		},
-	}
+		})
 	uc := &DocumentUsecase{
-		repo:    &mockDocumentRepo{t: t},
+		repo:    NewMockDocumentRepo(t),
 		storage: storage,
 		maxSize: 3,
 	}

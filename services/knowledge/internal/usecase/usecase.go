@@ -24,12 +24,12 @@ var (
 
 // DocumentUsecase содержит бизнес-логику работы с документами
 type DocumentUsecase struct {
-	repo    documentRepo
-	storage documentStorage
+	repo    DocumentRepo
+	storage DocumentStorage
 	maxSize int64
 }
 
-type documentRepo interface {
+type DocumentRepo interface {
 	CreateDocument(context.Context, *model.Document) error
 	GetDocumentByUUID(context.Context, string) (*model.Document, error)
 	ListActiveDocuments(context.Context) ([]*model.Document, error)
@@ -40,7 +40,7 @@ type documentRepo interface {
 	UpdateIndexStatus(context.Context, int64, string) error
 }
 
-type documentStorage interface {
+type DocumentStorage interface {
 	Delete(context.Context, string) error
 	Download(context.Context, string) (io.ReadCloser, error)
 	Upload(context.Context, string, io.Reader, int64, string) error

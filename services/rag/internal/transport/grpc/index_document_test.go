@@ -8,15 +8,18 @@ import (
 	"secure-rag-platform/services/rag/internal/usecase"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 )
 
 func TestRAGServerIndexDocumentMapsRequestAndResult(t *testing.T) {
 	t.Parallel()
 
-	mock := &mockRAGUsecase{
-		t: t,
-		indexDocument: func(_ context.Context, req usecase.IndexDocumentRequest) (*usecase.IndexDocumentResult, error) {
+	uc := NewMockRAGUsecase(t)
+	uc.EXPECT().Ready().Return(true)
+	uc.EXPECT().
+		IndexDocument(mock.Anything, mock.Anything).
+		RunAndReturn(func(_ context.Context, req usecase.IndexDocumentRequest) (*usecase.IndexDocumentResult, error) {
 			assert.Equal(t, "doc-1", req.DocumentUUID)
 			assert.Equal(t, "embed", req.EmbeddingModelAlias)
 			assert.Equal(t, 256, req.ChunkSize)
@@ -28,10 +31,9 @@ func TestRAGServerIndexDocumentMapsRequestAndResult(t *testing.T) {
 				EmbeddingDimension:     4,
 				ResolvedEmbeddingModel: "embed-model",
 			}, nil
-		},
-	}
+		})
 
-	resp, err := (&Server{uc: mock}).IndexDocument(context.Background(), &pb.IndexDocumentRequest{
+	resp, err := (&Server{uc: uc}).IndexDocument(context.Background(), &pb.IndexDocumentRequest{
 		DocumentUuid:        "doc-1",
 		EmbeddingModelAlias: "embed",
 		ChunkSize:           256,

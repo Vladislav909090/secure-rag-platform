@@ -9,7 +9,7 @@ import (
 
 type AuthServiceServerImpl struct {
 	pb.UnimplementedAuthServiceServer
-	svc iamUsecase
+	svc IAMUsecaseContract
 }
 
 func NewAuthServiceServer(uc *usecase.IAMUsecase) *AuthServiceServerImpl {

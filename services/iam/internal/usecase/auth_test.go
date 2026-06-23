@@ -9,6 +9,7 @@ import (
 	"secure-rag-platform/services/iam/internal/repository"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 )
 
@@ -17,26 +18,30 @@ func TestIAMUsecaseLoginIssuesTokenPair(t *testing.T) {
 
 	user := iamTestUser("u1")
 	subject := iamTestSubject("u1")
-	repo := &mockIAMRepo{
-		t: t,
-		getUserByLogin: func(_ context.Context, login string) (*model.User, error) {
+	repo := NewMockIAMRepo(t)
+	repo.EXPECT().
+		GetUserByLogin(mock.Anything, "user@example.com").
+		RunAndReturn(func(_ context.Context, login string) (*model.User, error) {
 			assert.Equal(t, "user@example.com", login)
 
 			return user, nil
-		},
-		getSubjectContext: func(_ context.Context, userID string) (*model.SubjectContext, error) {
+		})
+	repo.EXPECT().
+		GetSubjectContext(mock.Anything, "u1").
+		RunAndReturn(func(_ context.Context, userID string) (*model.SubjectContext, error) {
 			assert.Equal(t, "u1", userID)
 
 			return subject, nil
-		},
-		createSession: func(_ context.Context, input repository.CreateSessionInput) (*model.UserSession, error) {
+		})
+	repo.EXPECT().
+		CreateSession(mock.Anything, mock.Anything).
+		RunAndReturn(func(_ context.Context, input repository.CreateSessionInput) (*model.UserSession, error) {
 			assert.Equal(t, "u1", input.UserID)
 			assert.NotEmpty(t, input.RefreshTokenHash)
 			assert.True(t, input.ExpiresAt.After(time.Now().UTC()))
 
 			return iamTestSession("s1", "u1"), nil
-		},
-	}
+		})
 	uc := newIAMTestUsecase(repo)
 
 	got, err := uc.Login(context.Background(), LoginInput{Login: " user@example.com ", Password: "password"})
@@ -51,12 +56,12 @@ func TestIAMUsecaseLoginIssuesTokenPair(t *testing.T) {
 func TestIAMUsecaseLoginRejectsBadPassword(t *testing.T) {
 	t.Parallel()
 
-	repo := &mockIAMRepo{
-		t: t,
-		getUserByLogin: func(context.Context, string) (*model.User, error) {
+	repo := NewMockIAMRepo(t)
+	repo.EXPECT().
+		GetUserByLogin(mock.Anything, "user@example.com").
+		RunAndReturn(func(context.Context, string) (*model.User, error) {
 			return iamTestUser("u1"), nil
-		},
-	}
+		})
 	uc := newIAMTestUsecase(repo)
 
 	got, err := uc.Login(context.Background(), LoginInput{Login: "user@example.com", Password: "bad"})
@@ -69,12 +74,12 @@ func TestIAMUsecaseLoginRejectsInactiveUser(t *testing.T) {
 
 	user := iamTestUser("u1")
 	user.IsActive = false
-	repo := &mockIAMRepo{
-		t: t,
-		getUserByLogin: func(context.Context, string) (*model.User, error) {
+	repo := NewMockIAMRepo(t)
+	repo.EXPECT().
+		GetUserByLogin(mock.Anything, "user@example.com").
+		RunAndReturn(func(context.Context, string) (*model.User, error) {
 			return user, nil
-		},
-	}
+		})
 	uc := newIAMTestUsecase(repo)
 
 	got, err := uc.Login(context.Background(), LoginInput{Login: "user@example.com", Password: "password"})
@@ -85,7 +90,7 @@ func TestIAMUsecaseLoginRejectsInactiveUser(t *testing.T) {
 func TestIAMUsecaseLoginRejectsEmptyInput(t *testing.T) {
 	t.Parallel()
 
-	uc := newIAMTestUsecase(&mockIAMRepo{t: t})
+	uc := newIAMTestUsecase(NewMockIAMRepo(t))
 
 	got, err := uc.Login(context.Background(), LoginInput{Login: " ", Password: "password"})
 	require.ErrorIs(t, err, ErrInvalidArgument)
@@ -97,32 +102,38 @@ func TestIAMUsecaseRefreshTokenRotatesSession(t *testing.T) {
 
 	refreshRaw := "refresh-token"
 	refreshHash := hashOpaqueToken(refreshRaw)
-	repo := &mockIAMRepo{
-		t: t,
-		getSessionByRefreshHash: func(_ context.Context, gotHash string) (*model.UserSession, error) {
+	repo := NewMockIAMRepo(t)
+	repo.EXPECT().
+		GetSessionByRefreshHash(mock.Anything, refreshHash).
+		RunAndReturn(func(_ context.Context, gotHash string) (*model.UserSession, error) {
 			assert.Equal(t, refreshHash, gotHash)
 
 			return iamTestSession("s1", "u1"), nil
-		},
-		getUserByID: func(_ context.Context, userID string) (*model.User, error) {
+		})
+	repo.EXPECT().
+		GetUserByID(mock.Anything, "u1").
+		RunAndReturn(func(_ context.Context, userID string) (*model.User, error) {
 			assert.Equal(t, "u1", userID)
 
 			return iamTestUser("u1"), nil
-		},
-		getSubjectContext: func(_ context.Context, userID string) (*model.SubjectContext, error) {
+		})
+	repo.EXPECT().
+		GetSubjectContext(mock.Anything, "u1").
+		RunAndReturn(func(_ context.Context, userID string) (*model.SubjectContext, error) {
 			assert.Equal(t, "u1", userID)
 
 			return iamTestSubject("u1"), nil
-		},
-		rotateSessionRefreshHash: func(_ context.Context, sessionID string, newRefreshHash string, expiresAt time.Time) (*model.UserSession, error) {
+		})
+	repo.EXPECT().
+		RotateSessionRefreshHash(mock.Anything, "s1", mock.Anything, mock.Anything).
+		RunAndReturn(func(_ context.Context, sessionID string, newRefreshHash string, expiresAt time.Time) (*model.UserSession, error) {
 			assert.Equal(t, "s1", sessionID)
 			assert.NotEmpty(t, newRefreshHash)
 			assert.NotEqual(t, refreshHash, newRefreshHash)
 			assert.True(t, expiresAt.After(time.Now().UTC()))
 
 			return iamTestSession("s1", "u1"), nil
-		},
-	}
+		})
 	uc := newIAMTestUsecase(repo)
 
 	got, err := uc.RefreshToken(context.Background(), RefreshTokenInput{RefreshToken: refreshRaw})
@@ -139,12 +150,12 @@ func TestIAMUsecaseRefreshTokenRejectsRevokedSession(t *testing.T) {
 	revokedAt := time.Now().UTC()
 	session := iamTestSession("s1", "u1")
 	session.RevokedAt = &revokedAt
-	repo := &mockIAMRepo{
-		t: t,
-		getSessionByRefreshHash: func(context.Context, string) (*model.UserSession, error) {
+	repo := NewMockIAMRepo(t)
+	repo.EXPECT().
+		GetSessionByRefreshHash(mock.Anything, mock.Anything).
+		RunAndReturn(func(context.Context, string) (*model.UserSession, error) {
 			return session, nil
-		},
-	}
+		})
 	uc := newIAMTestUsecase(repo)
 
 	got, err := uc.RefreshToken(context.Background(), RefreshTokenInput{RefreshToken: "refresh-token"})
@@ -157,12 +168,12 @@ func TestIAMUsecaseRefreshTokenRejectsExpiredSession(t *testing.T) {
 
 	session := iamTestSession("s1", "u1")
 	session.ExpiresAt = time.Now().UTC().Add(-time.Minute)
-	repo := &mockIAMRepo{
-		t: t,
-		getSessionByRefreshHash: func(context.Context, string) (*model.UserSession, error) {
+	repo := NewMockIAMRepo(t)
+	repo.EXPECT().
+		GetSessionByRefreshHash(mock.Anything, mock.Anything).
+		RunAndReturn(func(context.Context, string) (*model.UserSession, error) {
 			return session, nil
-		},
-	}
+		})
 	uc := newIAMTestUsecase(repo)
 
 	got, err := uc.RefreshToken(context.Background(), RefreshTokenInput{RefreshToken: "refresh-token"})
@@ -173,15 +184,17 @@ func TestIAMUsecaseRefreshTokenRejectsExpiredSession(t *testing.T) {
 func TestIAMUsecaseRefreshTokenRejectsMissingUser(t *testing.T) {
 	t.Parallel()
 
-	repo := &mockIAMRepo{
-		t: t,
-		getSessionByRefreshHash: func(context.Context, string) (*model.UserSession, error) {
+	repo := NewMockIAMRepo(t)
+	repo.EXPECT().
+		GetSessionByRefreshHash(mock.Anything, mock.Anything).
+		RunAndReturn(func(context.Context, string) (*model.UserSession, error) {
 			return iamTestSession("s1", "u1"), nil
-		},
-		getUserByID: func(context.Context, string) (*model.User, error) {
+		})
+	repo.EXPECT().
+		GetUserByID(mock.Anything, "u1").
+		RunAndReturn(func(context.Context, string) (*model.User, error) {
 			return nil, nil
-		},
-	}
+		})
 	uc := newIAMTestUsecase(repo)
 
 	got, err := uc.RefreshToken(context.Background(), RefreshTokenInput{RefreshToken: "refresh-token"})
@@ -192,21 +205,27 @@ func TestIAMUsecaseRefreshTokenRejectsMissingUser(t *testing.T) {
 func TestIAMUsecaseRefreshTokenMapsRotateNotFoundToRevoked(t *testing.T) {
 	t.Parallel()
 
-	repo := &mockIAMRepo{
-		t: t,
-		getSessionByRefreshHash: func(context.Context, string) (*model.UserSession, error) {
+	repo := NewMockIAMRepo(t)
+	repo.EXPECT().
+		GetSessionByRefreshHash(mock.Anything, mock.Anything).
+		RunAndReturn(func(context.Context, string) (*model.UserSession, error) {
 			return iamTestSession("s1", "u1"), nil
-		},
-		getUserByID: func(context.Context, string) (*model.User, error) {
+		})
+	repo.EXPECT().
+		GetUserByID(mock.Anything, "u1").
+		RunAndReturn(func(context.Context, string) (*model.User, error) {
 			return iamTestUser("u1"), nil
-		},
-		getSubjectContext: func(context.Context, string) (*model.SubjectContext, error) {
+		})
+	repo.EXPECT().
+		GetSubjectContext(mock.Anything, "u1").
+		RunAndReturn(func(context.Context, string) (*model.SubjectContext, error) {
 			return iamTestSubject("u1"), nil
-		},
-		rotateSessionRefreshHash: func(context.Context, string, string, time.Time) (*model.UserSession, error) {
+		})
+	repo.EXPECT().
+		RotateSessionRefreshHash(mock.Anything, "s1", mock.Anything, mock.Anything).
+		RunAndReturn(func(context.Context, string, string, time.Time) (*model.UserSession, error) {
 			return nil, repository.ErrNotFound
-		},
-	}
+		})
 	uc := newIAMTestUsecase(repo)
 
 	got, err := uc.RefreshToken(context.Background(), RefreshTokenInput{RefreshToken: "refresh-token"})
@@ -217,19 +236,21 @@ func TestIAMUsecaseRefreshTokenMapsRotateNotFoundToRevoked(t *testing.T) {
 func TestIAMUsecaseLogoutAllowsAdminToRevokeOtherUserSession(t *testing.T) {
 	t.Parallel()
 
-	repo := &mockIAMRepo{
-		t: t,
-		getSessionByID: func(_ context.Context, sessionID string) (*model.UserSession, error) {
+	repo := NewMockIAMRepo(t)
+	repo.EXPECT().
+		GetSessionByID(mock.Anything, "s2").
+		RunAndReturn(func(_ context.Context, sessionID string) (*model.UserSession, error) {
 			assert.Equal(t, "s2", sessionID)
 
 			return iamTestSession("s2", "u2"), nil
-		},
-		revokeSession: func(_ context.Context, sessionID string) (bool, error) {
+		})
+	repo.EXPECT().
+		RevokeSession(mock.Anything, "s2").
+		RunAndReturn(func(_ context.Context, sessionID string) (bool, error) {
 			assert.Equal(t, "s2", sessionID)
 
 			return true, nil
-		},
-	}
+		})
 	uc := newIAMTestUsecase(repo)
 
 	revoked, err := uc.Logout(context.Background(), &Principal{UserID: "u1", SessionID: "s1", Roles: []string{RoleAccessAdmin}}, "s2")
@@ -240,13 +261,7 @@ func TestIAMUsecaseLogoutAllowsAdminToRevokeOtherUserSession(t *testing.T) {
 func TestIAMUsecaseLogoutRejectsOtherUserForNonAdmin(t *testing.T) {
 	t.Parallel()
 
-	repo := &mockIAMRepo{
-		t: t,
-		getSessionByID: func(context.Context, string) (*model.UserSession, error) {
-			return iamTestSession("s2", "u2"), nil
-		},
-	}
-	uc := newIAMTestUsecase(repo)
+	uc := newIAMTestUsecase(NewMockIAMRepo(t))
 
 	revoked, err := uc.Logout(context.Background(), &Principal{UserID: "u1", SessionID: "s1", Roles: []string{RoleUser}}, "s2")
 	require.ErrorIs(t, err, ErrForbidden)
@@ -256,7 +271,7 @@ func TestIAMUsecaseLogoutRejectsOtherUserForNonAdmin(t *testing.T) {
 func TestIAMUsecaseLogoutRejectsNilPrincipal(t *testing.T) {
 	t.Parallel()
 
-	uc := newIAMTestUsecase(&mockIAMRepo{t: t})
+	uc := newIAMTestUsecase(NewMockIAMRepo(t))
 
 	revoked, err := uc.Logout(context.Background(), nil, "s1")
 	require.ErrorIs(t, err, ErrUnauthorized)
@@ -266,12 +281,12 @@ func TestIAMUsecaseLogoutRejectsNilPrincipal(t *testing.T) {
 func TestIAMUsecaseLogoutReturnsNotFoundForMissingSession(t *testing.T) {
 	t.Parallel()
 
-	repo := &mockIAMRepo{
-		t: t,
-		getSessionByID: func(context.Context, string) (*model.UserSession, error) {
+	repo := NewMockIAMRepo(t)
+	repo.EXPECT().
+		GetSessionByID(mock.Anything, "s1").
+		RunAndReturn(func(context.Context, string) (*model.UserSession, error) {
 			return nil, nil
-		},
-	}
+		})
 	uc := newIAMTestUsecase(repo)
 
 	revoked, err := uc.Logout(context.Background(), &Principal{UserID: "u1", SessionID: "s1"}, "")
@@ -282,19 +297,21 @@ func TestIAMUsecaseLogoutReturnsNotFoundForMissingSession(t *testing.T) {
 func TestIAMUsecaseLogoutAllRevokesTargetUserSessions(t *testing.T) {
 	t.Parallel()
 
-	repo := &mockIAMRepo{
-		t: t,
-		getUserByID: func(_ context.Context, userID string) (*model.User, error) {
+	repo := NewMockIAMRepo(t)
+	repo.EXPECT().
+		GetUserByID(mock.Anything, "u2").
+		RunAndReturn(func(_ context.Context, userID string) (*model.User, error) {
 			assert.Equal(t, "u2", userID)
 
 			return iamTestUser("u2"), nil
-		},
-		revokeAllUserSessions: func(_ context.Context, userID string) (int64, error) {
+		})
+	repo.EXPECT().
+		RevokeAllUserSessions(mock.Anything, "u2").
+		RunAndReturn(func(_ context.Context, userID string) (int64, error) {
 			assert.Equal(t, "u2", userID)
 
 			return 3, nil
-		},
-	}
+		})
 	uc := newIAMTestUsecase(repo)
 
 	got, err := uc.LogoutAll(context.Background(), &Principal{UserID: "u1", Roles: []string{RoleSuperAdmin}}, "u2")
@@ -308,7 +325,7 @@ func TestIAMUsecaseLogoutAllRevokesTargetUserSessions(t *testing.T) {
 func TestIAMUsecaseLogoutAllRejectsOtherUserForNonAdmin(t *testing.T) {
 	t.Parallel()
 
-	uc := newIAMTestUsecase(&mockIAMRepo{t: t})
+	uc := newIAMTestUsecase(NewMockIAMRepo(t))
 
 	got, err := uc.LogoutAll(context.Background(), &Principal{UserID: "u1", Roles: []string{RoleUser}}, "u2")
 	require.ErrorIs(t, err, ErrForbidden)
@@ -318,12 +335,12 @@ func TestIAMUsecaseLogoutAllRejectsOtherUserForNonAdmin(t *testing.T) {
 func TestIAMUsecaseLogoutAllReturnsNotFoundForMissingUser(t *testing.T) {
 	t.Parallel()
 
-	repo := &mockIAMRepo{
-		t: t,
-		getUserByID: func(context.Context, string) (*model.User, error) {
+	repo := NewMockIAMRepo(t)
+	repo.EXPECT().
+		GetUserByID(mock.Anything, "u1").
+		RunAndReturn(func(context.Context, string) (*model.User, error) {
 			return nil, nil
-		},
-	}
+		})
 	uc := newIAMTestUsecase(repo)
 
 	got, err := uc.LogoutAll(context.Background(), &Principal{UserID: "u1"}, "")
@@ -335,12 +352,12 @@ func TestIAMUsecaseGetMeReturnsPrincipalContext(t *testing.T) {
 	t.Parallel()
 
 	subject := iamTestSubject("u1")
-	repo := &mockIAMRepo{
-		t: t,
-		getSubjectContext: func(context.Context, string) (*model.SubjectContext, error) {
+	repo := NewMockIAMRepo(t)
+	repo.EXPECT().
+		GetSubjectContext(mock.Anything, "u1").
+		RunAndReturn(func(context.Context, string) (*model.SubjectContext, error) {
 			return subject, nil
-		},
-	}
+		})
 	uc := newIAMTestUsecase(repo)
 
 	got, err := uc.GetMe(context.Background(), &Principal{UserID: "u1"})
@@ -351,7 +368,7 @@ func TestIAMUsecaseGetMeReturnsPrincipalContext(t *testing.T) {
 func TestIAMUsecaseGetMeRejectsNilPrincipal(t *testing.T) {
 	t.Parallel()
 
-	uc := newIAMTestUsecase(&mockIAMRepo{t: t})
+	uc := newIAMTestUsecase(NewMockIAMRepo(t))
 
 	got, err := uc.GetMe(context.Background(), nil)
 	require.ErrorIs(t, err, ErrUnauthorized)

@@ -9,6 +9,7 @@ import (
 	"secure-rag-platform/services/iam/internal/usecase"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 )
 
@@ -18,23 +19,25 @@ func TestUserServiceUpdateUserMapsOptionalFields(t *testing.T) {
 	login := "alice2"
 	password := "new-secret"
 	active := false
-	mock := &mockIAMUsecase{t: t}
-	mock.authenticateAccessToken = func(ctx context.Context, accessToken string) (*usecase.Principal, *model.SubjectContext, error) {
-		return &usecase.Principal{UserID: "admin", Roles: []string{usecase.RoleAccessAdmin}}, nil, nil
-	}
-	mock.updateUser = func(ctx context.Context, input usecase.UpdateUserInput) (*model.UserView, error) {
-		assert.Equal(t, "u1", input.UserID)
-		require.NotNil(t, input.Login)
-		assert.Equal(t, login, *input.Login)
-		require.NotNil(t, input.Password)
-		assert.Equal(t, password, *input.Password)
-		require.NotNil(t, input.IsActive)
-		assert.Equal(t, active, *input.IsActive)
+	uc := NewMockIAMUsecase(t)
+	uc.EXPECT().
+		AuthenticateAccessToken(mock.Anything, "token").
+		Return(&usecase.Principal{UserID: "admin", Roles: []string{usecase.RoleAccessAdmin}}, (*model.SubjectContext)(nil), nil)
+	uc.EXPECT().
+		UpdateUser(mock.Anything, mock.Anything).
+		RunAndReturn(func(ctx context.Context, input usecase.UpdateUserInput) (*model.UserView, error) {
+			assert.Equal(t, "u1", input.UserID)
+			require.NotNil(t, input.Login)
+			assert.Equal(t, login, *input.Login)
+			require.NotNil(t, input.Password)
+			assert.Equal(t, password, *input.Password)
+			require.NotNil(t, input.IsActive)
+			assert.Equal(t, active, *input.IsActive)
 
-		return &model.UserView{ID: input.UserID, Login: *input.Login, IsActive: *input.IsActive}, nil
-	}
+			return &model.UserView{ID: input.UserID, Login: *input.Login, IsActive: *input.IsActive}, nil
+		})
 
-	resp, err := (&UserServiceServerImpl{svc: mock}).UpdateUser(authContext("token"), &pb.UpdateUserRequest{
+	resp, err := (&UserServiceServerImpl{svc: uc}).UpdateUser(authContext("token"), &pb.UpdateUserRequest{
 		UserId:   "u1",
 		Login:    &login,
 		Password: &password,

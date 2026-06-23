@@ -9,7 +9,7 @@ import (
 
 type UserServiceServerImpl struct {
 	pb.UnimplementedUserServiceServer
-	svc iamUsecase
+	svc IAMUsecaseContract
 }
 
 func NewUserServiceServer(uc *usecase.IAMUsecase) *UserServiceServerImpl {

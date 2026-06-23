@@ -9,6 +9,7 @@ import (
 	"secure-rag-platform/services/knowledge/internal/usecase"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
@@ -52,9 +53,10 @@ func TestKnowledgeServiceCreateDocumentStreamUploadsChunks(t *testing.T) {
 	require.NoError(t, err)
 
 	desc := "file description"
-	mock := &mockDocumentUsecase{
-		t: t,
-		createDocument: func(_ context.Context, input usecase.CreateDocumentInput, file io.Reader, fileName string, mimeType string) (*usecase.CreateDocumentOutput, error) {
+	uc := NewMockDocumentUsecase(t)
+	uc.EXPECT().
+		CreateDocument(mock.Anything, mock.Anything, mock.Anything, "note.txt", "text/plain").
+		RunAndReturn(func(_ context.Context, input usecase.CreateDocumentInput, file io.Reader, fileName string, mimeType string) (*usecase.CreateDocumentOutput, error) {
 			data, readErr := io.ReadAll(file)
 			require.NoError(t, readErr)
 
@@ -67,8 +69,7 @@ func TestKnowledgeServiceCreateDocumentStreamUploadsChunks(t *testing.T) {
 			assert.Equal(t, "hello world", string(data))
 
 			return &usecase.CreateDocumentOutput{Document: knowledgeTestDocument("doc-1")}, nil
-		},
-	}
+		})
 	stream := &testCreateDocumentStream{
 		ctx: context.Background(),
 		requests: []*pb.CreateDocumentStreamRequest{
@@ -101,7 +102,7 @@ func TestKnowledgeServiceCreateDocumentStreamUploadsChunks(t *testing.T) {
 		},
 	}
 
-	err = (&KnowledgeServiceServerImpl{uc: mock}).CreateDocumentStream(stream)
+	err = (&KnowledgeServiceServerImpl{uc: uc}).CreateDocumentStream(stream)
 	require.NoError(t, err)
 	require.NotNil(t, stream.sent)
 	require.NotNil(t, stream.sent.GetDocument())
@@ -122,7 +123,7 @@ func TestKnowledgeServiceCreateDocumentStreamRejectsMissingFileName(t *testing.T
 		},
 	}
 
-	err := (&KnowledgeServiceServerImpl{uc: &mockDocumentUsecase{t: t}}).CreateDocumentStream(stream)
+	err := (&KnowledgeServiceServerImpl{uc: NewMockDocumentUsecase(t)}).CreateDocumentStream(stream)
 	require.Error(t, err)
 	assert.Equal(t, codes.InvalidArgument, status.Code(err))
 	assert.Nil(t, stream.sent)

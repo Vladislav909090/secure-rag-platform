@@ -13,10 +13,10 @@ import (
 // Server реализует gRPC-сервис RAGService
 type Server struct {
 	pb.UnimplementedRAGServiceServer
-	uc ragUsecase
+	uc RAGUsecase
 }
 
-type ragUsecase interface {
+type RAGUsecase interface {
 	DeleteDocumentIndex(context.Context, string) error
 	IndexDocument(context.Context, usecase.IndexDocumentRequest) (*usecase.IndexDocumentResult, error)
 	Query(context.Context, usecase.QueryRequest) (*usecase.QueryResult, error)

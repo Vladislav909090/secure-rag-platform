@@ -8,7 +8,7 @@ import (
 	"secure-rag-platform/services/knowledge/internal/usecase"
 )
 
-type documentUsecase interface {
+type DocumentUsecaseContract interface {
 	CreateDocument(ctx context.Context, input usecase.CreateDocumentInput, file io.Reader, fileName string, mimeType string) (*usecase.CreateDocumentOutput, error)
 	DeleteDocument(ctx context.Context, docUUID string) (*usecase.DeleteDocumentOutput, error)
 	DownloadFile(ctx context.Context, docUUID string) (*usecase.FileDownload, error)
@@ -20,7 +20,7 @@ type documentUsecase interface {
 	UpdateDocument(ctx context.Context, docUUID string, title *string, description *string) (*model.Document, error)
 }
 
-func usecaseOrNil(uc *usecase.DocumentUsecase) documentUsecase {
+func usecaseOrNil(uc *usecase.DocumentUsecase) DocumentUsecaseContract {
 	if uc == nil {
 		return nil
 	}

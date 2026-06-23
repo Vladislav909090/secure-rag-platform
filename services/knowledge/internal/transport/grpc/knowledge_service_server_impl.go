@@ -11,7 +11,7 @@ import (
 // KnowledgeServiceServerImpl реализует gRPC-сервис KnowledgeService
 type KnowledgeServiceServerImpl struct {
 	pb.UnimplementedKnowledgeServiceServer
-	uc documentUsecase
+	uc DocumentUsecaseContract
 }
 
 // NewKnowledgeServiceServer создаёт gRPC-сервер; при nil доступен только health

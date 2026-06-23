@@ -9,7 +9,7 @@ import (
 
 type RoleServiceServerImpl struct {
 	pb.UnimplementedRoleServiceServer
-	svc iamUsecase
+	svc IAMUsecaseContract
 }
 
 func NewRoleServiceServer(uc *usecase.IAMUsecase) *RoleServiceServerImpl {

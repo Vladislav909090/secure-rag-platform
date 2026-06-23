@@ -7,6 +7,7 @@ import (
 	"secure-rag-platform/services/knowledge/internal/model"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 )
 
@@ -17,12 +18,12 @@ func TestDocumentUsecaseListDocumentsWrapsDocuments(t *testing.T) {
 		usecaseTestDocument("doc-1"),
 		usecaseTestDocument("doc-2"),
 	}
-	repo := &mockDocumentRepo{
-		t: t,
-		listActiveDocuments: func(context.Context) ([]*model.Document, error) {
+	repo := NewMockDocumentRepo(t)
+	repo.EXPECT().
+		ListActiveDocuments(mock.Anything).
+		RunAndReturn(func(context.Context) ([]*model.Document, error) {
 			return docs, nil
-		},
-	}
+		})
 	uc := &DocumentUsecase{repo: repo}
 
 	out, err := uc.ListDocuments(context.Background())
@@ -35,12 +36,12 @@ func TestDocumentUsecaseListDocumentsWrapsDocuments(t *testing.T) {
 func TestDocumentUsecaseListDocumentsWrapsRepoError(t *testing.T) {
 	t.Parallel()
 
-	repo := &mockDocumentRepo{
-		t: t,
-		listActiveDocuments: func(context.Context) ([]*model.Document, error) {
+	repo := NewMockDocumentRepo(t)
+	repo.EXPECT().
+		ListActiveDocuments(mock.Anything).
+		RunAndReturn(func(context.Context) ([]*model.Document, error) {
 			return nil, errBoom()
-		},
-	}
+		})
 	uc := &DocumentUsecase{repo: repo}
 
 	out, err := uc.ListDocuments(context.Background())

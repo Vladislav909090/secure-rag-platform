@@ -10,6 +10,7 @@ import (
 	"secure-rag-platform/services/rag/internal/repository"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 	"google.golang.org/grpc"
 )
@@ -40,14 +41,17 @@ func TestIsTextMime(t *testing.T) {
 func TestRAGServiceIndexDocumentDownloadsEmbedsAndStoresChunks(t *testing.T) {
 	t.Parallel()
 
-	repo := &mockRAGRepo{
-		t: t,
-		deleteChunks: func(_ context.Context, documentUUID string) error {
+	repo := NewMockRAGRepo(t)
+	repo.EXPECT().
+		DeleteChunks(mock.Anything, "doc-1").
+		RunAndReturn(func(_ context.Context, documentUUID string) error {
 			assert.Equal(t, "doc-1", documentUUID)
 
 			return nil
-		},
-		insertChunks: func(_ context.Context, chunks []repository.Chunk) error {
+		})
+	repo.EXPECT().
+		InsertChunks(mock.Anything, mock.Anything).
+		RunAndReturn(func(_ context.Context, chunks []repository.Chunk) error {
 			require.Len(t, chunks, 6)
 			assert.Equal(t, "doc-1", chunks[0].DocumentUUID)
 			assert.Equal(t, int32(0), chunks[0].ChunkIndex)
@@ -58,20 +62,21 @@ func TestRAGServiceIndexDocumentDownloadsEmbedsAndStoresChunks(t *testing.T) {
 			assert.Equal(t, []float32{5, 6}, chunks[5].Embedding.Slice())
 
 			return nil
-		},
-	}
+		})
 	svc := newRAGTestService(t, repo)
-	svc.storage = &mockObjectStorage{
-		t: t,
-		download: func(_ context.Context, key string) (io.ReadCloser, error) {
+	storage := NewMockObjectStorage(t)
+	storage.EXPECT().
+		Download(mock.Anything, "documents/doc-1/file").
+		RunAndReturn(func(_ context.Context, key string) (io.ReadCloser, error) {
 			assert.Equal(t, "documents/doc-1/file", key)
 
 			return readCloser("abcdefghijklmnopqrst"), nil
-		},
-	}
-	svc.embedding = &mockEmbeddingClient{
-		t: t,
-		batchEmbed: func(_ context.Context, req *aiinferencev1.BatchEmbedRequest, _ ...grpc.CallOption) (*aiinferencev1.BatchEmbedResponse, error) {
+		})
+	svc.storage = storage
+	embedding := NewMockEmbeddingServiceClient(t)
+	embedding.EXPECT().
+		BatchEmbed(mock.Anything, mock.Anything).
+		RunAndReturn(func(_ context.Context, req *aiinferencev1.BatchEmbedRequest, _ ...grpc.CallOption) (*aiinferencev1.BatchEmbedResponse, error) {
 			assert.Equal(t, "embed-default", req.GetModelAlias())
 			assert.True(t, req.GetNormalize())
 			require.Len(t, req.GetTexts(), 6)
@@ -88,8 +93,8 @@ func TestRAGServiceIndexDocumentDownloadsEmbedsAndStoresChunks(t *testing.T) {
 				Dimension:     2,
 				ResolvedModel: "embed-resolved",
 			}, nil
-		},
-	}
+		})
+	svc.embedding = embedding
 
 	got, err := svc.IndexDocument(context.Background(), IndexDocumentRequest{
 		DocumentUUID: " doc-1 ",
@@ -107,7 +112,7 @@ func TestRAGServiceIndexDocumentDownloadsEmbedsAndStoresChunks(t *testing.T) {
 func TestRAGServiceIndexDocumentRejectsEmptyDocumentUUID(t *testing.T) {
 	t.Parallel()
 
-	got, err := newRAGTestService(t, &mockRAGRepo{t: t}).IndexDocument(context.Background(), IndexDocumentRequest{})
+	got, err := newRAGTestService(t, NewMockRAGRepo(t)).IndexDocument(context.Background(), IndexDocumentRequest{})
 	require.ErrorIs(t, err, ErrInvalidRequest)
 	assert.Nil(t, got)
 }
@@ -115,15 +120,16 @@ func TestRAGServiceIndexDocumentRejectsEmptyDocumentUUID(t *testing.T) {
 func TestRAGServiceIndexDocumentRejectsUnsupportedMime(t *testing.T) {
 	t.Parallel()
 
-	svc := newRAGTestService(t, &mockRAGRepo{t: t})
-	svc.knowledge = &mockKnowledgeClient{
-		t: t,
-		getDocument: func(context.Context, *knowledgev1.GetDocumentRequest, ...grpc.CallOption) (*knowledgev1.GetDocumentResponse, error) {
+	svc := newRAGTestService(t, NewMockRAGRepo(t))
+	knowledge := NewMockKnowledgeServiceClient(t)
+	knowledge.EXPECT().
+		GetDocument(mock.Anything, mock.Anything).
+		RunAndReturn(func(context.Context, *knowledgev1.GetDocumentRequest, ...grpc.CallOption) (*knowledgev1.GetDocumentResponse, error) {
 			return &knowledgev1.GetDocumentResponse{
 				Document: &knowledgev1.Document{Uuid: "doc-1", StorageKey: "key", MimeType: "application/pdf"},
 			}, nil
-		},
-	}
+		})
+	svc.knowledge = knowledge
 
 	got, err := svc.IndexDocument(context.Background(), IndexDocumentRequest{DocumentUUID: "doc-1"})
 	require.ErrorIs(t, err, ErrInvalidRequest)
@@ -133,17 +139,19 @@ func TestRAGServiceIndexDocumentRejectsUnsupportedMime(t *testing.T) {
 func TestRAGServiceIndexDocumentRejectsEmbeddingSizeMismatch(t *testing.T) {
 	t.Parallel()
 
-	svc := newRAGTestService(t, &mockRAGRepo{t: t})
-	svc.storage = &mockObjectStorage{
-		t:        t,
-		download: func(context.Context, string) (io.ReadCloser, error) { return readCloser("alpha beta"), nil },
-	}
-	svc.embedding = &mockEmbeddingClient{
-		t: t,
-		batchEmbed: func(context.Context, *aiinferencev1.BatchEmbedRequest, ...grpc.CallOption) (*aiinferencev1.BatchEmbedResponse, error) {
+	svc := newRAGTestService(t, NewMockRAGRepo(t))
+	storage := NewMockObjectStorage(t)
+	storage.EXPECT().
+		Download(mock.Anything, "documents/doc-1/file").
+		Return(readCloser("alpha beta"), nil)
+	svc.storage = storage
+	embedding := NewMockEmbeddingServiceClient(t)
+	embedding.EXPECT().
+		BatchEmbed(mock.Anything, mock.Anything).
+		RunAndReturn(func(context.Context, *aiinferencev1.BatchEmbedRequest, ...grpc.CallOption) (*aiinferencev1.BatchEmbedResponse, error) {
 			return &aiinferencev1.BatchEmbedResponse{Vectors: nil, Dimension: 2}, nil
-		},
-	}
+		})
+	svc.embedding = embedding
 
 	got, err := svc.IndexDocument(context.Background(), IndexDocumentRequest{DocumentUUID: "doc-1", ChunkSize: 10})
 	require.Error(t, err)

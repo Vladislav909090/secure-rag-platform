@@ -16,11 +16,15 @@ func TestRAGServerRequireUC(t *testing.T) {
 	require.Error(t, err)
 	assert.Equal(t, codes.Unavailable, status.Code(err))
 
-	err = (&Server{uc: &mockRAGUsecase{t: t, ready: func() bool { return false }}}).requireUC()
+	notReady := NewMockRAGUsecase(t)
+	notReady.EXPECT().Ready().Return(false)
+	err = (&Server{uc: notReady}).requireUC()
 	require.Error(t, err)
 	assert.Equal(t, codes.Unavailable, status.Code(err))
 
-	err = (&Server{uc: &mockRAGUsecase{t: t}}).requireUC()
+	ready := NewMockRAGUsecase(t)
+	ready.EXPECT().Ready().Return(true)
+	err = (&Server{uc: ready}).requireUC()
 	require.NoError(t, err)
 }
 

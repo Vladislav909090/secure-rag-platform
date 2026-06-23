@@ -9,6 +9,7 @@ import (
 	"secure-rag-platform/services/iam/internal/usecase"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 	"google.golang.org/protobuf/types/known/structpb"
 )
@@ -20,26 +21,28 @@ func TestUserServiceCreateUserMapsRequestAndCreator(t *testing.T) {
 	require.NoError(t, err)
 	active := false
 
-	mock := &mockIAMUsecase{t: t}
-	mock.authenticateAccessToken = func(ctx context.Context, accessToken string) (*usecase.Principal, *model.SubjectContext, error) {
-		return &usecase.Principal{
+	uc := NewMockIAMUsecase(t)
+	uc.EXPECT().
+		AuthenticateAccessToken(mock.Anything, "token").
+		Return(&usecase.Principal{
 			UserID: "admin",
 			Roles:  []string{usecase.RoleSuperAdmin},
-		}, nil, nil
-	}
-	mock.createUser = func(ctx context.Context, input usecase.CreateUserInput) (*model.UserView, error) {
-		assert.Equal(t, "alice", input.Login)
-		assert.Equal(t, "secret", input.Password)
-		require.NotNil(t, input.IsActive)
-		assert.Equal(t, active, *input.IsActive)
-		require.NotNil(t, input.CreatedBy)
-		assert.Equal(t, "admin", *input.CreatedBy)
-		assert.Equal(t, "search", input.Attributes["department"])
+		}, (*model.SubjectContext)(nil), nil)
+	uc.EXPECT().
+		CreateUser(mock.Anything, mock.Anything).
+		RunAndReturn(func(ctx context.Context, input usecase.CreateUserInput) (*model.UserView, error) {
+			assert.Equal(t, "alice", input.Login)
+			assert.Equal(t, "secret", input.Password)
+			require.NotNil(t, input.IsActive)
+			assert.Equal(t, active, *input.IsActive)
+			require.NotNil(t, input.CreatedBy)
+			assert.Equal(t, "admin", *input.CreatedBy)
+			assert.Equal(t, "search", input.Attributes["department"])
 
-		return &model.UserView{ID: "u1", Login: input.Login, IsActive: active, Roles: input.RoleCodes, Attributes: input.Attributes}, nil
-	}
+			return &model.UserView{ID: "u1", Login: input.Login, IsActive: active, Roles: input.RoleCodes, Attributes: input.Attributes}, nil
+		})
 
-	resp, err := (&UserServiceServerImpl{svc: mock}).CreateUser(authContext("token"), &pb.CreateUserRequest{
+	resp, err := (&UserServiceServerImpl{svc: uc}).CreateUser(authContext("token"), &pb.CreateUserRequest{
 		Login:      "alice",
 		Password:   "secret",
 		IsActive:   &active,

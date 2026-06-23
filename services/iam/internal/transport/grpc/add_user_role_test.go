@@ -9,26 +9,29 @@ import (
 	"secure-rag-platform/services/iam/internal/usecase"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 )
 
 func TestRoleServiceAddUserRoleUsesAdminPrincipal(t *testing.T) {
 	t.Parallel()
 
-	mock := &mockIAMUsecase{t: t}
-	mock.authenticateAccessToken = func(ctx context.Context, accessToken string) (*usecase.Principal, *model.SubjectContext, error) {
-		return &usecase.Principal{UserID: "admin", Roles: []string{usecase.RoleAccessAdmin}}, nil, nil
-	}
-	mock.addUserRole = func(ctx context.Context, userID string, roleCode string, assignedBy *string) ([]*model.Role, int64, error) {
-		assert.Equal(t, "u1", userID)
-		assert.Equal(t, usecase.RoleKnowledgeEditor, roleCode)
-		require.NotNil(t, assignedBy)
-		assert.Equal(t, "admin", *assignedBy)
+	uc := NewMockIAMUsecase(t)
+	uc.EXPECT().
+		AuthenticateAccessToken(mock.Anything, "token").
+		Return(&usecase.Principal{UserID: "admin", Roles: []string{usecase.RoleAccessAdmin}}, (*model.SubjectContext)(nil), nil)
+	uc.EXPECT().
+		AddUserRole(mock.Anything, "u1", usecase.RoleKnowledgeEditor, mock.Anything).
+		RunAndReturn(func(ctx context.Context, userID string, roleCode string, assignedBy *string) ([]*model.Role, int64, error) {
+			assert.Equal(t, "u1", userID)
+			assert.Equal(t, usecase.RoleKnowledgeEditor, roleCode)
+			require.NotNil(t, assignedBy)
+			assert.Equal(t, "admin", *assignedBy)
 
-		return []*model.Role{{ID: 2, Code: roleCode}}, 6, nil
-	}
+			return []*model.Role{{ID: 2, Code: roleCode}}, 6, nil
+		})
 
-	resp, err := (&RoleServiceServerImpl{svc: mock}).AddUserRole(authContext("token"), &pb.AddUserRoleRequest{
+	resp, err := (&RoleServiceServerImpl{svc: uc}).AddUserRole(authContext("token"), &pb.AddUserRoleRequest{
 		UserId:   "u1",
 		RoleCode: usecase.RoleKnowledgeEditor,
 	})

@@ -8,6 +8,7 @@ import (
 	"secure-rag-platform/services/knowledge/internal/model"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 	"google.golang.org/protobuf/types/known/structpb"
 )
@@ -18,18 +19,20 @@ func TestKnowledgeServiceUpdateDocumentAttributesMapsAttributes(t *testing.T) {
 	attrs, err := structpb.NewStruct(map[string]any{"department": "legal"})
 	require.NoError(t, err)
 
-	mock := &mockDocumentUsecase{t: t}
-	mock.updateAttributes = func(ctx context.Context, docUUID string, attributes map[string]any) (*model.Document, error) {
-		assert.Equal(t, "doc-1", docUUID)
-		assert.Equal(t, "legal", attributes["department"])
+	uc := NewMockDocumentUsecase(t)
+	uc.EXPECT().
+		UpdateAttributes(mock.Anything, "doc-1", mock.Anything).
+		RunAndReturn(func(ctx context.Context, docUUID string, attributes map[string]any) (*model.Document, error) {
+			assert.Equal(t, "doc-1", docUUID)
+			assert.Equal(t, "legal", attributes["department"])
 
-		doc := knowledgeTestDocument(docUUID)
-		doc.Attributes = attributes
+			doc := knowledgeTestDocument(docUUID)
+			doc.Attributes = attributes
 
-		return doc, nil
-	}
+			return doc, nil
+		})
 
-	resp, err := (&KnowledgeServiceServerImpl{uc: mock}).UpdateDocumentAttributes(context.Background(), &pb.UpdateDocumentAttributesRequest{
+	resp, err := (&KnowledgeServiceServerImpl{uc: uc}).UpdateDocumentAttributes(context.Background(), &pb.UpdateDocumentAttributesRequest{
 		DocumentUuid: "doc-1",
 		Attributes:   attrs,
 	})

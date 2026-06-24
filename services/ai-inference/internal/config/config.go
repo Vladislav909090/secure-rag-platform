@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"os"
 	"sort"
+	"strconv"
 	"strings"
 )
 
@@ -15,6 +16,9 @@ const (
 	HTTPPort        Key = "HTTP_PORT"
 	GRPCPort        Key = "GRPC_PORT"
 	ProviderTimeout Key = "AI_INFERENCE_PROVIDER_TIMEOUT"
+
+	SkipProviderHealthcheck Key = "AI_INFERENCE_SKIP_PROVIDER_HEALTHCHECK"
+	MockProviderResponses   Key = "AI_INFERENCE_MOCK_RESPONSES"
 )
 
 const (
@@ -51,6 +55,9 @@ type Runtime struct {
 	GRPCPort        string
 	ProviderTimeout string
 	ModelAliases    map[string]ModelAlias
+
+	SkipProviderHealthcheck bool
+	MockProviderResponses   bool
 }
 
 func GetValue(key Key) string {
@@ -73,7 +80,8 @@ func LoadFromFile(modelsConfigPath string) (*Runtime, error) {
 	}
 
 	aliases := make(map[string]ModelAlias)
-	if err := json.Unmarshal(raw, &aliases); err != nil {
+	err = json.Unmarshal(raw, &aliases)
+	if err != nil {
 		return nil, fmt.Errorf("parse models config %q: %w", modelsConfigPath, err)
 	}
 
@@ -84,16 +92,42 @@ func LoadFromFile(modelsConfigPath string) (*Runtime, error) {
 		}
 	}
 
-	if err := validateAliases(aliases); err != nil {
+	err = validateAliases(aliases)
+	if err != nil {
+		return nil, err
+	}
+
+	skipProviderHealthcheck, err := parseBoolValue(GetValue(SkipProviderHealthcheck), SkipProviderHealthcheck)
+	if err != nil {
+		return nil, err
+	}
+	mockProviderResponses, err := parseBoolValue(GetValue(MockProviderResponses), MockProviderResponses)
+	if err != nil {
 		return nil, err
 	}
 
 	return &Runtime{
-		HTTPPort:        strings.TrimSpace(GetValue(HTTPPort)),
-		GRPCPort:        strings.TrimSpace(GetValue(GRPCPort)),
-		ProviderTimeout: strings.TrimSpace(GetValue(ProviderTimeout)),
-		ModelAliases:    aliases,
+		HTTPPort:                strings.TrimSpace(GetValue(HTTPPort)),
+		GRPCPort:                strings.TrimSpace(GetValue(GRPCPort)),
+		ProviderTimeout:         strings.TrimSpace(GetValue(ProviderTimeout)),
+		ModelAliases:            aliases,
+		SkipProviderHealthcheck: skipProviderHealthcheck,
+		MockProviderResponses:   mockProviderResponses,
 	}, nil
+}
+
+func parseBoolValue(raw string, key Key) (bool, error) {
+	raw = strings.TrimSpace(raw)
+	if raw == "" {
+		return false, nil
+	}
+
+	value, err := strconv.ParseBool(raw)
+	if err != nil {
+		return false, fmt.Errorf("parse %s: %w", key, err)
+	}
+
+	return value, nil
 }
 
 func validateAliases(aliases map[string]ModelAlias) error {

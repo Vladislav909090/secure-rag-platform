@@ -72,12 +72,27 @@ cp ./config/models.example.json ./config/models.json
 `provider` можно не указывать: будет использован `openai_compat`. Для generation можно добавить `generation_defaults`: `temperature`, `top_p`, `max_tokens`, `presence_penalty`, `frequency_penalty`.
 
 При старте сервис валидирует алиасы и делает короткий health-check по каждому провайдеру.
+Для локального режима без проверки живости внешних моделей можно выставить:
+
+```bash
+AI_INFERENCE_SKIP_PROVIDER_HEALTHCHECK=true
+```
+
+В этом режиме startup и `/health` не вызывают embedding/LLM провайдеры, но обычные `generate`/`embed` запросы остаются реальными. Для полностью моковых ответов:
+
+```bash
+AI_INFERENCE_MOCK_RESPONSES=true
+```
+
+Mock-режим также отключает live health-check и явно пишет warning в логи при старте.
 
 ## Конфигурация
 
 - `HTTP_PORT`
 - `GRPC_PORT`
 - `AI_INFERENCE_PROVIDER_TIMEOUT`
+- `AI_INFERENCE_SKIP_PROVIDER_HEALTHCHECK`
+- `AI_INFERENCE_MOCK_RESPONSES`
 
 ## Разработка
 

@@ -9,11 +9,11 @@ import (
 
 type AttributeServiceServerImpl struct {
 	pb.UnimplementedAttributeServiceServer
-	svc *usecase.IAMUsecase
+	svc IAMUsecaseContract
 }
 
 func NewAttributeServiceServer(uc *usecase.IAMUsecase) *AttributeServiceServerImpl {
-	return &AttributeServiceServerImpl{svc: uc}
+	return &AttributeServiceServerImpl{svc: usecaseOrNil(uc)}
 }
 
 var _ pb.AttributeServiceServer = (*AttributeServiceServerImpl)(nil)

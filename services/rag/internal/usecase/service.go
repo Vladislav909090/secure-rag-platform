@@ -1,12 +1,16 @@
 package usecase
 
 import (
+	"context"
+	"io"
 	"log/slog"
 
 	aiinferencev1 "secure-rag-platform/api/gen/go/aiinference/v1"
 	knowledgev1 "secure-rag-platform/api/gen/go/knowledge/v1"
 	"secure-rag-platform/services/rag/internal/repository"
 	"secure-rag-platform/services/rag/internal/storage"
+
+	"github.com/pgvector/pgvector-go"
 )
 
 type Defaults struct {
@@ -20,13 +24,23 @@ type Defaults struct {
 
 // Service содержит бизнес-логику RAG
 type Service struct {
-	repo       *repository.Repo
-	storage    *storage.S3Storage
+	repo       RAGRepo
+	storage    ObjectStorage
 	knowledge  knowledgev1.KnowledgeServiceClient
 	embedding  aiinferencev1.EmbeddingServiceClient
 	generation aiinferencev1.GenerationServiceClient
 	defaults   Defaults
 	logger     *slog.Logger
+}
+
+type RAGRepo interface {
+	DeleteChunks(context.Context, string) error
+	InsertChunks(context.Context, []repository.Chunk) error
+	SearchSimilar(context.Context, pgvector.Vector, string, int32, int32, int32, []string) ([]repository.ChunkMatch, error)
+}
+
+type ObjectStorage interface {
+	Download(context.Context, string) (io.ReadCloser, error)
 }
 
 // NewService создаёт сервисный слой RAG

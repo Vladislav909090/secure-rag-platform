@@ -52,10 +52,37 @@ type accessTokenClaims struct {
 
 // IAMUsecase содержит бизнес-логику IAM
 type IAMUsecase struct {
-	repo   *repository.Repo
+	repo   IAMRepo
 	redis  *redis.Client
 	cfg    Config
 	logger *slog.Logger
+}
+
+type IAMRepo interface {
+	AddUserRole(context.Context, string, string, *string) ([]*model.Role, error)
+	CreateSession(context.Context, repository.CreateSessionInput) (*model.UserSession, error)
+	CreateUser(context.Context, repository.CreateUserInput) (*model.User, error)
+	DeleteUserAttributeKey(context.Context, string, string, *string) (map[string]any, error)
+	GetSessionByID(context.Context, string) (*model.UserSession, error)
+	GetSessionByRefreshHash(context.Context, string) (*model.UserSession, error)
+	GetSubjectContext(context.Context, string) (*model.SubjectContext, error)
+	GetUserAttributes(context.Context, string) (map[string]any, error)
+	GetUserByID(context.Context, string) (*model.User, error)
+	GetUserByLogin(context.Context, string) (*model.User, error)
+	GetUserRoles(context.Context, string) ([]*model.Role, error)
+	GetUserView(context.Context, string) (*model.UserView, error)
+	HasUserWithRole(context.Context, string) (bool, error)
+	IncrementContextVersion(context.Context, string) (int64, error)
+	ListActiveUserSessions(context.Context, string) ([]*model.UserSession, error)
+	ListRoles(context.Context) ([]*model.Role, error)
+	ListUserViews(context.Context) ([]*model.UserView, error)
+	RemoveUserRole(context.Context, string, string) ([]*model.Role, error)
+	ReplaceUserAttributes(context.Context, string, map[string]any, *string) (map[string]any, error)
+	RevokeAllUserSessions(context.Context, string) (int64, error)
+	RevokeSession(context.Context, string) (bool, error)
+	RotateSessionRefreshHash(context.Context, string, string, time.Time) (*model.UserSession, error)
+	SetUserRoles(context.Context, string, []string, *string) ([]*model.Role, error)
+	UpdateUser(context.Context, repository.UpdateUserInput) (*model.User, error)
 }
 
 // NewIAMUsecase создает слой бизнес-логики IAM с переданными зависимостями

@@ -1,4 +1,4 @@
-.PHONY: lint test build docker\:build \
+.PHONY: lint test test\:cover coverage build docker\:build mockery\:gen mocks \
 	proto\:tools proto\:deps proto\:gen proto\:clean \
 	api\:sync api\:gen api\:clean grpc\:stubs \
 	compose\:up compose\:recreate compose\:down compose\:config
@@ -14,6 +14,7 @@ BIN_EXT       =
 GOOGLEAPIS_REF ?= 1526e545e9d26f23b9c5d0f04af17297def8d045
 GOOGLEAPIS_RAW = https://raw.githubusercontent.com/googleapis/googleapis/$(GOOGLEAPIS_REF)
 PROTOC         = protoc
+MOCKERY        = go run github.com/vektra/mockery/v2@v2.53.5
 
 LOCAL_PROTO_FILE = v1/gateway.proto
 ROOT_PROTO_DIR   = ../../api/proto/gateway/v1
@@ -28,10 +29,13 @@ API_PROTO_FILES = \
 	rag/v1/rag.proto \
 	aiinference/v1/ai_inference.proto
 
+COVERPROFILE ?= coverage.out
+
 ifeq ($(OS),Windows_NT)
 BIN_EXT = .exe
 PROTOC = $(shell powershell -NoProfile -Command "$$cmd=Get-Command protoc -ErrorAction SilentlyContinue; if($$cmd){$$cmd.Source}else{$$p1=Join-Path $$env:LOCALAPPDATA 'Microsoft\\WinGet\\Packages\\Google.Protobuf_Microsoft.Winget.Source_8wekyb3d8bbwe\\bin\\protoc.exe'; $$p2=Join-Path $$env:LOCALAPPDATA 'protoc\\bin\\protoc.exe'; if(Test-Path -LiteralPath $$p1 -ErrorAction SilentlyContinue){$$p1}elseif(Test-Path -LiteralPath $$p2 -ErrorAction SilentlyContinue){$$p2}else{'protoc'}}")
 PROTO_DEPS_CMD = powershell -NoProfile -Command "New-Item -ItemType Directory -Force third_party/google/api | Out-Null; $$updated=$$false; if(-not(Test-Path third_party/google/api/annotations.proto)){Invoke-WebRequest '$(GOOGLEAPIS_RAW)/google/api/annotations.proto' -OutFile third_party/google/api/annotations.proto -UseBasicParsing; $$updated=$$true}; if(-not(Test-Path third_party/google/api/http.proto)){Invoke-WebRequest '$(GOOGLEAPIS_RAW)/google/api/http.proto' -OutFile third_party/google/api/http.proto -UseBasicParsing; $$updated=$$true}; if(-not(Test-Path third_party/google/api/httpbody.proto)){Invoke-WebRequest '$(GOOGLEAPIS_RAW)/google/api/httpbody.proto' -OutFile third_party/google/api/httpbody.proto -UseBasicParsing; $$updated=$$true}; if($$updated){Write-Host '==> Downloaded missing google/api protos'}else{Write-Host '==> google/api protos already present'}"
+COVERPKG = $(shell powershell -NoProfile -Command "(go list ./... | Where-Object { $$_ -notmatch '/gen/' -and $$_ -notmatch '/internal/docs$$' }) -join ','")
 else
 PROTO_DEPS_CMD = mkdir -p third_party/google/api && \
 	changed=0; \
@@ -39,6 +43,7 @@ PROTO_DEPS_CMD = mkdir -p third_party/google/api && \
 	if [ ! -f third_party/google/api/http.proto ]; then curl -sSL $(GOOGLEAPIS_RAW)/google/api/http.proto -o third_party/google/api/http.proto && changed=1; fi; \
 	if [ ! -f third_party/google/api/httpbody.proto ]; then curl -sSL $(GOOGLEAPIS_RAW)/google/api/httpbody.proto -o third_party/google/api/httpbody.proto && changed=1; fi; \
 	if [ $$changed -eq 1 ]; then echo "==> Downloaded missing google/api protos"; else echo "==> google/api protos already present"; fi
+COVERPKG = $(shell go list ./... | grep -v '/gen/' | grep -v '/internal/docs$$' | paste -sd, -)
 endif
 
 lint:
@@ -46,6 +51,24 @@ lint:
 
 test:
 	go test ./...
+
+test\:cover:
+	go test -covermode=atomic -coverpkg="$(COVERPKG)" -coverprofile="$(COVERPROFILE)" ./...
+	go tool cover -func="$(COVERPROFILE)"
+
+coverage: test\:cover
+
+mocks: mockery\:gen
+
+mockery\:gen:
+	$(MOCKERY) --srcpkg secure-rag-platform/api/gen/go/iam/v1 --name InternalIAMServiceClient --structname MockInternalIAMServiceClient --filename internal_iam_service_client_mock_test.go --output internal/usecase --outpkg usecase --testonly --with-expecter --quiet
+	$(MOCKERY) --srcpkg secure-rag-platform/api/gen/go/iam/v1 --name AuthServiceClient --structname MockAuthServiceClient --filename auth_service_client_mock_test.go --output internal/usecase --outpkg usecase --testonly --with-expecter --quiet
+	$(MOCKERY) --srcpkg secure-rag-platform/api/gen/go/iam/v1 --name UserServiceClient --structname MockUserServiceClient --filename user_service_client_mock_test.go --output internal/usecase --outpkg usecase --testonly --with-expecter --quiet
+	$(MOCKERY) --srcpkg secure-rag-platform/api/gen/go/iam/v1 --name RoleServiceClient --structname MockRoleServiceClient --filename role_service_client_mock_test.go --output internal/usecase --outpkg usecase --testonly --with-expecter --quiet
+	$(MOCKERY) --srcpkg secure-rag-platform/api/gen/go/iam/v1 --name AttributeServiceClient --structname MockAttributeServiceClient --filename attribute_service_client_mock_test.go --output internal/usecase --outpkg usecase --testonly --with-expecter --quiet
+	$(MOCKERY) --srcpkg secure-rag-platform/api/gen/go/knowledge/v1 --name KnowledgeServiceClient --structname MockKnowledgeServiceClient --filename knowledge_service_client_mock_test.go --output internal/usecase --outpkg usecase --testonly --with-expecter --quiet
+	$(MOCKERY) --srcpkg secure-rag-platform/api/gen/go/rag/v1 --name RAGServiceClient --structname MockRAGServiceClient --filename rag_service_client_mock_test.go --output internal/usecase --outpkg usecase --testonly --with-expecter --quiet
+	$(MOCKERY) --dir internal/usecase --name PolicyAuthorizer --structname MockPolicyAuthorizer --filename policy_authorizer_mock_test.go --output internal/usecase --inpackage --testonly --with-expecter --quiet
 
 build:
 ifeq ($(OS),Windows_NT)

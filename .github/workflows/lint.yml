@@ -39,6 +39,53 @@ jobs:
       - name: Run tests
         run: make test
 
+      - name: Report coverage warnings
+        shell: bash
+        run: |
+          set -euo pipefail
+          declare -A thresholds=(
+            [gateway]=30
+            [iam]=30
+            [knowledge]=30
+            [rag]=30
+            [ai-inference]=50
+          )
+
+          if [[ -n "${GITHUB_STEP_SUMMARY:-}" ]]; then
+            {
+              echo "### Test coverage"
+              echo
+              echo "| Service | Coverage | Warning threshold | Status |"
+              echo "|---|---:|---:|---|"
+            } >> "${GITHUB_STEP_SUMMARY}"
+          fi
+
+          printf "%-14s %10s %10s %s\n" "SERVICE" "COVERAGE" "THRESHOLD" "STATUS"
+          for service in gateway iam knowledge rag ai-inference; do
+            log_file="${RUNNER_TEMP:-/tmp}/coverage-${service}.log"
+            (
+              cd "services/${service}"
+              coverpkg="$(go list ./... | grep -v '/gen/' | grep -v '/internal/docs$' | paste -sd, -)"
+              go test -covermode=atomic -coverpkg="${coverpkg}" -coverprofile="coverage.out" ./...
+            ) > "${log_file}" 2>&1 || {
+              cat "${log_file}"
+              exit 1
+            }
+
+            total="$(cd "services/${service}" && go tool cover -func="coverage.out" | awk '/^total:/ { gsub(/%/, "", $3); print $3 }')"
+            threshold="${thresholds[$service]}"
+            status="ok"
+            if awk -v total="${total}" -v threshold="${threshold}" 'BEGIN { exit !((total + 0) < (threshold + 0)) }'; then
+              status="warning"
+              printf "::warning title=Low test coverage::%s coverage %.1f%% is below warning threshold %.1f%%\n" "${service}" "${total}" "${threshold}"
+            fi
+
+            printf "%-14s %9.1f%% %9.1f%% %s\n" "${service}" "${total}" "${threshold}" "${status}"
+            if [[ -n "${GITHUB_STEP_SUMMARY:-}" ]]; then
+              printf "| %s | %.1f%% | %.1f%% | %s |\n" "${service}" "${total}" "${threshold}" "${status}" >> "${GITHUB_STEP_SUMMARY}"
+            fi
+          done
+
       - name: Build services
         run: make build
 

@@ -8,28 +8,7 @@ import (
 
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
-	"google.golang.org/protobuf/types/known/structpb"
 )
-
-func (s *Server) requireUC() error {
-	if s.uc == nil || !s.uc.Ready() {
-		return status.Error(codes.Unavailable, "service not configured")
-	}
-
-	return nil
-}
-
-func mapToStruct(value map[string]any) *structpb.Struct {
-	if value == nil {
-		value = map[string]any{}
-	}
-	out, err := structpb.NewStruct(value)
-	if err != nil {
-		return &structpb.Struct{Fields: map[string]*structpb.Value{}}
-	}
-
-	return out
-}
 
 func toGRPCError(err error) error {
 	switch {

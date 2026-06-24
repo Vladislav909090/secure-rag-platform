@@ -6,7 +6,9 @@ import (
 	"encoding/hex"
 	"errors"
 	"io"
+	"time"
 
+	"secure-rag-platform/services/knowledge/internal/model"
 	"secure-rag-platform/services/knowledge/internal/repository"
 	"secure-rag-platform/services/knowledge/internal/storage"
 )
@@ -22,9 +24,26 @@ var (
 
 // DocumentUsecase содержит бизнес-логику работы с документами
 type DocumentUsecase struct {
-	repo    *repository.Repo
-	storage *storage.S3Storage
+	repo    DocumentRepo
+	storage DocumentStorage
 	maxSize int64
+}
+
+type DocumentRepo interface {
+	CreateDocument(context.Context, *model.Document) error
+	GetDocumentByUUID(context.Context, string) (*model.Document, error)
+	ListActiveDocuments(context.Context) ([]*model.Document, error)
+	RestoreDocument(context.Context, string, time.Time) error
+	SoftDeleteDocument(context.Context, string, time.Time) error
+	UpdateAttributes(context.Context, string, map[string]any, time.Time) error
+	UpdateDocument(context.Context, string, *string, *string, time.Time) error
+	UpdateIndexStatus(context.Context, int64, string) error
+}
+
+type DocumentStorage interface {
+	Delete(context.Context, string) error
+	Download(context.Context, string) (io.ReadCloser, error)
+	Upload(context.Context, string, io.Reader, int64, string) error
 }
 
 // NewDocumentUsecase создаёт сценарий работы с документами

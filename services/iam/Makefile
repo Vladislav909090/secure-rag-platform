@@ -1,4 +1,4 @@
-.PHONY: lint test build docker\:build \
+.PHONY: lint test test\:cover coverage build docker\:build mockery\:gen mocks \
 	proto\:tools proto\:deps proto\:gen proto\:clean \
 	api\:sync api\:gen api\:clean grpc\:stubs \
 	migrate\:validate migrate\:status migrate\:up migrate\:down migrate\:create \
@@ -16,6 +16,7 @@ GOOGLEAPIS_REF ?= 1526e545e9d26f23b9c5d0f04af17297def8d045
 GOOGLEAPIS_RAW = https://raw.githubusercontent.com/googleapis/googleapis/$(GOOGLEAPIS_REF)
 PROTOC         = protoc
 GOOSE          = go run github.com/pressly/goose/v3/cmd/goose@v3.24.3
+MOCKERY        = go run github.com/vektra/mockery/v2@v2.53.5
 DB_DSN        ?= postgres://iam:iam@localhost:5433/iam?sslmode=disable
 MIGRATION_NAME ?= new_migration
 
@@ -32,10 +33,13 @@ API_PROTO_FILES = \
 	rag/v1/rag.proto \
 	aiinference/v1/ai_inference.proto
 
+COVERPROFILE ?= coverage.out
+
 ifeq ($(OS),Windows_NT)
 BIN_EXT = .exe
 PROTOC = $(shell powershell -NoProfile -Command "$$cmd=Get-Command protoc -ErrorAction SilentlyContinue; if($$cmd){$$cmd.Source}else{$$p1=Join-Path $$env:LOCALAPPDATA 'Microsoft\\WinGet\\Packages\\Google.Protobuf_Microsoft.Winget.Source_8wekyb3d8bbwe\\bin\\protoc.exe'; $$p2=Join-Path $$env:LOCALAPPDATA 'protoc\\bin\\protoc.exe'; if(Test-Path -LiteralPath $$p1 -ErrorAction SilentlyContinue){$$p1}elseif(Test-Path -LiteralPath $$p2 -ErrorAction SilentlyContinue){$$p2}else{'protoc'}}")
 PROTO_DEPS_CMD = powershell -NoProfile -Command "New-Item -ItemType Directory -Force third_party/google/api | Out-Null; $$updated=$$false; if(-not(Test-Path third_party/google/api/annotations.proto)){Invoke-WebRequest '$(GOOGLEAPIS_RAW)/google/api/annotations.proto' -OutFile third_party/google/api/annotations.proto -UseBasicParsing; $$updated=$$true}; if(-not(Test-Path third_party/google/api/http.proto)){Invoke-WebRequest '$(GOOGLEAPIS_RAW)/google/api/http.proto' -OutFile third_party/google/api/http.proto -UseBasicParsing; $$updated=$$true}; if(-not(Test-Path third_party/google/api/httpbody.proto)){Invoke-WebRequest '$(GOOGLEAPIS_RAW)/google/api/httpbody.proto' -OutFile third_party/google/api/httpbody.proto -UseBasicParsing; $$updated=$$true}; if($$updated){Write-Host '==> Downloaded missing google/api protos'}else{Write-Host '==> google/api protos already present'}"
+COVERPKG = $(shell powershell -NoProfile -Command "(go list ./... | Where-Object { $$_ -notmatch '/gen/' -and $$_ -notmatch '/internal/docs$$' }) -join ','")
 else
 PROTO_DEPS_CMD = mkdir -p third_party/google/api && \
 	changed=0; \
@@ -43,6 +47,7 @@ PROTO_DEPS_CMD = mkdir -p third_party/google/api && \
 	if [ ! -f third_party/google/api/http.proto ]; then curl -sSL $(GOOGLEAPIS_RAW)/google/api/http.proto -o third_party/google/api/http.proto && changed=1; fi; \
 	if [ ! -f third_party/google/api/httpbody.proto ]; then curl -sSL $(GOOGLEAPIS_RAW)/google/api/httpbody.proto -o third_party/google/api/httpbody.proto && changed=1; fi; \
 	if [ $$changed -eq 1 ]; then echo "==> Downloaded missing google/api protos"; else echo "==> google/api protos already present"; fi
+COVERPKG = $(shell go list ./... | grep -v '/gen/' | grep -v '/internal/docs$$' | paste -sd, -)
 endif
 
 lint:
@@ -50,6 +55,18 @@ lint:
 
 test:
 	go test ./...
+
+test\:cover:
+	go test -covermode=atomic -coverpkg="$(COVERPKG)" -coverprofile="$(COVERPROFILE)" ./...
+	go tool cover -func="$(COVERPROFILE)"
+
+coverage: test\:cover
+
+mocks: mockery\:gen
+
+mockery\:gen:
+	$(MOCKERY) --dir internal/transport/grpc --name IAMUsecaseContract --structname MockIAMUsecase --filename iam_usecase_mock_test.go --output internal/transport/grpc --inpackage --testonly --with-expecter --quiet
+	$(MOCKERY) --dir internal/usecase --name IAMRepo --structname MockIAMRepo --filename iam_repo_mock_test.go --output internal/usecase --inpackage --testonly --with-expecter --quiet
 
 build:
 ifeq ($(OS),Windows_NT)

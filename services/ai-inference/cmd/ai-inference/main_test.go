@@ -31,7 +31,7 @@ func (testProvider) Embed(
 	return &usecase.BatchEmbedResult{}, nil
 }
 
-func TestHealthRPC(t *testing.T) {
+func TestAIInferenceHealthRPC(t *testing.T) {
 	svc := usecase.NewService(
 		map[string]config.ModelAlias{
 			"chat.default": {

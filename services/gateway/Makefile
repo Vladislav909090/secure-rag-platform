@@ -1,4 +1,4 @@
-.PHONY: lint test test\:cover coverage build docker\:build \
+.PHONY: lint test test\:cover coverage build docker\:build mockery\:gen mocks \
 	proto\:tools proto\:deps proto\:gen proto\:clean \
 	api\:sync api\:gen api\:clean grpc\:stubs \
 	compose\:up compose\:recreate compose\:down compose\:config
@@ -14,6 +14,7 @@ BIN_EXT       =
 GOOGLEAPIS_REF ?= 1526e545e9d26f23b9c5d0f04af17297def8d045
 GOOGLEAPIS_RAW = https://raw.githubusercontent.com/googleapis/googleapis/$(GOOGLEAPIS_REF)
 PROTOC         = protoc
+MOCKERY        = go run github.com/vektra/mockery/v2@v2.53.5
 
 LOCAL_PROTO_FILE = v1/gateway.proto
 ROOT_PROTO_DIR   = ../../api/proto/gateway/v1
@@ -56,6 +57,18 @@ test\:cover:
 	go tool cover -func="$(COVERPROFILE)"
 
 coverage: test\:cover
+
+mocks: mockery\:gen
+
+mockery\:gen:
+	$(MOCKERY) --srcpkg secure-rag-platform/api/gen/go/iam/v1 --name InternalIAMServiceClient --structname MockInternalIAMServiceClient --filename internal_iam_service_client_mock_test.go --output internal/usecase --outpkg usecase --testonly --with-expecter --quiet
+	$(MOCKERY) --srcpkg secure-rag-platform/api/gen/go/iam/v1 --name AuthServiceClient --structname MockAuthServiceClient --filename auth_service_client_mock_test.go --output internal/usecase --outpkg usecase --testonly --with-expecter --quiet
+	$(MOCKERY) --srcpkg secure-rag-platform/api/gen/go/iam/v1 --name UserServiceClient --structname MockUserServiceClient --filename user_service_client_mock_test.go --output internal/usecase --outpkg usecase --testonly --with-expecter --quiet
+	$(MOCKERY) --srcpkg secure-rag-platform/api/gen/go/iam/v1 --name RoleServiceClient --structname MockRoleServiceClient --filename role_service_client_mock_test.go --output internal/usecase --outpkg usecase --testonly --with-expecter --quiet
+	$(MOCKERY) --srcpkg secure-rag-platform/api/gen/go/iam/v1 --name AttributeServiceClient --structname MockAttributeServiceClient --filename attribute_service_client_mock_test.go --output internal/usecase --outpkg usecase --testonly --with-expecter --quiet
+	$(MOCKERY) --srcpkg secure-rag-platform/api/gen/go/knowledge/v1 --name KnowledgeServiceClient --structname MockKnowledgeServiceClient --filename knowledge_service_client_mock_test.go --output internal/usecase --outpkg usecase --testonly --with-expecter --quiet
+	$(MOCKERY) --srcpkg secure-rag-platform/api/gen/go/rag/v1 --name RAGServiceClient --structname MockRAGServiceClient --filename rag_service_client_mock_test.go --output internal/usecase --outpkg usecase --testonly --with-expecter --quiet
+	$(MOCKERY) --dir internal/usecase --name PolicyAuthorizer --structname MockPolicyAuthorizer --filename policy_authorizer_mock_test.go --output internal/usecase --inpackage --testonly --with-expecter --quiet
 
 build:
 ifeq ($(OS),Windows_NT)

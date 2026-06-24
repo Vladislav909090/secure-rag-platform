@@ -1,4 +1,4 @@
-.PHONY: lint test test\:cover coverage build docker\:build \
+.PHONY: lint test test\:cover coverage build docker\:build mockery\:gen mocks \
 	proto\:tools proto\:deps proto\:gen proto\:clean \
 	api\:sync api\:gen api\:clean grpc\:stubs \
 	migrate\:validate migrate\:status migrate\:up migrate\:down migrate\:create \
@@ -16,6 +16,7 @@ GOOGLEAPIS_REF ?= 1526e545e9d26f23b9c5d0f04af17297def8d045
 GOOGLEAPIS_RAW = https://raw.githubusercontent.com/googleapis/googleapis/$(GOOGLEAPIS_REF)
 PROTOC         = protoc
 GOOSE          = go run github.com/pressly/goose/v3/cmd/goose@v3.24.3
+MOCKERY        = go run github.com/vektra/mockery/v2@v2.53.5
 DB_DSN        ?= postgres://knowledge:knowledge@localhost:5434/knowledge?sslmode=disable
 MIGRATION_NAME ?= new_migration
 
@@ -60,6 +61,13 @@ test\:cover:
 	go tool cover -func="$(COVERPROFILE)"
 
 coverage: test\:cover
+
+mocks: mockery\:gen
+
+mockery\:gen:
+	$(MOCKERY) --dir internal/transport/grpc --name DocumentUsecaseContract --structname MockDocumentUsecase --filename document_usecase_mock_test.go --output internal/transport/grpc --inpackage --testonly --with-expecter --quiet
+	$(MOCKERY) --dir internal/usecase --name DocumentRepo --structname MockDocumentRepo --filename document_repo_mock_test.go --output internal/usecase --inpackage --testonly --with-expecter --quiet
+	$(MOCKERY) --dir internal/usecase --name DocumentStorage --structname MockDocumentStorage --filename document_storage_mock_test.go --output internal/usecase --inpackage --testonly --with-expecter --quiet
 
 build:
 ifeq ($(OS),Windows_NT)

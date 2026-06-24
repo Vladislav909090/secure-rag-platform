@@ -2,6 +2,7 @@
 	test test\:gateway test\:iam test\:knowledge test\:rag test\:ai-inference \
 	test\:cover test\:cover\:gateway test\:cover\:iam test\:cover\:knowledge test\:cover\:rag test\:cover\:ai-inference coverage \
 	build build\:gateway build\:iam build\:knowledge build\:rag build\:ai-inference \
+	mockery\:gen mockery\:gen\:gateway mockery\:gen\:iam mockery\:gen\:knowledge mockery\:gen\:rag mocks \
 	api\:sync api\:gen api\:clean \
 	proto\:tools proto\:deps proto\:gen \
 	proto\:gen\:gateway proto\:gen\:iam proto\:gen\:knowledge proto\:gen\:rag proto\:gen\:ai-inference \
@@ -124,6 +125,24 @@ build\:ai-inference:
 	$(MAKE) -C services/ai-inference build
 
 build: build\:gateway build\:iam build\:knowledge build\:rag build\:ai-inference
+
+# Mockery
+
+mockery\:gen\:gateway:
+	$(MAKE) -C services/gateway mockery:gen
+
+mockery\:gen\:iam:
+	$(MAKE) -C services/iam mockery:gen
+
+mockery\:gen\:knowledge:
+	$(MAKE) -C services/knowledge mockery:gen
+
+mockery\:gen\:rag:
+	$(MAKE) -C services/rag mockery:gen
+
+mockery\:gen: mockery\:gen\:gateway mockery\:gen\:iam mockery\:gen\:knowledge mockery\:gen\:rag
+
+mocks: mockery\:gen
 
 # Proto и публичный API
 
